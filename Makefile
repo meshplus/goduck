@@ -1,4 +1,4 @@
-APP_NAME = bitxman
+APP_NAME = goduck
 APP_VERSION = 1.0.0
 
 # build with version infos

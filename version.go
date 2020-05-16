@@ -1,4 +1,4 @@
-package bitxman
+package goduck
 
 import (
 	"fmt"

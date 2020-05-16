@@ -10,8 +10,8 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "BitXMan"
-	app.Usage = "BitXMan is a command-line management tool that can help to run BitXHub."
+	app.Name = "GoDuck"
+	app.Usage = "GoDuck is a command-line management tool that can help to run BitXHub."
 	app.Compiled = time.Now()
 
 	cli.VersionPrinter = func(c *cli.Context) {
@@ -22,7 +22,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:  "repo",
-			Usage: "BitXHub storage repo path",
+			Usage: "GoDuck storage repo path",
 		},
 	}
 

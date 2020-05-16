@@ -1,4 +1,4 @@
-module github.com/meshplus/bitxman
+module github.com/meshplus/goduck
 
 go 1.14
 
