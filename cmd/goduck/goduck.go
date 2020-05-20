@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,6 +29,8 @@ func main() {
 
 	app.Commands = []*cli.Command{
 		getVersionCMD(),
+		GetInitCMD(),
+		fabric.GetFabricCMD(),
 	}
 
 	err := app.Run(os.Args)
