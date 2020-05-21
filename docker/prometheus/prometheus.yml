@@ -1,0 +1,35 @@
+# my global config
+global:
+  scrape_interval:     15s # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s # By default, scrape targets every 15 seconds.
+  # scrape_timeout is set to the global default (10s).
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'codelab-monitor'
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+# - "first.rules"
+# - "second.rules"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  - job_name: "bitxhub-node1"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:40011']
+  - job_name: "bitxhub-node2"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:40012']
+  - job_name: "bitxhub-node3"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:40013']
+  - job_name: "bitxhub-node4"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:40014']
