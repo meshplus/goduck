@@ -8,5 +8,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/gobuffalo/packd v0.3.0
 	github.com/gobuffalo/packr v1.30.1
+	github.com/meshplus/bitxhub-kit v1.0.0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/urfave/cli/v2 v2.2.0
 )
