@@ -1,0 +1,79 @@
+package repo
+
+import (
+	"os"
+	"path/filepath"
+
+	"github.com/mitchellh/go-homedir"
+)
+
+const (
+	// defaultPathName is the default config dir name
+	defaultPathName = ".bitxhub"
+	// defaultPathRoot is the path to the default config dir location.
+	defaultPathRoot = "~/" + defaultPathName
+	// envDir is the environment variable used to change the path root.
+	envDir = "BITXHUB_PATH"
+	// Network config name
+	NetworkConfigName = "network.toml"
+	// Genesis config name
+	GenesisConfigName = "genesis.json"
+	// CA cert name
+	caCertName = "ca.cert"
+	// CA private key name
+	caPrivKeyName = "ca.priv"
+	// key name
+	KeyName = "key.json"
+)
+
+type Genesis struct {
+	Addresses []string `json:"addresses" toml:"addresses"`
+}
+
+type NetworkConfig struct {
+	ID    uint64 `toml:"id" json:"id"`
+	N     uint64
+	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
+}
+
+type NetworkNodes struct {
+	ID   uint64 `toml:"id" json:"id"`
+	Addr string `toml:"addr" json:"addr"`
+}
+
+func PathRoot() (string, error) {
+	dir := os.Getenv(envDir)
+	var err error
+	if len(dir) == 0 {
+		dir, err = homedir.Expand(defaultPathRoot)
+	}
+	return dir, err
+}
+
+func PathRootWithDefault(path string) (string, error) {
+	if len(path) == 0 {
+		return PathRoot()
+	}
+
+	return path, nil
+}
+
+func GetCAPrivKeyPath(dir string) string {
+	return filepath.Join(dir, caPrivKeyName)
+}
+
+func GetCACertPath(dir string) string {
+	return filepath.Join(dir, caCertName)
+}
+
+func GetPrivKeyPath(name, dir string) string {
+	return filepath.Join(dir, name+".priv")
+}
+
+func GetCSRPath(name, dir string) string {
+	return filepath.Join(dir, name+".csr")
+}
+
+func GetCertPath(name, dir string) string {
+	return filepath.Join(dir, name+".cert")
+}

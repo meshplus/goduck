@@ -31,6 +31,10 @@ func main() {
 		getVersionCMD(),
 		GetInitCMD(),
 		fabric.GetFabricCMD(),
+		configCMD(),
+		keyCMD(),
+		certCMD,
+		caCMD,
 	}
 
 	err := app.Run(os.Args)
