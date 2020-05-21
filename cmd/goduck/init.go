@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
+	"github.com/meshplus/goduck/repo"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,6 +26,13 @@ func GetInitCMD() *cli.Command {
 
 func Initialize(ctx *cli.Context) error {
 	repoRoot := ctx.String("repo")
+	if repoRoot == "" {
+		root, err := repo.PathRoot()
+		if err != nil {
+			return err
+		}
+		repoRoot = root
+	}
 	if fileutil.Exist(repoRoot) {
 		fmt.Println("goduck configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")

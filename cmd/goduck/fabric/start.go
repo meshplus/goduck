@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/meshplus/goduck/repo"
 	"github.com/urfave/cli/v2"
 )
 
@@ -36,23 +37,32 @@ func GetFabricCMD() *cli.Command {
 }
 
 func start(ctx *cli.Context) error {
-	repoRoot := ctx.String("repo")
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
 	args := []string{filepath.Join(repoRoot, "ffn.sh"), "up"}
 
-	return execCmd(args)
+	return execCmd(args, repoRoot)
 }
 
 func installChaincode(ctx *cli.Context) error {
-	repoRoot := ctx.String("repo")
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
 	fabricConfig := ctx.String("config")
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoRoot, "chaincode.sh"), "install", "-c", fabricConfig)
 
-	return execCmd(args)
+	return execCmd(args, repoRoot)
 }
 
-func execCmd(args []string) error {
+func execCmd(args []string, repoRoot string) error {
 	cmd := exec.Command("/bin/bash", args...)
+	cmd.Dir = repoRoot
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("execute command: %s", err.Error())
