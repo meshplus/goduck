@@ -44,7 +44,7 @@ func start(ctx *cli.Context) error {
 
 	args := []string{filepath.Join(repoRoot, "ffn.sh"), "up"}
 
-	return execCmd(args)
+	return execCmd(args, repoRoot)
 }
 
 func installChaincode(ctx *cli.Context) error {
@@ -57,11 +57,12 @@ func installChaincode(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoRoot, "chaincode.sh"), "install", "-c", fabricConfig)
 
-	return execCmd(args)
+	return execCmd(args, repoRoot)
 }
 
-func execCmd(args []string) error {
+func execCmd(args []string, repoRoot string) error {
 	cmd := exec.Command("/bin/bash", args...)
+	cmd.Dir = repoRoot
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("execute command: %s", err.Error())
