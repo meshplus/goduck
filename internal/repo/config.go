@@ -9,11 +9,11 @@ import (
 
 const (
 	// defaultPathName is the default config dir name
-	defaultPathName = ".bitxhub"
+	defaultPathName = ".goduck"
 	// defaultPathRoot is the path to the default config dir location.
 	defaultPathRoot = "~/" + defaultPathName
 	// envDir is the environment variable used to change the path root.
-	envDir = "BITXHUB_PATH"
+	envDir = "GODUCK_PATH"
 	// Network config name
 	NetworkConfigName = "network.toml"
 	// Genesis config name
@@ -22,24 +22,11 @@ const (
 	caCertName = "ca.cert"
 	// CA private key name
 	caPrivKeyName = "ca.priv"
+	// Agency name
+	AgencyName = "agency"
 	// key name
 	KeyName = "key.json"
 )
-
-type Genesis struct {
-	Addresses []string `json:"addresses" toml:"addresses"`
-}
-
-type NetworkConfig struct {
-	ID    uint64 `toml:"id" json:"id"`
-	N     uint64
-	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
-}
-
-type NetworkNodes struct {
-	ID   uint64 `toml:"id" json:"id"`
-	Addr string `toml:"addr" json:"addr"`
-}
 
 func PathRoot() (string, error) {
 	dir := os.Getenv(envDir)
