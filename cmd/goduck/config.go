@@ -127,7 +127,7 @@ func generateNodesConfig(repoRoot, agencyPrivKey, agencyCertPath string, ips []s
 
 	for i := 1; i <= count; i++ {
 		ip := ips[i-1]
-		ipToId[ip] = ipToId[ip] + 1
+		ipToId[ip]++
 
 		addr, node, err := generateNodeConfig(repoRoot, agencyPrivKey, agencyCertPath, ip, i, ipToId)
 		if err != nil {
