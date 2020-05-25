@@ -36,25 +36,58 @@ func configCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "config",
 		Usage: "Generate configuration for BitXHub nodes",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "target",
-				Value: ".",
-				Usage: "where to put the generated configuration files",
+		Subcommands: []*cli.Command{
+			{
+				Name: "binary",
+				Usage: "Generate configuration for BitXHub binary nodes",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "target",
+						Value: ".",
+						Usage: "where to put the generated configuration files",
+					},
+					&cli.Uint64Flag{
+						Name:  "count",
+						Value: 4,
+						Usage: "Node count",
+					},
+					&cli.StringSliceFlag{
+						Name:  "ips",
+						Usage: "node IPs, use 127.0.0.1 for all nodes by default",
+					},
+				},
+				Action: generateConfig,
 			},
-			&cli.Uint64Flag{
-				Name:  "count",
-				Value: 4,
-				Usage: "Node count",
-			},
-			&cli.StringSliceFlag{
-				Name:  "ips",
-				Usage: "node IPs, use 127.0.0.1 for all nodes by default",
+			{
+				Name: "docker",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "target",
+						Value: ".",
+						Usage: "where to put the generated configuration files",
+					},
+				},
+				Usage: "Generate configuration for BitXHub docker nodes",
+				Action: generateDockerConfig,
 			},
 		},
-		Action: generateConfig,
 	}
 }
+
+func generateDockerConfig(ctx *cli.Context) error {
+	target := ctx.String("target")
+	count := 4
+	fmt.Printf("initializing %d BitXHub nodes at %s\n", count, target)
+
+	ips := make([]string, 0)
+	for i := 2; i <count+2; i++ {
+		ip := fmt.Sprintf("172.19.0.%d", i)
+		ips = append(ips, ip)
+	}
+
+	return initConfig(target, count, ips)
+}
+
 
 func generateConfig(ctx *cli.Context) error {
 	target := ctx.String("target")
@@ -72,7 +105,11 @@ func generateConfig(ctx *cli.Context) error {
 			ips = append(ips, "127.0.0.1")
 		}
 	}
+	return initConfig(target, int(count), ips)
+}
 
+
+func initConfig(target string, count int, ips []string) error{
 	if repo.Initialized(target) {
 		fmt.Println("BitXHub configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
