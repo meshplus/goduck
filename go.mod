@@ -17,11 +17,12 @@ require (
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p-core v0.5.7-0.20200520175250-264788628f5a
 	github.com/meshplus/bitxhub v1.0.0-rc2
-	github.com/meshplus/bitxhub-kit v1.0.1-0.20200525050818-198e65fa54c9
+	github.com/meshplus/bitxhub-kit v1.0.1-0.20200525112026-df2160653e23
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.2.0
+	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
