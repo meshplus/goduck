@@ -37,6 +37,7 @@ func main() {
 		keyCMD(),
 		certCMD,
 		caCMD,
+		installCMD(),
 	}
 
 	err := app.Run(os.Args)
