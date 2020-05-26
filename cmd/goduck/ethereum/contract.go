@@ -1,10 +1,13 @@
 package ethereum
 
 import (
+	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -26,7 +29,7 @@ var contractCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:     "ether_addr",
 					Usage:    "the address of ethereum chain",
-					Value:    "localhost:8545",
+					Value:    "http://localhost:8545",
 					Required: false,
 				},
 				&cli.StringFlag{
@@ -41,6 +44,29 @@ var contractCMD = &cli.Command{
 				},
 			},
 			Action: deploy,
+		},
+		{
+			Name:  "invoke",
+			Usage: "invoke solidity contract on ethereum chain",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "ether_addr",
+					Usage:    "the address of ethereum chain",
+					Value:    "http://localhost:8545",
+					Required: false,
+				},
+				&cli.StringFlag{
+					Name:     "key_path",
+					Usage:    "the ethereum account private key path",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "abi_path",
+					Usage:    "the path of solidity contract abi file",
+					Required: true,
+				},
+			},
+			Action: invoke,
 		},
 	},
 }
@@ -81,6 +107,112 @@ func deploy(ctx *cli.Context) error {
 		fmt.Printf("Contract JSON ABI\n%s\n", compileResult.Abi[i])
 	}
 
+	return nil
+}
+
+func invoke(ctx *cli.Context) error {
+	etherAddr := ctx.String("ether_addr")
+	keyPath := ctx.String("key_path")
+	abiPath := ctx.String("abi_path")
+
+	if ctx.NArg() < 2 {
+		return fmt.Errorf("invoke contract must include address and function")
+	}
+
+	args := ctx.Args().Slice()
+	if ctx.NArg() == 2 {
+		args = append(args, "")
+	}
+	dstAddr := args[0]
+	function := args[1]
+	argAbi := args[2]
+
+	file, err := ioutil.ReadFile(abiPath)
+	if err != nil {
+		return err
+	}
+
+	etherCli, privateKey, err := help(etherAddr, keyPath)
+	if err != nil {
+		return err
+	}
+
+	ab, err := abi.JSON(bytes.NewReader(file))
+	if err != nil {
+		return err
+	}
+
+	etherSession := &EtherSession{
+		privateKey: privateKey,
+		etherCli:   etherCli,
+		ctx:        context.Background(),
+		ab:         ab,
+	}
+
+	// prepare for invoke parameters
+	var argx []interface{}
+	if len(args) != 0 {
+		argSplits := strings.Split(argAbi, ",")
+		var argArr [][]byte
+		for _, arg := range argSplits {
+			argArr = append(argArr, []byte(arg))
+		}
+
+		argx, err = ABIUnmarshal(ab, argArr, function)
+		if err != nil {
+			return err
+		}
+	}
+
+	packed, err := ab.Pack(function, argx...)
+	if err != nil {
+		return err
+	}
+
+	invokerAddr := crypto.PubkeyToAddress(privateKey.PublicKey)
+	to := common.HexToAddress(dstAddr)
+
+	if ab.Methods[function].IsConstant() {
+		// for read only eth calls
+		result, err := etherSession.ethCall(&invokerAddr, &to, function, packed)
+		if err != nil {
+			return err
+		}
+
+		if result == nil {
+			fmt.Printf("\n======= invoke function %s =======\n", function)
+			fmt.Println("no result")
+			return nil
+		}
+
+		str := ""
+		for _, r := range result {
+			if r != nil {
+				if reflect.TypeOf(r).String() == "[32]uint8" {
+					v, ok := r.([32]byte)
+					if ok {
+						r = string(v[:])
+					}
+				}
+			}
+			str = fmt.Sprintf("%s,%v", str, r)
+		}
+
+		str = strings.Trim(str, ",")
+		fmt.Printf("\n======= invoke function %s =======\n", function)
+		fmt.Printf("call result: %s\n", str)
+		return nil
+	}
+
+	// for write only eth transaction
+	receipt, err := etherSession.ethTx(&invokerAddr, &to, packed)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\n======= invoke function %s =======\n", function)
+	fmt.Printf("transaction hash: %s\n", receipt.TxHash.Hex())
+	fmt.Printf("transaction status: %d\n", receipt.Status)
 	return nil
 }
 
