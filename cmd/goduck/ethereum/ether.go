@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/meshplus/goduck/repo"
 	"github.com/urfave/cli/v2"
 )
 
@@ -14,15 +15,8 @@ func GetEtherCMD() *cli.Command {
 		Usage: "operation about ethereum chain",
 		Subcommands: []*cli.Command{
 			{
-				Name:  "start",
-				Usage: "start a ethereum chain",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "account_path",
-						Usage:    "path to store accounts file",
-						Required: true,
-					},
-				},
+				Name:   "start",
+				Usage:  "start a ethereum chain",
 				Action: start,
 			},
 			contractCMD,
@@ -31,8 +25,12 @@ func GetEtherCMD() *cli.Command {
 }
 
 func start(ctx *cli.Context) error {
-	accountPath := ctx.String("account_path")
-	args := []string{"-a", "1", "--acctKeys", accountPath}
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	args := []string{"-a", "1", "--acctKeys", repoRoot}
 
 	cmd := exec.Command("ganache-cli", args...)
 	stdout, _ := cmd.StdoutPipe()
