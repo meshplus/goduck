@@ -2,16 +2,25 @@ package main
 
 import (
 	"bufio"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/meshplus/bitxhub/pkg/cert"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/pelletier/go-toml"
 	"github.com/urfave/cli/v2"
@@ -38,7 +47,7 @@ func configCMD() *cli.Command {
 		Usage: "Generate configuration for BitXHub nodes",
 		Subcommands: []*cli.Command{
 			{
-				Name: "binary",
+				Name:  "binary",
 				Usage: "Generate configuration for BitXHub binary nodes",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -67,7 +76,7 @@ func configCMD() *cli.Command {
 						Usage: "where to put the generated configuration files",
 					},
 				},
-				Usage: "Generate configuration for BitXHub docker nodes",
+				Usage:  "Generate configuration for BitXHub docker nodes",
 				Action: generateDockerConfig,
 			},
 		},
@@ -80,14 +89,13 @@ func generateDockerConfig(ctx *cli.Context) error {
 	fmt.Printf("initializing %d BitXHub nodes at %s\n", count, target)
 
 	ips := make([]string, 0)
-	for i := 2; i <count+2; i++ {
+	for i := 2; i < count+2; i++ {
 		ip := fmt.Sprintf("172.19.0.%d", i)
 		ips = append(ips, ip)
 	}
 
 	return initConfig(target, count, ips)
 }
-
 
 func generateConfig(ctx *cli.Context) error {
 	target := ctx.String("target")
@@ -108,8 +116,7 @@ func generateConfig(ctx *cli.Context) error {
 	return initConfig(target, int(count), ips)
 }
 
-
-func initConfig(target string, count int, ips []string) error{
+func initConfig(target string, count int, ips []string) error {
 	if repo.Initialized(target) {
 		fmt.Println("BitXHub configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
@@ -351,4 +358,200 @@ func cleanOldConfig(target string) error {
 	}
 
 	return nil
+}
+
+func generateCA(dir string) (string, string, error) {
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return "", "", err
+	}
+
+	priKeyEncode, err := x509.MarshalECPrivateKey(privKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	f, err := os.Create(repo.GetCAPrivKeyPath(dir))
+	if err != nil {
+		return "", "", err
+	}
+	defer f.Close()
+
+	err = pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: priKeyEncode})
+	if err != nil {
+		return "", "", err
+	}
+
+	c, err := cert.GenerateCert(privKey, true, "Hyperchain")
+	if err != nil {
+		return "", "", err
+	}
+
+	x509certEncode, err := x509.CreateCertificate(rand.Reader, c, c, privKey.Public(), privKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	f, err = os.Create(repo.GetCACertPath(dir))
+	if err != nil {
+		return "", "", err
+	}
+	defer f.Close()
+
+	if err := pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: x509certEncode}); err != nil {
+		return "", "", err
+	}
+
+	return repo.GetCAPrivKeyPath(dir), repo.GetCACertPath(dir), nil
+}
+
+func generateCSR(org string, privPath string, target string) error {
+	privData, err := ioutil.ReadFile(privPath)
+	if err != nil {
+		return err
+	}
+	block, _ := pem.Decode(privData)
+	privKey, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("parse private key: %w", err)
+	}
+
+	template := &x509.CertificateRequest{
+		Subject: pkix.Name{
+			Country:            []string{"CN"},
+			Locality:           []string{"HangZhou"},
+			Province:           []string{"ZheJiang"},
+			OrganizationalUnit: []string{"BitXHub"},
+			Organization:       []string{org},
+			StreetAddress:      []string{"street", "address"},
+			PostalCode:         []string{"324000"},
+			CommonName:         "BitXHub",
+		},
+	}
+	data, err := x509.CreateCertificateRequest(rand.Reader, template, privKey)
+	if err != nil {
+		return err
+	}
+
+	name := getFileName(privPath)
+
+	f, err := os.Create(repo.GetCSRPath(name, target))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return pem.Encode(f, &pem.Block{Type: "CSR", Bytes: data})
+}
+
+func issueCert(csrPath, privPath, certPath, target string, isCA bool) error {
+	privData, err := ioutil.ReadFile(privPath)
+	if err != nil {
+		return fmt.Errorf("read ca private key: %w", err)
+	}
+	block, _ := pem.Decode(privData)
+	privKey, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("parse ca private key: %w", err)
+	}
+
+	caCertData, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return err
+	}
+	block, _ = pem.Decode(caCertData)
+	caCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("parse ca cert: %w", err)
+	}
+
+	crsData, err := ioutil.ReadFile(csrPath)
+	if err != nil {
+		return fmt.Errorf("read crs: %w", err)
+	}
+
+	block, _ = pem.Decode(crsData)
+
+	crs, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("parse csr: %w", err)
+	}
+
+	if err := crs.CheckSignature(); err != nil {
+		return fmt.Errorf("wrong csr sign: %w", err)
+	}
+
+	sn, err := rand.Int(rand.Reader, big.NewInt(1000000))
+	if err != nil {
+		return err
+	}
+
+	notBefore := time.Now().Add(-5 * time.Minute).UTC()
+	template := &x509.Certificate{
+		Signature:             crs.Signature,
+		SignatureAlgorithm:    crs.SignatureAlgorithm,
+		PublicKey:             crs.PublicKey,
+		PublicKeyAlgorithm:    crs.PublicKeyAlgorithm,
+		SerialNumber:          sn,
+		NotBefore:             notBefore,
+		NotAfter:              notBefore.Add(50 * 365 * 24 * time.Hour).UTC(),
+		BasicConstraintsValid: true,
+		IsCA:                  isCA,
+		Issuer:                caCert.Subject,
+		KeyUsage: x509.KeyUsageDigitalSignature |
+			x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign |
+			x509.KeyUsageCRLSign,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+		Subject:     crs.Subject,
+	}
+
+	x509certEncode, err := x509.CreateCertificate(rand.Reader, template, caCert, crs.PublicKey, privKey)
+	if err != nil {
+		return fmt.Errorf("create cert: %w", err)
+	}
+
+	name := getFileName(csrPath)
+
+	f, err := os.Create(repo.GetCertPath(name, target))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: x509certEncode})
+}
+
+func generatePrivKey(name, target string) error {
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return fmt.Errorf("generate key: %w", err)
+	}
+
+	priKeyEncode, err := x509.MarshalECPrivateKey(privKey)
+	if err != nil {
+		return fmt.Errorf("marshal key: %w", err)
+	}
+
+	f, err := os.Create(repo.GetPrivKeyPath(name, target))
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+
+	err = pem.Encode(f, &pem.Block{Type: "EC PRIVATE KEY", Bytes: priKeyEncode})
+	if err != nil {
+		return fmt.Errorf("pem encode: %w", err)
+	}
+
+	return nil
+}
+
+func getFileName(path string) string {
+	def := "default"
+	name := filepath.Base(path)
+	bs := strings.Split(name, ".")
+	if len(bs) != 2 {
+		return def
+	}
+
+	return bs[0]
 }
