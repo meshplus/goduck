@@ -35,8 +35,6 @@ func main() {
 		ethereum.GetEtherCMD(),
 		configCMD(),
 		keyCMD(),
-		certCMD,
-		caCMD,
 		installCMD(),
 	}
 
