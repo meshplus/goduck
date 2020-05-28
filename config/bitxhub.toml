@@ -1,11 +1,11 @@
 title = "BitXHub configuration file"
 
-solo = false
+solo = {{.Solo}}
 
 [port]
-  grpc = 6001{{.}}
-  gateway = 909{{.}}
-  pprof = 5312{{.}}
+  grpc = 6001{{.Id}}
+  gateway = 909{{.Id}}
+  pprof = 5312{{.Id}}
 
 [pprof]
   enable = true
@@ -30,4 +30,4 @@ solo = false
   verify = true
 
 [order]
-  plugin = "plugins/raft.so"
+  plugin = "plugins/{{.Consensus}}.so"

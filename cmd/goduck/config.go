@@ -45,78 +45,54 @@ func configCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "config",
 		Usage: "Generate configuration for BitXHub nodes",
-		Subcommands: []*cli.Command{
-			{
-				Name:  "binary",
-				Usage: "Generate configuration for BitXHub binary nodes",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "target",
-						Value: ".",
-						Usage: "where to put the generated configuration files",
-					},
-					&cli.Uint64Flag{
-						Name:  "count",
-						Value: 4,
-						Usage: "Node count",
-					},
-					&cli.StringSliceFlag{
-						Name:  "ips",
-						Usage: "node IPs, use 127.0.0.1 for all nodes by default",
-					},
-				},
-				Action: generateConfig,
+		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:  "num",
+				Value: 4,
+				Usage: "Node number, only useful in cluster mode, ignored in solo mode",
 			},
-			{
-				Name: "docker",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "target",
-						Value: ".",
-						Usage: "where to put the generated configuration files",
-					},
-				},
-				Usage:  "Generate configuration for BitXHub docker nodes",
-				Action: generateDockerConfig,
+			&cli.StringFlag{
+				Name:  "type",
+				Value: "binary",
+				Usage: "configuration type, one of binary or docker",
+			},
+			&cli.StringFlag{
+				Name:  "mode",
+				Value: "cluster",
+				Usage: "configuration mode, one of solo or cluster",
+			},
+			&cli.StringSliceFlag{
+				Name:  "ips",
+				Usage: "node IPs, use 127.0.0.1 for all nodes by default",
+			},
+			&cli.StringFlag{
+				Name:  "target",
+				Value: ".",
+				Usage: "where to put the generated configuration files",
 			},
 		},
+		Action: generateConfig,
 	}
-}
-
-func generateDockerConfig(ctx *cli.Context) error {
-	target := ctx.String("target")
-	count := 4
-	fmt.Printf("initializing %d BitXHub nodes at %s\n", count, target)
-
-	ips := make([]string, 0)
-	for i := 2; i < count+2; i++ {
-		ip := fmt.Sprintf("172.19.0.%d", i)
-		ips = append(ips, ip)
-	}
-
-	return initConfig(target, count, ips)
 }
 
 func generateConfig(ctx *cli.Context) error {
-	target := ctx.String("target")
-	count := ctx.Uint64("count")
+	num := ctx.Int("num")
+	typ := ctx.String("type")
+	mode := ctx.String("mode")
 	ips := ctx.StringSlice("ips")
+	target := ctx.String("target")
 
-	if err := checkParams(count, ips); err != nil {
+	return InitConfig(typ, mode, target, num, ips)
+}
+
+func InitConfig(typ, mode, target string, num int, ips []string) error {
+	num, ips, err := processParams(num, typ, mode, ips)
+	if err != nil {
 		return err
 	}
 
-	fmt.Printf("initializing %d BitXHub nodes at %s\n", count, target)
+	fmt.Printf("initializing %d BitXHub nodes at %s\n", num, target)
 
-	if len(ips) == 0 {
-		for i := 0; i < int(count); i++ {
-			ips = append(ips, "127.0.0.1")
-		}
-	}
-	return initConfig(target, int(count), ips)
-}
-
-func initConfig(target string, count int, ips []string) error {
 	if repo.Initialized(target) {
 		fmt.Println("BitXHub configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
@@ -149,7 +125,7 @@ func initConfig(target string, count int, ips []string) error {
 		return fmt.Errorf("generate agency cert: %w", err)
 	}
 
-	addrs, nodes, err := generateNodesConfig(target, agencyPrivKey, agencyCertPath, ips)
+	addrs, nodes, err := generateNodesConfig(target, mode, agencyPrivKey, agencyCertPath, ips)
 	if err != nil {
 		return fmt.Errorf("generate nodes config: %w", err)
 	}
@@ -158,12 +134,12 @@ func initConfig(target string, count int, ips []string) error {
 		return fmt.Errorf("write network and genesis config: %w", err)
 	}
 
-	fmt.Printf("%d BitXHub nodes at %s are initialized successfully\n", count, target)
+	fmt.Printf("%d BitXHub nodes at %s are initialized successfully\n", num, target)
 
 	return nil
 }
 
-func generateNodesConfig(repoRoot, agencyPrivKey, agencyCertPath string, ips []string) ([]string, []*NetworkNodes, error) {
+func generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ips []string) ([]string, []*NetworkNodes, error) {
 	count := len(ips)
 	ipToId := make(map[string]int)
 	addrs := make([]string, 0, count)
@@ -173,7 +149,7 @@ func generateNodesConfig(repoRoot, agencyPrivKey, agencyCertPath string, ips []s
 		ip := ips[i-1]
 		ipToId[ip]++
 
-		addr, node, err := generateNodeConfig(repoRoot, agencyPrivKey, agencyCertPath, ip, i, ipToId)
+		addr, node, err := generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip, i, ipToId)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -185,7 +161,7 @@ func generateNodesConfig(repoRoot, agencyPrivKey, agencyCertPath string, ips []s
 	return addrs, nodes, nil
 }
 
-func generateNodeConfig(repoRoot, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
+func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
@@ -207,7 +183,7 @@ func generateNodeConfig(repoRoot, agencyPrivKey, agencyCertPath, ip string, id i
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
-	if err := repo.Initialize(nodeRoot, ipToId[ip]); err != nil {
+	if err := repo.Initialize(nodeRoot, mode, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
 
@@ -310,20 +286,49 @@ func checkIPs(ips []string) error {
 	return nil
 }
 
-func checkParams(count uint64, ips []string) error {
-	if count == 0 {
-		return fmt.Errorf("invalid count")
+func processParams(num int, typ string, mode string, ips []string) (int, []string, error) {
+	if mode == "solo" {
+		num = 1
 	}
 
-	if len(ips) != 0 && uint64(len(ips)) != count {
-		return fmt.Errorf("IPs' count is not equal to nodes' count")
+	if num == 0 {
+		return 0, nil, fmt.Errorf("invalid node number")
+	}
+
+	if typ != "docker" && typ != "binary" {
+		return 0, nil, fmt.Errorf("invalid type, choose one of docker or binary")
+	}
+
+	if mode != "solo" && mode != "cluster" {
+		return 0, nil, fmt.Errorf("invalid mode, choose one of solo or cluster")
+	}
+
+	if typ == "docker" && mode == "cluster" && num != 4 {
+		return 0, nil, fmt.Errorf("docker type supports 4 nodes only")
+	}
+
+	if len(ips) != 0 && len(ips) != num {
+		return 0, nil, fmt.Errorf("IPs' number is not equal to nodes' number")
 	}
 
 	if err := checkIPs(ips); err != nil {
-		return err
+		return 0, nil, err
 	}
 
-	return nil
+	if len(ips) == 0 {
+		if typ == "binary" {
+			for i := 0; i < int(num); i++ {
+				ips = append(ips, "127.0.0.1")
+			}
+		} else {
+			for i := 2; i < int(num)+2; i++ {
+				ip := fmt.Sprintf("172.19.0.%d", i)
+				ips = append(ips, ip)
+			}
+		}
+	}
+
+	return num, ips, nil
 }
 
 func cleanOldConfig(target string) error {
