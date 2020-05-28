@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -26,33 +27,34 @@ func Initialize(repoRoot, mode string, id int) error {
 			}
 		}
 
-		t := template.New(file.Name())
-		t, err := t.Parse(file.String())
-		if err != nil {
-			return err
+		fileName := file.Name()
+		if fileName == "bitxhub.toml" || fileName == "api" {
+			t := template.New(fileName)
+			t, err := t.Parse(file.String())
+			if err != nil {
+				return err
+			}
+
+			f, err := os.Create(p)
+			if err != nil {
+				return err
+			}
+
+			consensus := "solo"
+			if mode == "cluster" {
+				consensus = "raft"
+			}
+
+			data := struct {
+				Id        int
+				Solo      bool
+				Consensus string
+			}{id, mode == "solo", consensus}
+
+			return t.Execute(f, data)
+		} else {
+			return ioutil.WriteFile(p, []byte(file.String()), 0644)
 		}
-
-		f, err := os.Create(p)
-		if err != nil {
-			return err
-		}
-
-		consensus := "solo"
-		if mode == "cluster" {
-			consensus = "raft"
-		}
-
-		data := struct {
-			Id        int
-			Solo      bool
-			Consensus string
-		}{id, mode == "solo", consensus}
-
-		if err := t.Execute(f, data); err != nil {
-			return err
-		}
-
-		return nil
 	}); err != nil {
 		return err
 	}
