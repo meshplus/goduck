@@ -14,7 +14,7 @@ const (
 	packPath = "../../config"
 )
 
-func Initialize(repoRoot string, id int) error {
+func Initialize(repoRoot, mode string, id int) error {
 	box := packr.NewBox(packPath)
 	if err := box.Walk(func(s string, file packd.File) error {
 		p := filepath.Join(repoRoot, s)
@@ -37,7 +37,18 @@ func Initialize(repoRoot string, id int) error {
 			return err
 		}
 
-		if err := t.Execute(f, id); err != nil {
+		consensus := "solo"
+		if mode == "cluster" {
+			consensus = "raft"
+		}
+
+		data := struct {
+			Id        int
+			Solo      bool
+			Consensus string
+		}{id, mode == "solo", consensus}
+
+		if err := t.Execute(f, data); err != nil {
 			return err
 		}
 
