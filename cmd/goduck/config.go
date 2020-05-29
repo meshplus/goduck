@@ -165,6 +165,10 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
+	if mode == "solo" {
+		org = "NodeSolo"
+		nodeRoot = filepath.Join(repoRoot, name+"Solo")
+	}
 	certRoot := filepath.Join(nodeRoot, "certs")
 
 	if err := os.MkdirAll(certRoot, 0755); err != nil {
@@ -349,20 +353,36 @@ func cleanOldConfig(target string) error {
 
 	for i := 1; ; i++ {
 		nodeDir := filepath.Join(target, "node"+strconv.Itoa(i))
-
-		s, err := os.Stat(nodeDir)
+		exist, err := removeDir(nodeDir)
 		if err != nil {
-			break
+			return err
 		}
 
-		if s.IsDir() {
-			if err := os.RemoveAll(nodeDir); err != nil {
-				return fmt.Errorf("remove node configuration: %w", err)
-			}
+		if !exist {
+			break
 		}
 	}
 
+	if _, err := removeDir(filepath.Join(target, "nodeSolo")); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func removeDir(dir string) (bool, error) {
+	s, err := os.Stat(dir)
+	if err != nil {
+		return false, nil
+	}
+
+	if s.IsDir() {
+		if err := os.RemoveAll(dir); err != nil {
+			return true, fmt.Errorf("remove node configuration: %w", err)
+		}
+	}
+
+	return true, nil
 }
 
 func generateCA(dir string) (string, string, error) {

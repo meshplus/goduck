@@ -63,5 +63,10 @@ func Initialize(repoRoot, mode string, id int) error {
 }
 
 func Initialized(repoRoot string) bool {
-	return fileutil.Exist(filepath.Join(repoRoot, caPrivKeyName)) && fileutil.Exist(filepath.Join(repoRoot, "node1"))
+	return fileutil.Exist(GetCAPrivKeyPath(repoRoot)) ||
+		fileutil.Exist(GetCACertPath(repoRoot)) ||
+		fileutil.Exist(GetPrivKeyPath(repoRoot, AgencyName)) ||
+		fileutil.Exist(GetCertPath(repoRoot, AgencyName)) ||
+		fileutil.Exist(filepath.Join(repoRoot, "node1")) ||
+		fileutil.Exist(filepath.Join(repoRoot, "nodeSolo"))
 }
