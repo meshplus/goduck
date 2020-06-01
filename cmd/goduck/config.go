@@ -130,7 +130,7 @@ func InitConfig(typ, mode, target string, num int, ips []string) error {
 		return fmt.Errorf("generate nodes config: %w", err)
 	}
 
-	if err := writeNetworkAndGenesis(target, addrs, nodes); err != nil {
+	if err := writeNetworkAndGenesis(target, mode, addrs, nodes); err != nil {
 		return fmt.Errorf("write network and genesis config: %w", err)
 	}
 
@@ -209,7 +209,7 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 	return addr, node, nil
 }
 
-func writeNetworkAndGenesis(repoRoot string, addrs []string, nodes []*NetworkNodes) error {
+func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes) error {
 	genesis := Genesis{Addresses: addrs}
 	content, err := json.MarshalIndent(genesis, "", " ")
 	if err != nil {
@@ -219,6 +219,9 @@ func writeNetworkAndGenesis(repoRoot string, addrs []string, nodes []*NetworkNod
 	count := len(addrs)
 	for i := 1; i <= count; i++ {
 		nodeRoot := filepath.Join(repoRoot, "node"+strconv.Itoa(i))
+		if mode == "solo" {
+			nodeRoot = filepath.Join(repoRoot, "nodeSolo")
+		}
 
 		if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
 			return err
