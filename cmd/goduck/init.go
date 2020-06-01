@@ -14,7 +14,10 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const ScriptsPath = "../../scripts"
+const (
+	ScriptsPath = "../../scripts"
+	ConfigPath  = "../../config"
+)
 
 func GetInitCMD() *cli.Command {
 	return &cli.Command{
@@ -42,9 +45,10 @@ func Initialize(ctx *cli.Context) error {
 			return nil
 		}
 	}
-	box := packr.NewBox(ScriptsPath)
+	scriptBox := packr.NewBox(ScriptsPath)
+	configBox := packr.NewBox(ConfigPath)
 
-	if err := box.Walk(func(s string, file packd.File) error {
+	var walkFn = func(s string, file packd.File) error {
 		p := filepath.Join(repoRoot, s)
 		dir := filepath.Dir(p)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -54,7 +58,13 @@ func Initialize(ctx *cli.Context) error {
 			}
 		}
 		return ioutil.WriteFile(p, []byte(file.String()), 0644)
-	}); err != nil {
+	}
+
+	if err := scriptBox.Walk(walkFn); err != nil {
+		return err
+	}
+
+	if err := configBox.Walk(walkFn); err != nil {
 		return err
 	}
 

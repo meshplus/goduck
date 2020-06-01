@@ -18,7 +18,7 @@ func GetFabricCMD() *cli.Command {
 			{
 				Name:   "start",
 				Usage:  "start a fabric network",
-				Action: start,
+				Action: Start,
 			},
 			{
 				Name:  "chaincode",
@@ -36,7 +36,7 @@ func GetFabricCMD() *cli.Command {
 	}
 }
 
-func start(ctx *cli.Context) error {
+func Start(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err

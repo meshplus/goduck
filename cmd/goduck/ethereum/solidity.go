@@ -11,6 +11,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	Bool    = "bool"
+	Address = "address"
+	Int64   = "int64"
+	Uint64  = "uint64"
+	Int32   = "int32"
+	Uint32  = "uint32"
+	Int8    = "int8"
+	Uint8   = "uint8"
+	Bytes32 = "bytes32"
+	String  = "string"
+)
+
 func ABIUnmarshal(abi abi.ABI, args [][]byte, funcName string) ([]interface{}, error) {
 	argx := make([]interface{}, len(args))
 
@@ -84,36 +97,36 @@ type packer struct {
 
 func getSinglePacker(args abi.Arguments) (interface{}, string) {
 	switch args[0].Type.String() {
-	case "int32":
+	case Int32:
 		var num int32
-		return &num, "int32"
-	case "uint32":
+		return &num, Int32
+	case Uint32:
 		var num uint32
-		return &num, "uint32"
-	case "int8":
+		return &num, Uint32
+	case Int8:
 		var num int8
-		return &num, "int8"
-	case "uint8":
+		return &num, Int8
+	case Uint8:
 		var num uint8
-		return &num, "uint8"
-	case "int64":
+		return &num, Uint8
+	case Int64:
 		var num int64
-		return &num, "int64"
-	case "uint64":
+		return &num, Int64
+	case Uint64:
 		var num uint64
-		return &num, "uint64"
-	case "bool":
+		return &num, Uint64
+	case Bool:
 		var num bool
-		return &num, "bool"
-	case "string":
+		return &num, Bool
+	case String:
 		var num string
-		return &num, "string"
-	case "bytes32":
+		return &num, String
+	case Bytes32:
 		var num [32]byte
-		return &num, "bytes32"
-	case "address":
+		return &num, Bytes32
+	case Address:
 		var num common.Address
-		return &num, "address"
+		return &num, Address
 	}
 
 	return nil, ""
@@ -124,27 +137,27 @@ func getPacker(args abi.Arguments) *packer {
 	types := ""
 	for i, arg := range args {
 		switch arg.Type.String() {
-		case "int32":
+		case Int32:
 			var num int32
 			packers[i] = &num
 			types += "int32,"
-		case "uint32":
+		case Uint32:
 			var num uint32
 			packers[i] = &num
 			types += "uint32,"
-		case "int8":
+		case Int8:
 			var num int8
 			packers[i] = &num
 			types += "int8,"
-		case "uint8":
+		case Uint8:
 			var num uint8
 			packers[i] = &num
 			types += "uint8,"
-		case "int64":
+		case Int64:
 			var num int64
 			packers[i] = &num
 			types += "int64,"
-		case "uint64":
+		case Uint64:
 			var num uint64
 			packers[i] = &num
 			types += "uint64,"
@@ -152,19 +165,19 @@ func getPacker(args abi.Arguments) *packer {
 			var nums []uint64
 			packers[i] = &nums
 			types += "uint64[],"
-		case "bool":
+		case Bool:
 			var f bool
 			packers[i] = &f
 			types += "bool,"
-		case "string":
+		case String:
 			var s string
 			packers[i] = &s
 			types += "string,"
-		case "bytes32":
+		case Bytes32:
 			var b [32]byte
 			packers[i] = &b
 			types += "bytes32,"
-		case "address":
+		case Address:
 			var addr common.Address
 			packers[i] = &addr
 			types += "address,"
@@ -185,27 +198,27 @@ func getPacker(args abi.Arguments) *packer {
 
 func unpackResult(ret interface{}, types string) interface{} {
 	switch types {
-	case "int32":
+	case Int32:
 		return *ret.(*int32)
-	case "uint32":
+	case Uint32:
 		return *ret.(*uint32)
-	case "int8":
+	case Int8:
 		return *ret.(*int8)
-	case "uint8":
+	case Uint8:
 		return *ret.(*uint8)
-	case "int64":
+	case Int64:
 		return *ret.(*int64)
-	case "uint64":
+	case Uint64:
 		return *ret.(*uint64)
 	case "uint64[]":
 		return reflect.ValueOf(ret).Interface()
-	case "bool":
+	case Bool:
 		return *ret.(*bool)
-	case "string":
+	case String:
 		return *ret.(*string)
-	case "bytes32":
+	case Bytes32:
 		return *ret.(*[32]byte)
-	case "address":
+	case Address:
 		return *ret.(*common.Address)
 	case "address[]":
 		return reflect.ValueOf(ret).Interface()
@@ -217,49 +230,49 @@ func unpackResult(ret interface{}, types string) interface{} {
 func transform(input string, t string) (interface{}, error) {
 	switch t {
 	// todo:
-	case "address":
+	case Address:
 		var address common.Address
 		copy(address[:], common.Hex2Bytes(input[2:]))
 		return address, nil
-	case "string":
+	case String:
 		return input, nil
-	case "bytes32":
+	case Bytes32:
 		var r [32]byte
 		copy(r[:], []byte(input)[:32])
 		return r, nil
 	case "int256":
 		return nil, errors.New("type overFitted")
-	case "int64":
+	case Int64:
 		r, err := strconv.ParseInt(input, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	case "uint64":
+	case Uint64:
 		r, err := strconv.ParseUint(input, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	case "int32":
+	case Int32:
 		r, err := strconv.ParseInt(input, 10, 32)
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	case "uint8":
+	case Uint8:
 		r, err := strconv.ParseUint(input, 10, 8)
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	case "uint32":
+	case Uint32:
 		r, err := strconv.ParseUint(input, 10, 32)
 		if err != nil {
 			return nil, err
 		}
 		return r, nil
-	case "bool":
+	case Bool:
 		r, err := strconv.ParseBool(input)
 		if err != nil {
 			return nil, err

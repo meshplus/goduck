@@ -35,7 +35,8 @@ func main() {
 		ethereum.GetEtherCMD(),
 		configCMD(),
 		keyCMD(),
-		bitxhubCMD(),
+		installCMD(),
+		pierCMD,
 	}
 
 	err := app.Run(os.Args)

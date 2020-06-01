@@ -30,9 +30,35 @@ func start(ctx *cli.Context) error {
 		return err
 	}
 
-	args := []string{"-a", "1", "--acctKeys", repoRoot}
+	if err := StartEthereum(repoRoot, "binary"); err != nil {
+		return err
+	}
 
-	cmd := exec.Command("ganache-cli", args...)
+	fmt.Printf("start ethereum private chain with data directory in %s/datadir.\n", repoRoot)
+	return nil
+}
+
+func StartEthereum(repo, mode string) error {
+	switch mode {
+	case "binary":
+		args := []string{"private_chain.sh", "binary"}
+		if err := execCmd(args, repo); err != nil {
+			return err
+		}
+	case "docker":
+		args := []string{"private_chain.sh", "docker"}
+		if err := execCmd(args, repo); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not surpported mode")
+	}
+	return nil
+}
+
+func execCmd(args []string, repoRoot string) error {
+	cmd := exec.Command("/bin/bash", args...)
+	cmd.Dir = repoRoot
 	stdout, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("execute command: %s", err.Error())
