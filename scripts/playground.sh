@@ -1,5 +1,6 @@
-set -e
+#!/usr/bin/env bash
 
+set -e
 source x.sh
 
 VERSION=1.0
@@ -9,6 +10,7 @@ OPT=$1
 TYPE=$2
 MODE=$3
 N=$4
+SYSTEM=$(uname -s)
 
 function printHelp() {
   print_blue "Usage:  "
@@ -22,29 +24,35 @@ function printHelp() {
 
 function binary_prepare() {
   cd "${CURRENT_PATH}"
-  if [ -a bin/bitxhub ]; then
-    print_blue "Install bitxhub binary"
-    goduck install bitxhub "${CURRENT_PATH}"/bin
-    cd bin
-    if [ "${uname}" == "Linux" ]; then
+  if [ ! -a bin/bitxhub ]; then
+    mkdir -p bin && cd bin
+    if [ "${SYSTEM}" == "Linux" ]; then
       tar xf bitxhub_linux_amd64.tar.gz
-    elif [ "${uname}" == "Darwin" ]; then
+    elif [ "${SYSTEM}" == "Darwin" ]; then
       tar xf bitxhub_macos_x86_64.tar.gz
     else
-      echo "Bitxhub does not support the current operating system"
+      print_red "Bitxhub does not support the current operating system"
     fi
   fi
+
+  if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
+     print_red "Bitxhub already run in daemon processes"
+     exit 1
+  fi
+  print_blue "export LD_LIBRARY_PATH"
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/libwasmer.so
 }
 
 function bitxhub_binary_solo() {
   binary_prepare
+
   cd "${CURRENT_PATH}"
   if [ ! -d nodeSolo/plugins ]; then
     mkdir nodeSolo/plugins
     cp -r bin/plugins/solo.so nodeSolo/plugins
   fi
   print_blue "Start bitxhub solo by binary"
-  nohup "${CURRENT_PATH}"/bin/bitxhub --repo "${CURRENT_PATH}"/nodeSolo start &
+  nohup "${CURRENT_PATH}"/bin/bitxhub --repo "${CURRENT_PATH}"/nodeSolo start >/dev/null 2>&1 &
   echo $! >bitxhub.pid
 }
 
@@ -54,6 +62,10 @@ function bitxhub_docker_solo() {
   fi
 
   print_blue "Start bitxhub solo mode by docker"
+  if [ "$(docker container ls -a | grep -c bitxhub_solo)" -ge 1 ]; then
+    docker start bitxhub_solo
+    exit 1
+  fi
   docker run -d --name bitxhub_solo \
     -p 60011:60011 -p 9091:9091 -p 53121:53121 -p 40011:40011 \
     -v "${CURRENT_PATH}"/nodeSolo/api:/root/.bitxhub/api \
@@ -76,8 +88,8 @@ function bitxhub_binary_cluster() {
       cp -r bin/plugins/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
-    nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start &
-    echo $!+"/n" >"${CURRENT_PATH}"/bitxhub.pid
+    nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start >/dev/null 2>&1 &
+    echo $! >>"${CURRENT_PATH}"/bitxhub.pid
   done
 }
 
@@ -90,25 +102,28 @@ function bitxhub_docker_cluster() {
 }
 
 function bitxhub_down() {
+  set +e
   if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
     list=$(cat "${CURRENT_PATH}"/bitxhub.pid)
     for pid in $list; do
       kill "$pid"
       if [ $? -eq 0 ]; then
-        echo "program exit."
+        echo "node pid:$pid exit"
       else
-        echo "program exit fail, try use kill -9 $pid"
+        print_red "program exit fail, try use kill -9 $pid"
       fi
     done
     rm "${CURRENT_PATH}"/bitxhub.pid
   fi
 
-  if [ "$(docker container ls -a | grep -c bitxhub_node)" -ge 1 ]; then
+  if [ "$(docker container ls | grep -c bitxhub_node)" -ge 1 ]; then
     docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml stop
+    echo "bitxhub docker cluster stop"
   fi
 
-  if [ "$(docker container ls -a | grep -c bitxhub_solo)" -ge 1 ]; then
+  if [ "$(docker container ls | grep -c bitxhub_solo)" -ge 1 ]; then
     docker stop bitxhub_solo
+    echo "bitxhub docker solo stop"
   fi
 
 }
@@ -124,7 +139,7 @@ function bitxhub_up() {
       bitxhub_docker_cluster
       ;;
     *)
-      echo "TYPE should be solo or cluster"
+      print_red "TYPE should be solo or cluster"
       exit 1
       ;;
     esac
@@ -132,19 +147,19 @@ function bitxhub_up() {
   "binary")
     case $TYPE in
     "solo")
-      bitxhub_binary_cluster
+      bitxhub_binary_solo
       ;;
     "cluster")
       bitxhub_binary_cluster
       ;;
     *)
-      echo "TYPE should be solo or cluster"
+      print_red "TYPE should be solo or cluster"
       exit 1
       ;;
     esac
     ;;
   *)
-    print_blue "MODE should be docker or binary"
+    print_red "MODE should be docker or binary"
     exit 1
     ;;
   esac
