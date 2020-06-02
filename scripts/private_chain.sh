@@ -29,7 +29,7 @@ function binaryUp() {
       --rpcapi "eth,web3,personal,net,miner,admin,debug" \
       --allow-insecure-unlock --nodiscover \
       --unlock 0c7cd0feddf37a350530446bf3ebdddd447d2790 --password password \
-      --mine --miner.threads=1 --etherbase=0c7cd0feddf37a350530446bf3ebdddd447d2790 &
+      --mine --miner.threads=1 --etherbase=0c7cd0feddf37a350530446bf3ebdddd447d2790 > /dev/null 2>&1 &
 }
 
 function dockerUp() {

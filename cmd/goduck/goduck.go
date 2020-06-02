@@ -35,7 +35,7 @@ func main() {
 		ethereum.GetEtherCMD(),
 		configCMD(),
 		keyCMD(),
-		installCMD(),
+		bitxhubCMD(),
 		pierCMD,
 	}
 

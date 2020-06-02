@@ -92,8 +92,6 @@ func deploy(ctx *cli.Context) error {
 	}
 	// deploy a contract
 	auth := bind.NewKeyedTransactor(privateKey)
-	auth.GasLimit = 1007523
-
 	for i, bin := range compileResult.Bins {
 		if bin == "0x" {
 			continue
@@ -103,7 +101,7 @@ func deploy(ctx *cli.Context) error {
 			return err
 		}
 
-		code := strings.TrimSpace(bin)
+		code := strings.TrimPrefix(strings.TrimSpace(bin), "0x")
 		addr, _, _, err := bind.DeployContract(auth, parsed, common.FromHex(code), etherCli)
 		if err != nil {
 			return err

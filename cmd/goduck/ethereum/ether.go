@@ -51,7 +51,7 @@ func StartEthereum(repo, mode string) error {
 			return err
 		}
 	default:
-		return fmt.Errorf("not surpported mode")
+		return fmt.Errorf("not supported mode")
 	}
 	return nil
 }
