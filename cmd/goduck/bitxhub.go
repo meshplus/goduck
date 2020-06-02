@@ -4,8 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
+
+	"github.com/meshplus/goduck/internal/download"
 
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
@@ -16,6 +21,11 @@ const (
 	BINARY = "binary"
 	SOLO   = "solo"
 	SCRIPT = "playground.sh"
+
+	WasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
+
+	BitxhubUrlLinux = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_linux_amd64.tar.gz"
+	BitxhubUrlMacOS = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_macos_x86_64.tar.gz"
 )
 
 func bitxhubCMD() *cli.Command {
@@ -44,7 +54,8 @@ func bitxhubCMD() *cli.Command {
 					},
 				},
 				Action: startBitXHub,
-			}, {
+			},
+			{
 				Name:   "stop",
 				Usage:  "stop bitxhub nodes",
 				Action: stopBitXHub,
@@ -86,10 +97,48 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("init config error:%w", err)
 	}
 
+	if typ == BINARY {
+		err := downloadBinary(repoPath)
+		if err != nil {
+			return fmt.Errorf("download binary error:%w", err)
+		}
+	}
+
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, SCRIPT), "up")
-	args = append(args, mode, typ, string(num))
+	args = append(args, mode, typ, strconv.Itoa(num))
 	return execCmd(args, repoPath)
+}
+
+func downloadBinary(repoPath string) error {
+	root := filepath.Join(repoPath, "bin")
+	if !fileutil.Exist(root) {
+		err := os.Mkdir(root, 0755)
+		if err != nil {
+			return err
+		}
+	}
+	if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
+		err := download.Download(root, WasmLibUrl)
+		if err != nil {
+			return err
+		}
+	}
+	if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
+		if runtime.GOOS == "linux" {
+			err := download.Download(root, BitxhubUrlLinux)
+			if err != nil {
+				return err
+			}
+		}
+		if runtime.GOOS == "darwin" {
+			err := download.Download(root, BitxhubUrlMacOS)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func execCmd(args []string, repoRoot string) error {
