@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -76,7 +76,7 @@ func deploy(ctx *cli.Context) error {
 	keyPath := ctx.String("key_path")
 	codePath := ctx.String("code_path")
 
-	etherCli, privateKey, err := help(etherAddr, keyPath)
+	etherCli, privateKey, err := helper(etherAddr, keyPath)
 	if err != nil {
 		return err
 	}
@@ -92,13 +92,17 @@ func deploy(ctx *cli.Context) error {
 	}
 	// deploy a contract
 	auth := bind.NewKeyedTransactor(privateKey)
-	parsed, err := abi.JSON(strings.NewReader(compileResult.Abi[0]))
-	if err != nil {
-		return err
-	}
-
 	for i, bin := range compileResult.Bins {
-		addr, _, _, err := bind.DeployContract(auth, parsed, common.FromHex(bin), etherCli)
+		if bin == "0x" {
+			continue
+		}
+		parsed, err := abi.JSON(strings.NewReader(compileResult.Abi[i]))
+		if err != nil {
+			return err
+		}
+
+		code := strings.TrimPrefix(strings.TrimSpace(bin), "0x")
+		addr, _, _, err := bind.DeployContract(auth, parsed, common.FromHex(code), etherCli)
 		if err != nil {
 			return err
 		}
@@ -132,7 +136,7 @@ func invoke(ctx *cli.Context) error {
 		return err
 	}
 
-	etherCli, privateKey, err := help(etherAddr, keyPath)
+	etherCli, privateKey, err := helper(etherAddr, keyPath)
 	if err != nil {
 		return err
 	}
@@ -151,7 +155,7 @@ func invoke(ctx *cli.Context) error {
 
 	// prepare for invoke parameters
 	var argx []interface{}
-	if len(args) != 0 {
+	if len(argAbi) != 0 {
 		argSplits := strings.Split(argAbi, ",")
 		var argArr [][]byte
 		for _, arg := range argSplits {
@@ -205,18 +209,17 @@ func invoke(ctx *cli.Context) error {
 	}
 
 	// for write only eth transaction
-	receipt, err := etherSession.ethTx(&invokerAddr, &to, packed)
+	signedTx, err := etherSession.ethTx(&invokerAddr, &to, packed)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("\n======= invoke function %s =======\n", function)
-	fmt.Printf("transaction hash: %s\n", receipt.TxHash.Hex())
-	fmt.Printf("transaction status: %d\n", receipt.Status)
+	fmt.Printf("\n=============== Transaction hash is ==============\n\t%s\n", signedTx.Hash().Hex())
 	return nil
 }
 
-func help(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
+func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
 	etherCli, err := ethclient.Dial(etherAddr)
 	if err != nil {
 		return nil, nil, err
@@ -226,23 +229,10 @@ func help(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, erro
 	if err != nil {
 		return nil, nil, err
 	}
-
-	type EtherAccount struct {
-		PrivateKeys map[string]string `json:"private_keys"`
-	}
-	accounts := &EtherAccount{}
-	if err := json.Unmarshal(keyByte, accounts); err != nil {
+	unlockedKey, err := keystore.DecryptKey(keyByte, "123")
+	if err != nil {
 		return nil, nil, err
 	}
 
-	var privateKey *ecdsa.PrivateKey
-	for _, account := range accounts.PrivateKeys {
-		privateKey, err = crypto.HexToECDSA(account)
-		if err != nil {
-			return nil, nil, err
-		}
-		break
-	}
-
-	return etherCli, privateKey, nil
+	return etherCli, unlockedKey.PrivateKey, nil
 }

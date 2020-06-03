@@ -32,8 +32,13 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 		return nil, err
 	}
 
-	if output == nil {
-		return nil, fmt.Errorf("output is nil")
+	if len(output) == 0 {
+		if code, err := es.etherCli.CodeAt(es.ctx, *to, nil); err != nil {
+			return nil, err
+		} else if len(code) == 0 {
+			return nil, fmt.Errorf("no code at your contract addresss")
+		}
+		return nil, fmt.Errorf("output is empty")
 	}
 
 	// unpack result for display
@@ -45,7 +50,7 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 	return result, nil
 }
 
-func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*types.Receipt, error) {
+func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*types.Transaction, error) {
 	// for write only transaction
 	signedTx, err := es.buildTx(invokerAddr, to, packed)
 	if err != nil {
@@ -55,7 +60,7 @@ func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*
 		return nil, err
 	}
 
-	return es.etherCli.TransactionReceipt(es.ctx, signedTx.Hash())
+	return signedTx, nil
 }
 
 func (es *EtherSession) buildTx(from, dstAddr *common.Address, input []byte) (*types.Transaction, error) {

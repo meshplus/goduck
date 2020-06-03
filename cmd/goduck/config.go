@@ -26,6 +26,13 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	DockerMode  = "docker"
+	SoloMode    = "solo"
+	BinaryMode  = "binary"
+	ClusterMode = "cluster"
+)
+
 type Genesis struct {
 	Addresses []string `toml:"addresses" json:"addresses" `
 }
@@ -53,12 +60,12 @@ func configCMD() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:  "type",
-				Value: "binary",
+				Value: BinaryMode,
 				Usage: "configuration type, one of binary or docker",
 			},
 			&cli.StringFlag{
 				Name:  "mode",
-				Value: "cluster",
+				Value: ClusterMode,
 				Usage: "configuration mode, one of solo or cluster",
 			},
 			&cli.StringSliceFlag{
@@ -165,7 +172,7 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
-	if mode == "solo" {
+	if mode == SoloMode {
 		org = "NodeSolo"
 		nodeRoot = filepath.Join(repoRoot, name+"Solo")
 	}
@@ -294,7 +301,7 @@ func checkIPs(ips []string) error {
 }
 
 func processParams(num int, typ string, mode string, ips []string) (int, []string, error) {
-	if mode == "solo" {
+	if mode == SoloMode {
 		num = 1
 	}
 
@@ -302,15 +309,15 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 		return 0, nil, fmt.Errorf("invalid node number")
 	}
 
-	if typ != "docker" && typ != "binary" {
+	if typ != DockerMode && typ != BinaryMode {
 		return 0, nil, fmt.Errorf("invalid type, choose one of docker or binary")
 	}
 
-	if mode != "solo" && mode != "cluster" {
+	if mode != SoloMode && mode != ClusterMode {
 		return 0, nil, fmt.Errorf("invalid mode, choose one of solo or cluster")
 	}
 
-	if typ == "docker" && mode == "cluster" && num != 4 {
+	if typ == DockerMode && mode == ClusterMode && num != 4 {
 		return 0, nil, fmt.Errorf("docker type supports 4 nodes only")
 	}
 
@@ -323,12 +330,12 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 	}
 
 	if len(ips) == 0 {
-		if typ == "binary" {
-			for i := 0; i < int(num); i++ {
+		if typ == BinaryMode {
+			for i := 0; i < num; i++ {
 				ips = append(ips, "127.0.0.1")
 			}
 		} else {
-			for i := 2; i < int(num)+2; i++ {
+			for i := 2; i < num+2; i++ {
 				ip := fmt.Sprintf("172.19.0.%d", i)
 				ips = append(ips, ip)
 			}

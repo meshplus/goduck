@@ -25,7 +25,11 @@ func compileSolidityCode(codePath string) (*CompileResult, error) {
 		types []string
 	)
 	for name, contract := range contracts {
-		abi, _ := json.Marshal(contract.Info.AbiDefinition) // Flatten the compiler parse
+		abi, err := json.Marshal(contract.Info.AbiDefinition) // Flatten the compiler parse
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ABIs from compiler output: %w", err)
+		}
+
 		abis = append(abis, string(abi))
 		bins = append(bins, contract.Code)
 		types = append(types, name)

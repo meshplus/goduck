@@ -36,6 +36,7 @@ func main() {
 		configCMD(),
 		keyCMD(),
 		bitxhubCMD(),
+		pierCMD,
 	}
 
 	err := app.Run(os.Args)
