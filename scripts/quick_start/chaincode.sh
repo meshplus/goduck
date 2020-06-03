@@ -53,9 +53,10 @@ function prepare() {
   fi
 
   if [ ! -d contracts ]; then
-    print_blue "===> Copy contracts from pier-client-fabric project"
-    mkdir contracts
-    cp -rf pier-client-fabric/examples/* contracts
+    print_blue "===> Download chaincode"
+    wget https://github.com/meshplus/pier-client-fabric/raw/v1.0.0-rc3/example/contracts.zip
+    unzip -q contracts.zip
+    rm contracts.zip
   fi
 
   if [ ! -f config-template.yaml ]; then
