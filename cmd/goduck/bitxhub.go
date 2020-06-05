@@ -35,7 +35,7 @@ func bitxhubCMD() *cli.Command {
 		Subcommands: []*cli.Command{
 			{
 				Name:  "start",
-				Usage: "start bitxhub nodes",
+				Usage: "Start bitxhub nodes",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
@@ -57,8 +57,39 @@ func bitxhubCMD() *cli.Command {
 			},
 			{
 				Name:   "stop",
-				Usage:  "stop bitxhub nodes",
+				Usage:  "Stop bitxhub nodes",
 				Action: stopBitXHub,
+			},
+			{
+				Name:  "config",
+				Usage: "Generate configuration for BitXHub nodes",
+				Flags: []cli.Flag{
+					&cli.Uint64Flag{
+						Name:  "num",
+						Value: 4,
+						Usage: "Node number, only useful in cluster mode, ignored in solo mode",
+					},
+					&cli.StringFlag{
+						Name:  "type",
+						Value: BinaryMode,
+						Usage: "configuration type, one of binary or docker",
+					},
+					&cli.StringFlag{
+						Name:  "mode",
+						Value: ClusterMode,
+						Usage: "configuration mode, one of solo or cluster",
+					},
+					&cli.StringSliceFlag{
+						Name:  "ips",
+						Usage: "node IPs, use 127.0.0.1 for all nodes by default",
+					},
+					&cli.StringFlag{
+						Name:  "target",
+						Value: ".",
+						Usage: "where to put the generated configuration files",
+					},
+				},
+				Action: generateConfig,
 			},
 		},
 	}
