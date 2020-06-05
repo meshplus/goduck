@@ -54,7 +54,7 @@ function prepare() {
 
   if [ ! -d contracts ]; then
     print_blue "===> Download chaincode"
-    wget https://github.com/meshplus/pier-client-fabric/raw/v1.0.0-rc3/example/contracts.zip
+    wget https://github.com/meshplus/pier-client-fabric/raw/v1.0.0-rc4/example/contracts.zip
     unzip -q contracts.zip
     rm contracts.zip
   fi
