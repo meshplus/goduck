@@ -48,40 +48,6 @@ type NetworkNodes struct {
 	Addr string `toml:"addr" json:"addr"`
 }
 
-func configCMD() *cli.Command {
-	return &cli.Command{
-		Name:  "config",
-		Usage: "Generate configuration for BitXHub nodes",
-		Flags: []cli.Flag{
-			&cli.Uint64Flag{
-				Name:  "num",
-				Value: 4,
-				Usage: "Node number, only useful in cluster mode, ignored in solo mode",
-			},
-			&cli.StringFlag{
-				Name:  "type",
-				Value: BinaryMode,
-				Usage: "configuration type, one of binary or docker",
-			},
-			&cli.StringFlag{
-				Name:  "mode",
-				Value: ClusterMode,
-				Usage: "configuration mode, one of solo or cluster",
-			},
-			&cli.StringSliceFlag{
-				Name:  "ips",
-				Usage: "node IPs, use 127.0.0.1 for all nodes by default",
-			},
-			&cli.StringFlag{
-				Name:  "target",
-				Value: ".",
-				Usage: "where to put the generated configuration files",
-			},
-		},
-		Action: generateConfig,
-	}
-}
-
 func generateConfig(ctx *cli.Context) error {
 	num := ctx.Int("num")
 	typ := ctx.String("type")
@@ -330,7 +296,7 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 	}
 
 	if len(ips) == 0 {
-		if typ == BinaryMode {
+		if typ == BinaryMode || mode == SoloMode {
 			for i := 0; i < num; i++ {
 				ips = append(ips, "127.0.0.1")
 			}

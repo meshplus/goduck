@@ -33,7 +33,6 @@ func main() {
 		GetInitCMD(),
 		fabric.GetFabricCMD(),
 		ethereum.GetEtherCMD(),
-		configCMD(),
 		keyCMD(),
 		bitxhubCMD(),
 		pierCMD,
