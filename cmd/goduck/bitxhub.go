@@ -22,7 +22,8 @@ const (
 	SOLO   = "solo"
 	SCRIPT = "playground.sh"
 
-	WasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
+	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
+	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
 
 	BitxhubUrlLinux = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_linux_amd64.tar.gz"
 	BitxhubUrlMacOS = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_macos_x86_64.tar.gz"
@@ -149,23 +150,30 @@ func downloadBinary(repoPath string) error {
 			return err
 		}
 	}
-	if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-		err := download.Download(root, WasmLibUrl)
-		if err != nil {
-			return err
-		}
-	}
+
 	if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 		if runtime.GOOS == "linux" {
 			err := download.Download(root, BitxhubUrlLinux)
 			if err != nil {
 				return err
 			}
+			if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
+				err := download.Download(root, LinuxWasmLibUrl)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		if runtime.GOOS == "darwin" {
 			err := download.Download(root, BitxhubUrlMacOS)
 			if err != nil {
 				return err
+			}
+			if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
+				err := download.Download(root, MacOSWasmLibUrl)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

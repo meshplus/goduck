@@ -36,11 +36,12 @@ function binary_prepare() {
   fi
 
   if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
-     print_red "Bitxhub already run in daemon processes"
-     exit 1
+    print_red "Bitxhub already run in daemon processes"
+    exit 1
   fi
-  print_blue "export LD_LIBRARY_PATH"
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/libwasmer.so
+
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/
+
 }
 
 function bitxhub_binary_solo() {
@@ -64,17 +65,17 @@ function bitxhub_docker_solo() {
   print_blue "Start bitxhub solo mode by docker"
   if [ "$(docker container ls -a | grep -c bitxhub_solo)" -ge 1 ]; then
     docker start bitxhub_solo
-    exit 1
+  else
+    docker run -d --name bitxhub_solo \
+      -p 60011:60011 -p 9091:9091 -p 53121:53121 -p 40011:40011 \
+      -v "${CURRENT_PATH}"/nodeSolo/api:/root/.bitxhub/api \
+      -v "${CURRENT_PATH}"/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml \
+      -v "${CURRENT_PATH}"/nodeSolo/genesis.json:/root/.bitxhub/genesis.json \
+      -v "${CURRENT_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
+      -v "${CURRENT_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
+      -v "${CURRENT_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
+      meshplus/bitxhub-solo
   fi
-  docker run -d --name bitxhub_solo \
-    -p 60011:60011 -p 9091:9091 -p 53121:53121 -p 40011:40011 \
-    -v "${CURRENT_PATH}"/nodeSolo/api:/root/.bitxhub/api \
-    -v "${CURRENT_PATH}"/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml \
-    -v "${CURRENT_PATH}"/nodeSolo/genesis.json:/root/.bitxhub/genesis.json \
-    -v "${CURRENT_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
-    -v "${CURRENT_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
-    -v "${CURRENT_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
-    meshplus/bitxhub-solo
 }
 
 function bitxhub_binary_cluster() {
