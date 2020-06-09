@@ -10,7 +10,7 @@ import (
 	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
-	"github.com/meshplus/goduck/repo"
+	"github.com/meshplus/goduck/internal/repo"
 	"github.com/urfave/cli/v2"
 )
 

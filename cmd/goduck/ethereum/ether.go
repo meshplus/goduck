@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/meshplus/goduck/repo"
+	"github.com/meshplus/goduck/internal/repo"
 	"github.com/urfave/cli/v2"
 )
 

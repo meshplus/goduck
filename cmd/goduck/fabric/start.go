@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/meshplus/goduck/repo"
+	"github.com/meshplus/goduck/internal/repo"
 	"github.com/urfave/cli/v2"
 )
 
