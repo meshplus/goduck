@@ -24,8 +24,9 @@ function binaryUp() {
   geth init --datadir=datadir genesis.json
   cp account.key ./datadir/keystore/account.key
 
-  nohup geth --datadir $HOME/.goduck/datadir --rpc \
-      --rpccorsdomain https://remix.ethereum.org --rpcaddr "0.0.0.0" --rpcport 8545 \
+  nohup geth --datadir $HOME/.goduck/datadir --ws --rpc \
+      --rpccorsdomain https://remix.ethereum.org \
+      --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
       --rpcapi "eth,web3,personal,net,miner,admin,debug" \
       --allow-insecure-unlock --nodiscover \
       --unlock 0c7cd0feddf37a350530446bf3ebdddd447d2790 --password password \
@@ -33,17 +34,15 @@ function binaryUp() {
 }
 
 function dockerUp() {
-  rm -rf datadir
-  tar xvf datadir.tar.gz
-
-  docker run -d --name ethereum-node -v $HOME/.goduck:/root \
-  -p 8545:8545 -p 30303:30303 \
-  ethereum/client-go \
-      --datadir /root/datadir --rpc --rpcaddr "0.0.0.0" --rpcport 8545 \
-      --rpccorsdomain https://remix.ethereum.org \
+  docker run -d --name ethereum-node \
+  -p 8545:8545 -p 8546:8546 -p 30303:30303 \
+  meshplus/ethereum \
+      --datadir /root/datadir --ws --rpc \
+      --rpccorsdomain https://remix.ethereum.org --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" \
       --rpcapi "eth,web3,personal,net,miner,admin,debug" \
       --allow-insecure-unlock --nodiscover \
       --unlock 0c7cd0feddf37a350530446bf3ebdddd447d2790 --password /root/password \
+      --preload init.js --nousb \
       --mine --miner.threads=1 --etherbase=0c7cd0feddf37a350530446bf3ebdddd447d2790
 }
 
