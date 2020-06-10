@@ -229,7 +229,7 @@ func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, er
 	if err != nil {
 		return nil, nil, err
 	}
-	unlockedKey, err := keystore.DecryptKey(keyByte, "123")
+	unlockedKey, err := keystore.DecryptKey(keyByte, "")
 	if err != nil {
 		return nil, nil, err
 	}
