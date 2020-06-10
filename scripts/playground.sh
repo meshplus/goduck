@@ -39,9 +39,6 @@ function binary_prepare() {
     print_red "Bitxhub already run in daemon processes"
     exit 1
   fi
-
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/
-
 }
 
 function bitxhub_binary_solo() {
@@ -53,6 +50,7 @@ function bitxhub_binary_solo() {
     cp -r bin/plugins/solo.so nodeSolo/plugins
   fi
   print_blue "Start bitxhub solo by binary"
+  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/ \
   nohup "${CURRENT_PATH}"/bin/bitxhub --repo "${CURRENT_PATH}"/nodeSolo start >/dev/null 2>&1 &
   echo $! >bitxhub.pid
 }
@@ -89,7 +87,9 @@ function bitxhub_binary_cluster() {
       cp -r bin/plugins/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/ \
     nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start >/dev/null 2>&1 &
+
     echo $! >>"${CURRENT_PATH}"/bitxhub.pid
   done
 }

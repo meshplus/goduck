@@ -151,32 +151,35 @@ func downloadBinary(repoPath string) error {
 		}
 	}
 
-	if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
-		if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" {
+		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 			err := download.Download(root, BitxhubUrlLinux)
 			if err != nil {
 				return err
 			}
-			if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-				err := download.Download(root, LinuxWasmLibUrl)
-				if err != nil {
-					return err
-				}
+		}
+		if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
+			err := download.Download(root, LinuxWasmLibUrl)
+			if err != nil {
+				return err
 			}
 		}
-		if runtime.GOOS == "darwin" {
+	}
+	if runtime.GOOS == "darwin" {
+		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 			err := download.Download(root, BitxhubUrlMacOS)
 			if err != nil {
 				return err
 			}
-			if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
-				err := download.Download(root, MacOSWasmLibUrl)
-				if err != nil {
-					return err
-				}
+		}
+		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
+			err := download.Download(root, MacOSWasmLibUrl)
+			if err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
