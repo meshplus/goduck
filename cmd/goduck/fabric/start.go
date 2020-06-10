@@ -16,9 +16,16 @@ func GetFabricCMD() *cli.Command {
 		Usage: "operation about fabric network",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "start",
-				Usage:  "start a fabric network",
-				Action: Start,
+				Name:  "start",
+				Usage: "start a fabric network",
+				Action: func(ctx *cli.Context) error {
+					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+					if err != nil {
+						return err
+					}
+
+					return Start(repoRoot)
+				},
 			},
 			{
 				Name:  "chaincode",
@@ -36,13 +43,14 @@ func GetFabricCMD() *cli.Command {
 	}
 }
 
-func Start(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
-	if err != nil {
-		return err
-	}
-
+func Start(repoRoot string) error {
 	args := []string{filepath.Join(repoRoot, "ffn.sh"), "up"}
+
+	return execCmd(args, repoRoot)
+}
+
+func Stop(repoRoot string) error {
+	args := []string{filepath.Join(repoRoot, "ffn.sh"), "down"}
 
 	return execCmd(args, repoRoot)
 }

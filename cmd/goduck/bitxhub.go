@@ -10,23 +10,11 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/meshplus/goduck/internal/download"
-
 	"github.com/meshplus/bitxhub-kit/fileutil"
+	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
-)
-
-const (
-	BINARY = "binary"
-	SOLO   = "solo"
-	SCRIPT = "playground.sh"
-
-	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
-	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
-
-	BitxhubUrlLinux = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_linux_amd64.tar.gz"
-	BitxhubUrlMacOS = "https://github.com/meshplus/bitxhub/releases/download/v1.0.0-rc3/bitxhub_macos_x86_64.tar.gz"
 )
 
 func bitxhubCMD() *cli.Command {
@@ -40,12 +28,12 @@ func bitxhubCMD() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
-						Value: BINARY,
+						Value: types.BinaryMode,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
 						Name:  "mode",
-						Value: SOLO,
+						Value: types.SoloMode,
 						Usage: "configuration mode, one of solo or cluster",
 					},
 					&cli.Uint64Flag{
@@ -72,12 +60,12 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "type",
-						Value: BinaryMode,
+						Value: types.BinaryMode,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
 						Name:  "mode",
-						Value: ClusterMode,
+						Value: types.ClusterMode,
 						Usage: "configuration mode, one of solo or cluster",
 					},
 					&cli.StringSliceFlag{
@@ -101,11 +89,11 @@ func stopBitXHub(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, SCRIPT)) {
+	if !fileutil.Exist(filepath.Join(repoPath, types.SCRIPT)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, SCRIPT), "down")
+	args = append(args, filepath.Join(repoPath, types.SCRIPT), "down")
 
 	return execCmd(args, repoPath)
 }
@@ -119,7 +107,7 @@ func startBitXHub(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, SCRIPT)) {
+	if !fileutil.Exist(filepath.Join(repoPath, types.SCRIPT)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
@@ -129,7 +117,7 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("init config error:%w", err)
 	}
 
-	if typ == BINARY {
+	if typ == types.BinaryMode {
 		err := downloadBinary(repoPath)
 		if err != nil {
 			return fmt.Errorf("download binary error:%w", err)
@@ -137,7 +125,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, SCRIPT), "up")
+	args = append(args, filepath.Join(repoPath, types.SCRIPT), "up")
 	args = append(args, mode, typ, strconv.Itoa(num))
 	return execCmd(args, repoPath)
 }
@@ -153,13 +141,13 @@ func downloadBinary(repoPath string) error {
 
 	if runtime.GOOS == "linux" {
 		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
-			err := download.Download(root, BitxhubUrlLinux)
+			err := download.Download(root, types.BitxhubUrlLinux)
 			if err != nil {
 				return err
 			}
 		}
 		if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-			err := download.Download(root, LinuxWasmLibUrl)
+			err := download.Download(root, types.LinuxWasmLibUrl)
 			if err != nil {
 				return err
 			}
@@ -167,13 +155,13 @@ func downloadBinary(repoPath string) error {
 	}
 	if runtime.GOOS == "darwin" {
 		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
-			err := download.Download(root, BitxhubUrlMacOS)
+			err := download.Download(root, types.BitxhubUrlMacOS)
 			if err != nil {
 				return err
 			}
 		}
 		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
-			err := download.Download(root, MacOSWasmLibUrl)
+			err := download.Download(root, types.MacOSWasmLibUrl)
 			if err != nil {
 				return err
 			}

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/meshplus/goduck/cmd/goduck/ethereum"
-	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/meshplus/goduck/internal/repo"
+
+	"github.com/meshplus/goduck/cmd/goduck/pier"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,6 +30,19 @@ var pierCMD = &cli.Command{
 			},
 			Action: pierStart,
 		},
+		{
+			Name:  "stop",
+			Usage: "stop pier with its appchain down",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "chain",
+					Usage:    "specify appchain type",
+					Required: false,
+					Value:    "ethereum",
+				},
+			},
+			Action: pierStop,
+		},
 	},
 }
 
@@ -39,48 +50,21 @@ func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
 	mode := ctx.String("type")
 
-	switch mode {
-	case "binary":
-		switch chainType {
-		case "fabric":
-			return fmt.Errorf("fabric is not supported to start up with binary")
-		case "ethereum":
-			return startEthereumWithBinary(ctx)
-		default:
-			return fmt.Errorf("chain type %s is not supported", chainType)
-		}
-	case "docker":
-		switch chainType {
-		case "fabric":
-			return startFabricWithDocker(ctx)
-		case "ethereum":
-			return startEthereumWithDocker(ctx)
-		default:
-			return fmt.Errorf("chain type %s is not supported", chainType)
-		}
-	default:
-		return fmt.Errorf("start up mode %s is not supported", chainType)
-	}
-}
-
-func startEthereumWithBinary(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	return ethereum.StartEthereum(repoRoot, "binary")
+	return pier.StartAppchain(repoRoot, chainType, mode)
 }
 
-func startEthereumWithDocker(ctx *cli.Context) error {
+func pierStop(ctx *cli.Context) error {
+	chainType := ctx.String("chain")
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	return ethereum.StartEthereum(repoRoot, "docker")
-}
-
-func startFabricWithDocker(ctx *cli.Context) error {
-	return fabric.Start(ctx)
+	return pier.StopAppchain(repoRoot, chainType)
 }

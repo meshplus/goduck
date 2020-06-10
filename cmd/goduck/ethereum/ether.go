@@ -51,10 +51,20 @@ func startEther(ctx *cli.Context) error {
 }
 
 func stopEther(ctx *cli.Context) error {
-	repoPath, err := repo.PathRootWithDefault(ctx.String("repo"))
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
+
+	if err := StopEthereum(repoRoot); err != nil {
+		return err
+	}
+
+	fmt.Printf("start ethereum private chain with data directory in %s/ethereum/datadir.\n", repoRoot)
+	return nil
+}
+
+func StopEthereum(repoPath string) error {
 	if !fileutil.Exist(filepath.Join(repoPath, SCRIPT)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
