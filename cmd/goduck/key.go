@@ -8,6 +8,7 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
+	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
 	"github.com/meshplus/bitxhub-kit/key"
 	"github.com/meshplus/bitxhub/pkg/cert"
@@ -203,4 +204,18 @@ func getAddressFromPrivateKey(privPath string) (string, error) {
 	}
 
 	return act.Address.String(), nil
+}
+
+func convertToLibp2pPrivKey(privateKey crypto2.PrivateKey) (crypto.PrivKey, error) {
+	ecdsaPrivKey, ok := privateKey.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("convert to libp2p private key: not ecdsa private key")
+	}
+
+	libp2pPrivKey, _, err := crypto.ECDSAKeyPairFromKey(ecdsaPrivKey.K)
+	if err != nil {
+		return nil, err
+	}
+
+	return libp2pPrivKey, nil
 }

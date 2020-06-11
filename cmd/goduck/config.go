@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -18,14 +19,27 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
-	"github.com/meshplus/goduck/internal/types"
-
+	"github.com/gobuffalo/packd"
+	"github.com/gobuffalo/packr"
+	"github.com/libp2p/go-libp2p-core/peer"
+	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
+	ecdsa2 "github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
+	"github.com/meshplus/bitxhub-kit/fileutil"
+	key2 "github.com/meshplus/bitxhub-kit/key"
 	"github.com/meshplus/bitxhub/pkg/cert"
 	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/pelletier/go-toml"
 	"github.com/urfave/cli/v2"
+)
+
+var (
+	PackPath                 = "../../config"
+	_        ConfigGenerator = (*BitXHubConfigGenerator)(nil)
+	_        ConfigGenerator = (*PierConfigGenerator)(nil)
 )
 
 type Genesis struct {
@@ -43,25 +57,124 @@ type NetworkNodes struct {
 	Addr string `toml:"addr" json:"addr"`
 }
 
-func generateConfig(ctx *cli.Context) error {
-	num := ctx.Int("num")
-	typ := ctx.String("type")
-	mode := ctx.String("mode")
-	ips := ctx.StringSlice("ips")
-	target := ctx.String("target")
+type ConfigGenerator interface {
+	// Initialized
+	Initialized() (bool, error)
 
-	return InitConfig(typ, mode, target, num, ips)
+	// CleanOldConfig
+	CleanOldConfig() error
+
+	// InitConfig
+	InitConfig() error
+
+	// ProcessParams
+	ProcessParams() error
 }
 
-func InitConfig(typ, mode, target string, num int, ips []string) error {
-	num, ips, err := processParams(num, typ, mode, ips)
-	if err != nil {
+type BitXHubConfigGenerator struct {
+	typ    string
+	mode   string
+	target string
+	num    int
+	ips    []string
+}
+
+type PierConfigGenerator struct {
+	mode         string
+	appchainType string
+	appchainIP   string
+	bitxhub      string
+	target       string
+	validators   []string
+	peers        []string
+	port         int
+}
+
+func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string) *BitXHubConfigGenerator {
+	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips}
+}
+
+func NewPierConfigGenerator(mode string, appchainType string, appchainIP string, bitxhub string, target string, validators []string, peers []string, port int) *PierConfigGenerator {
+	return &PierConfigGenerator{
+		mode:         mode,
+		appchainType: appchainType,
+		appchainIP:   appchainIP,
+		bitxhub:      bitxhub,
+		target:       target,
+		validators:   validators,
+		peers:        peers,
+		port:         port,
+	}
+}
+
+func (b *BitXHubConfigGenerator) Initialized() (bool, error) {
+	if fileutil.Exist(repo.GetCAPrivKeyPath(b.target)) ||
+		fileutil.Exist(repo.GetCACertPath(b.target)) ||
+		fileutil.Exist(repo.GetPrivKeyPath(b.target, repo.AgencyName)) ||
+		fileutil.Exist(repo.GetCertPath(b.target, repo.AgencyName)) {
+		return true, nil
+	}
+
+	if ok, err := existDir(filepath.Join(b.target, "node1")); err != nil {
+		return ok, err
+	} else if ok {
+		return true, nil
+	}
+
+	if ok, err := existDir(filepath.Join(b.target, "nodeSolo")); err != nil {
+		return ok, err
+	} else if ok {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (b *BitXHubConfigGenerator) CleanOldConfig() error {
+	if err := os.Remove(repo.GetCAPrivKeyPath(b.target)); err != nil {
+		return fmt.Errorf("remove ca private key: %w", err)
+	}
+	if err := os.Remove(repo.GetCACertPath(b.target)); err != nil {
+		return fmt.Errorf("remove ca certificate: %w", err)
+	}
+
+	if err := os.Remove(repo.GetPrivKeyPath(repo.AgencyName, b.target)); err != nil {
+		return fmt.Errorf("remove agency private key: %w", err)
+	}
+
+	if err := os.Remove(repo.GetCertPath(repo.AgencyName, b.target)); err != nil {
+		return fmt.Errorf("remove agency certificate: %w", err)
+	}
+
+	for i := 1; ; i++ {
+		nodeDir := filepath.Join(b.target, "node"+strconv.Itoa(i))
+		exist, err := removeDir(nodeDir)
+		if err != nil {
+			return err
+		}
+
+		if !exist {
+			break
+		}
+	}
+
+	if _, err := removeDir(filepath.Join(b.target, "nodeSolo")); err != nil {
 		return err
 	}
 
-	fmt.Printf("initializing %d BitXHub nodes at %s\n", num, target)
+	return nil
+}
 
-	if repo.Initialized(target) {
+func (b *BitXHubConfigGenerator) InitConfig() error {
+	if err := b.ProcessParams(); err != nil {
+		return err
+	}
+
+	fmt.Printf("initializing %d BitXHub nodes at %s\n", b.num, b.target)
+
+	if ok, err := b.Initialized(); err != nil {
+		return fmt.Errorf("check if BitXHub is initialized: %w", err)
+	} else if ok {
 		fmt.Println("BitXHub configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
 		input := bufio.NewScanner(os.Stdin)
@@ -71,43 +184,273 @@ func InitConfig(typ, mode, target string, num int, ips []string) error {
 			return nil
 		}
 
-		if err := cleanOldConfig(target); err != nil {
+		if err := b.CleanOldConfig(); err != nil {
 			return fmt.Errorf("clean old configuration: %w", err)
 		}
 	}
 
-	if _, err := os.Stat(target); os.IsNotExist(err) {
-		if err := os.MkdirAll(target, 0755); err != nil {
+	if _, err := os.Stat(b.target); os.IsNotExist(err) {
+		if err := os.MkdirAll(b.target, 0755); err != nil {
 			return err
 		}
 	}
 
-	caPrivKey, caCertPath, err := generateCA(target)
+	caPrivKey, caCertPath, err := generateCA(b.target)
 	if err != nil {
 		return fmt.Errorf("generate CA: %w", err)
 	}
 
-	agencyPrivKey, agencyCertPath, err := generateCert(repo.AgencyName, strings.ToUpper(repo.AgencyName), target,
+	agencyPrivKey, agencyCertPath, err := generateCert(repo.AgencyName, strings.ToUpper(repo.AgencyName), b.target,
 		caPrivKey, caCertPath, true)
 	if err != nil {
 		return fmt.Errorf("generate agency cert: %w", err)
 	}
 
-	addrs, nodes, err := generateNodesConfig(target, mode, agencyPrivKey, agencyCertPath, ips)
+	addrs, nodes, err := b.generateNodesConfig(b.target, b.mode, agencyPrivKey, agencyCertPath, b.ips)
 	if err != nil {
 		return fmt.Errorf("generate nodes config: %w", err)
 	}
 
-	if err := writeNetworkAndGenesis(target, mode, addrs, nodes); err != nil {
+	if err := writeNetworkAndGenesis(b.target, b.mode, addrs, nodes); err != nil {
 		return fmt.Errorf("write network and genesis config: %w", err)
 	}
 
-	fmt.Printf("%d BitXHub nodes at %s are initialized successfully\n", num, target)
+	fmt.Printf("%d BitXHub nodes at %s are initialized successfully\n", b.num, b.target)
 
 	return nil
 }
 
-func generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ips []string) ([]string, []*NetworkNodes, error) {
+func (b *BitXHubConfigGenerator) ProcessParams() error {
+	if b.mode == types.SoloMode {
+		b.num = 1
+	}
+
+	if b.num == 0 {
+		return fmt.Errorf("invalid node number")
+	}
+
+	if b.typ != types.TypeDocker && b.typ != types.TypeBinary {
+		return fmt.Errorf("invalid type, choose one of docker or binary")
+	}
+
+	if b.mode != types.SoloMode && b.mode != types.ClusterMode {
+		return fmt.Errorf("invalid mode, choose one of solo or cluster")
+	}
+
+	if b.typ == types.TypeDocker && b.mode == types.ClusterMode && b.num != 4 {
+		return fmt.Errorf("docker type supports 4 nodes only")
+	}
+
+	if len(b.ips) != 0 && len(b.ips) != b.num {
+		return fmt.Errorf("IPs' number is not equal to nodes' number")
+	}
+
+	if len(b.ips) == 0 && b.num >= 10 {
+		return fmt.Errorf("can not create more than 10 nodes with one IP address")
+	}
+
+	if err := checkIPs(b.ips); err != nil {
+		return err
+	}
+
+	if len(b.ips) == 0 {
+		if b.typ == types.TypeBinary || b.mode == types.SoloMode {
+			for i := 0; i < b.num; i++ {
+				b.ips = append(b.ips, "127.0.0.1")
+			}
+		} else {
+			for i := 2; i < b.num+2; i++ {
+				ip := fmt.Sprintf("172.19.0.%d", i)
+				b.ips = append(b.ips, ip)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (p *PierConfigGenerator) Initialized() (bool, error) {
+	if fileutil.Exist(filepath.Join(p.target, repo.PierConfigName)) {
+		return true, nil
+	}
+
+	return existDir(filepath.Join(p.target, p.appchainType))
+}
+
+func (p *PierConfigGenerator) copyConfigFiles() error {
+	privKey, err := generatePierKey(p.target)
+	if err != nil {
+		return fmt.Errorf("generate Pier's private key: %w", err)
+	}
+
+	validators := ""
+	bitxhub := ""
+	peers := ""
+	if p.mode == types.PierModeRelay {
+		bitxhub = p.bitxhub
+		for _, v := range p.validators {
+			validators += "\"" + v + "\",\n"
+		}
+	} else {
+		for _, v := range p.peers {
+			peers += "\"" + v + "\",\n"
+		}
+
+		libp2pPrivKey, err := convertToLibp2pPrivKey(privKey)
+		if err != nil {
+			return fmt.Errorf("convert to libp2p private key: %w", err)
+		}
+
+		pid, err := peer.IDFromPrivateKey(libp2pPrivKey)
+		if err != nil {
+			return fmt.Errorf("get ID from libp2p private key: %w", err)
+		}
+
+		peers += "\"" + fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/p2p/%s", p.port, pid) + "\",\n"
+	}
+
+	pluginFile := "fabric-client-1.4.so"
+	pluginConfig := types.ChainTypeFabric
+	if p.appchainType == types.ChainTypeEther {
+		pluginFile = "eth-client.so"
+		pluginConfig = types.ChainTypeEther
+	}
+
+	data := struct {
+		Mode         string
+		Bitxhub      string
+		Validators   string
+		Peers        string
+		PluginFile   string
+		PluginConfig string
+	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig}
+
+	if err := renderConfigFile(p.target, filepath.Join("pier", "pier.toml"), data); err != nil {
+		return fmt.Errorf("initialize Pier configuration file: %w", err)
+	}
+
+	dstDir := filepath.Join(p.target, p.appchainType)
+	srcDir := filepath.Join("pier", p.appchainType)
+	if err := renderConfigFiles(dstDir, srcDir, []string{p.appchainType + ".toml"}, p.appchainIP); err != nil {
+		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PierConfigGenerator) CleanOldConfig() error {
+	if err := os.Remove(filepath.Join(p.target, repo.PierConfigName)); err != nil {
+		return fmt.Errorf("remove Pier's old configuration file: %w", err)
+	}
+
+	if _, err := removeDir(filepath.Join(p.target, p.appchainType)); err != nil {
+		return fmt.Errorf("remove Pier's old plugin configuration: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PierConfigGenerator) InitConfig() error {
+	if err := p.ProcessParams(); err != nil {
+		return err
+	}
+
+	fmt.Printf("initializing Pier configuration at %s\n", p.target)
+
+	if ok, err := p.Initialized(); err != nil {
+		return fmt.Errorf("check if Pier is initialized: %w", err)
+	} else if ok {
+		fmt.Println("Pier configuration file already exists")
+		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
+		input := bufio.NewScanner(os.Stdin)
+		input.Scan()
+
+		if input.Text() != "Y" && input.Text() != "y" {
+			return nil
+		}
+
+		if err := p.CleanOldConfig(); err != nil {
+			return fmt.Errorf("clean old configuration: %w", err)
+		}
+	}
+
+	if _, err := os.Stat(p.target); os.IsNotExist(err) {
+		if err := os.MkdirAll(p.target, 0755); err != nil {
+			return err
+		}
+	}
+
+	if err := p.copyConfigFiles(); err != nil {
+		return err
+	}
+
+	fmt.Printf("Pier configuration at %s are initialized successfully\n", p.target)
+
+	return nil
+}
+
+func (p *PierConfigGenerator) ProcessParams() error {
+	if p.mode != types.PierModeDirect && p.mode != types.PierModeRelay {
+		return fmt.Errorf("invalid mode, choose one of direct or relay")
+	}
+
+	if p.mode == types.PierModeRelay && p.bitxhub == "" {
+		return fmt.Errorf("BitXhub's address is needed in relay mode")
+	}
+
+	if p.mode == types.PierModeRelay && len(p.validators) == 0 {
+		return fmt.Errorf("BitXhub validators' information is needed in relay mode")
+	}
+
+	if p.mode == types.PierModeDirect && len(p.peers) == 0 {
+		return fmt.Errorf("peers' information is needed in direct mode")
+	}
+
+	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
+		return fmt.Errorf("invalid appchain type, choose one of ether or fabric")
+	}
+
+	if err := checkIPs([]string{p.appchainIP}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func generateBitXHubConfig(ctx *cli.Context) error {
+	num := ctx.Int("num")
+	typ := ctx.String("type")
+	mode := ctx.String("mode")
+	ips := ctx.StringSlice("ips")
+	target := ctx.String("target")
+
+	return InitBitXHubConfig(typ, mode, target, num, ips)
+}
+
+func generatePierConfig(ctx *cli.Context) error {
+	mode := ctx.String("mode")
+	bitxhub := ctx.String("bitxhub")
+	validators := ctx.StringSlice("validators")
+	peers := ctx.StringSlice("peers")
+	appchainType := ctx.String("appchainType")
+	appchainIP := ctx.String("appchainIP")
+	target := ctx.String("target")
+	port := ctx.Int("port")
+
+	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port)
+}
+
+func InitBitXHubConfig(typ, mode, target string, num int, ips []string) error {
+	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips)
+	return bcg.InitConfig()
+}
+
+func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port int) error {
+	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port)
+	return pcg.InitConfig()
+}
+
+func (b *BitXHubConfigGenerator) generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ips []string) ([]string, []*NetworkNodes, error) {
 	count := len(ips)
 	ipToId := make(map[string]int)
 	addrs := make([]string, 0, count)
@@ -117,7 +460,7 @@ func generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, i
 		ip := ips[i-1]
 		ipToId[ip]++
 
-		addr, node, err := generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip, i, ipToId)
+		addr, node, err := b.generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip, i, ipToId)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -129,7 +472,7 @@ func generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, i
 	return addrs, nodes, nil
 }
 
-func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
+func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
@@ -155,7 +498,7 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
-	if err := repo.Initialize(nodeRoot, mode, ipToId[ip]); err != nil {
+	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
 
@@ -175,6 +518,23 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 	}
 
 	return addr, node, nil
+}
+
+func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error {
+	consensus := types.SoloMode
+	if b.mode == "cluster" {
+		consensus = "raft"
+	}
+
+	data := struct {
+		Id        int
+		Solo      bool
+		Consensus string
+	}{id, b.mode == "solo", consensus}
+
+	files := []string{"bitxhub.toml", "api"}
+
+	return renderConfigFiles(nodeRoot, "bitxhub", files, data)
 }
 
 func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes) error {
@@ -261,99 +621,70 @@ func checkIPs(ips []string) error {
 	return nil
 }
 
-func processParams(num int, typ string, mode string, ips []string) (int, []string, error) {
-	if mode == types.SoloMode {
-		num = 1
-	}
-
-	if num == 0 {
-		return 0, nil, fmt.Errorf("invalid node number")
-	}
-
-	if typ != types.TypeDocker && typ != types.TypeBinary {
-		return 0, nil, fmt.Errorf("invalid type, choose one of docker or binary")
-	}
-
-	if mode != types.SoloMode && mode != types.ClusterMode {
-		return 0, nil, fmt.Errorf("invalid mode, choose one of solo or cluster")
-	}
-
-	if typ == types.TypeDocker && mode == types.ClusterMode && num != 4 {
-		return 0, nil, fmt.Errorf("docker type supports 4 nodes only")
-	}
-
-	if len(ips) != 0 && len(ips) != num {
-		return 0, nil, fmt.Errorf("IPs' number is not equal to nodes' number")
-	}
-
-	if err := checkIPs(ips); err != nil {
-		return 0, nil, err
-	}
-
-	if len(ips) == 0 {
-		if typ == types.TypeBinary || mode == types.SoloMode {
-			for i := 0; i < num; i++ {
-				ips = append(ips, "127.0.0.1")
-			}
-		} else {
-			for i := 2; i < num+2; i++ {
-				ip := fmt.Sprintf("172.19.0.%d", i)
-				ips = append(ips, ip)
-			}
-		}
-	}
-
-	return num, ips, nil
-}
-
-func cleanOldConfig(target string) error {
-	if err := os.Remove(repo.GetCAPrivKeyPath(target)); err != nil {
-		return fmt.Errorf("remove ca private key: %w", err)
-	}
-	if err := os.Remove(repo.GetCACertPath(target)); err != nil {
-		return fmt.Errorf("remove ca certificate: %w", err)
-	}
-
-	if err := os.Remove(repo.GetPrivKeyPath(repo.AgencyName, target)); err != nil {
-		return fmt.Errorf("remove agency private key: %w", err)
-	}
-
-	if err := os.Remove(repo.GetCertPath(repo.AgencyName, target)); err != nil {
-		return fmt.Errorf("remove agency certificate: %w", err)
-	}
-
-	for i := 1; ; i++ {
-		nodeDir := filepath.Join(target, "node"+strconv.Itoa(i))
-		exist, err := removeDir(nodeDir)
-		if err != nil {
-			return err
-		}
-
-		if !exist {
-			break
-		}
-	}
-
-	if _, err := removeDir(filepath.Join(target, "nodeSolo")); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func removeDir(dir string) (bool, error) {
-	s, err := os.Stat(dir)
+	ok, err := existDir(dir)
 	if err != nil {
+		return false, err
+	}
+
+	if !ok {
 		return false, nil
 	}
 
-	if s.IsDir() {
-		if err := os.RemoveAll(dir); err != nil {
-			return true, fmt.Errorf("remove node configuration: %w", err)
-		}
+	if err := os.RemoveAll(dir); err != nil {
+		return true, fmt.Errorf("remove node configuration: %w", err)
 	}
 
 	return true, nil
+}
+
+func existDir(path string) (bool, error) {
+	if !fileutil.Exist(path) {
+		return false, nil
+	}
+
+	s, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return s.IsDir(), nil
+}
+
+func generatePierKey(target string) (crypto2.PrivateKey, error) {
+	privKey, err := ecdsa2.GenerateKey(ecdsa2.Secp256r1)
+	if err != nil {
+		return nil, fmt.Errorf("generate key: %w", err)
+	}
+
+	keyBytes, err := privKey.Bytes()
+	if err != nil {
+		return nil, fmt.Errorf("get private key bytes: %w", err)
+	}
+
+	cipher := hex.EncodeToString(keyBytes)
+	address, err := privKey.PublicKey().Address()
+	if err != nil {
+		return nil, fmt.Errorf("get public key address: %w", err)
+	}
+
+	key := &key2.Key{
+		Address:    address,
+		PrivateKey: cipher,
+		Encrypted:  false,
+	}
+
+	ret, err := json.MarshalIndent(key, "", "	")
+	if err != nil {
+		return nil, fmt.Errorf("marshal key: %w", err)
+	}
+
+	keyPath := filepath.Join(target, repo.KeyName)
+	if err = ioutil.WriteFile(keyPath, ret, os.ModePerm); err != nil {
+		return nil, fmt.Errorf("persist key: %s", err)
+	}
+
+	return privKey, nil
 }
 
 func generateCA(dir string) (string, string, error) {
@@ -550,4 +881,66 @@ func getFileName(path string) string {
 	}
 
 	return bs[0]
+}
+
+func renderConfigFiles(dstDir, srcDir string, filesToRender []string, data interface{}) error {
+	filesM := make(map[string]struct{})
+	for _, file := range filesToRender {
+		filesM[file] = struct{}{}
+	}
+
+	box := packr.NewBox(filepath.Join(PackPath, srcDir))
+	if err := box.Walk(func(s string, file packd.File) error {
+		p := filepath.Join(dstDir, s)
+		dir := filepath.Dir(p)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
+			if err != nil {
+				return err
+			}
+		}
+
+		fileName := file.Name()
+		if _, ok := filesM[fileName]; ok {
+			t := template.New(fileName)
+			t, err := t.Parse(file.String())
+			if err != nil {
+				return err
+			}
+
+			f, err := os.Create(p)
+			if err != nil {
+				return err
+			}
+
+			return t.Execute(f, data)
+		} else {
+			return ioutil.WriteFile(p, []byte(file.String()), 0644)
+		}
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func renderConfigFile(dstDir, srcFile string, data interface{}) error {
+	box := packr.NewBox(PackPath)
+	fileStr, err := box.FindString(srcFile)
+	if err != nil {
+		return fmt.Errorf("find file in box: %w", err)
+	}
+
+	t := template.New(filepath.Base(srcFile))
+	t, err = t.Parse(fileStr)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(filepath.Join(dstDir, filepath.Base(srcFile)))
+	if err != nil {
+		return err
+	}
+
+	return t.Execute(f, data)
 }

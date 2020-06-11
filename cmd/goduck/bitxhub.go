@@ -37,7 +37,7 @@ func bitxhubCMD() *cli.Command {
 					&cli.Uint64Flag{
 						Name:  "num",
 						Value: 4,
-						Usage: "Node number, only useful in cluster mode, ignored in solo mode",
+						Usage: "node number, only useful in cluster mode, ignored in solo mode",
 					},
 				},
 				Action: startBitXHub,
@@ -54,7 +54,7 @@ func bitxhubCMD() *cli.Command {
 					&cli.Uint64Flag{
 						Name:  "num",
 						Value: 4,
-						Usage: "Node number, only useful in cluster mode, ignored in solo mode",
+						Usage: "node number, only useful in cluster mode, ignored in solo mode",
 					},
 					&cli.StringFlag{
 						Name:  "type",
@@ -68,7 +68,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringSliceFlag{
 						Name:  "ips",
-						Usage: "node IPs, use 127.0.0.1 for all nodes by default",
+						Usage: "nodes' IP, use 127.0.0.1 for all nodes by default",
 					},
 					&cli.StringFlag{
 						Name:  "target",
@@ -76,7 +76,7 @@ func bitxhubCMD() *cli.Command {
 						Usage: "where to put the generated configuration files",
 					},
 				},
-				Action: generateConfig,
+				Action: generateBitXHubConfig,
 			},
 		},
 	}
@@ -110,7 +110,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	ips := make([]string, 0)
-	err = InitConfig(typ, mode, repoPath, num, ips)
+	err = InitBitXHubConfig(typ, mode, repoPath, num, ips)
 	if err != nil {
 		return fmt.Errorf("init config error:%w", err)
 	}

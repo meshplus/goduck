@@ -1,10 +1,16 @@
 package types
 
 const (
-	TypeBinary       = "binary"
-	TypeDocker       = "docker"
-	ClusterMode      = "cluster"
-	SoloMode         = "solo"
+	TypeBinary     = "binary"
+	TypeDocker     = "docker"
+	ClusterMode    = "cluster"
+	SoloMode       = "solo"
+	PierModeDirect = "direct"
+	PierModeRelay  = "relay"
+
+	ChainTypeEther  = "ether"
+	ChainTypeFabric = "fabric"
+
 	PlaygroundScript = "playground.sh"
 	FabricScript     = "fabric.sh"
 	ChaincodeScript  = "chaincode.sh"
