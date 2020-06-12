@@ -20,17 +20,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/meshplus/goduck/internal/types"
+
 	"github.com/meshplus/bitxhub/pkg/cert"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/pelletier/go-toml"
 	"github.com/urfave/cli/v2"
-)
-
-const (
-	DockerMode  = "docker"
-	SoloMode    = "solo"
-	BinaryMode  = "binary"
-	ClusterMode = "cluster"
 )
 
 type Genesis struct {
@@ -138,7 +133,7 @@ func generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
-	if mode == SoloMode {
+	if mode == types.SoloMode {
 		org = "NodeSolo"
 		nodeRoot = filepath.Join(repoRoot, name+"Solo")
 	}
@@ -267,7 +262,7 @@ func checkIPs(ips []string) error {
 }
 
 func processParams(num int, typ string, mode string, ips []string) (int, []string, error) {
-	if mode == SoloMode {
+	if mode == types.SoloMode {
 		num = 1
 	}
 
@@ -275,15 +270,15 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 		return 0, nil, fmt.Errorf("invalid node number")
 	}
 
-	if typ != DockerMode && typ != BinaryMode {
+	if typ != types.DockerMode && typ != types.BinaryMode {
 		return 0, nil, fmt.Errorf("invalid type, choose one of docker or binary")
 	}
 
-	if mode != SoloMode && mode != ClusterMode {
+	if mode != types.SoloMode && mode != types.ClusterMode {
 		return 0, nil, fmt.Errorf("invalid mode, choose one of solo or cluster")
 	}
 
-	if typ == DockerMode && mode == ClusterMode && num != 4 {
+	if typ == types.DockerMode && mode == types.ClusterMode && num != 4 {
 		return 0, nil, fmt.Errorf("docker type supports 4 nodes only")
 	}
 
@@ -296,7 +291,7 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 	}
 
 	if len(ips) == 0 {
-		if typ == BinaryMode || mode == SoloMode {
+		if typ == types.BinaryMode || mode == types.SoloMode {
 			for i := 0; i < num; i++ {
 				ips = append(ips, "127.0.0.1")
 			}

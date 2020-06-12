@@ -57,7 +57,7 @@ function etherDown() {
   fi
 
   if [ "$(docker container ls | grep -c ethereum-node)" -ge 1 ]; then
-    docker stop ethereum-node
+    docker rm -f ethereum-node
     echo "ethereum docker stop"
   fi
 }
