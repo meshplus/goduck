@@ -270,7 +270,7 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 		return 0, nil, fmt.Errorf("invalid node number")
 	}
 
-	if typ != types.DockerMode && typ != types.BinaryMode {
+	if typ != types.TypeDocker && typ != types.TypeBinary {
 		return 0, nil, fmt.Errorf("invalid type, choose one of docker or binary")
 	}
 
@@ -278,7 +278,7 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 		return 0, nil, fmt.Errorf("invalid mode, choose one of solo or cluster")
 	}
 
-	if typ == types.DockerMode && mode == types.ClusterMode && num != 4 {
+	if typ == types.TypeDocker && mode == types.ClusterMode && num != 4 {
 		return 0, nil, fmt.Errorf("docker type supports 4 nodes only")
 	}
 
@@ -291,7 +291,7 @@ func processParams(num int, typ string, mode string, ips []string) (int, []strin
 	}
 
 	if len(ips) == 0 {
-		if typ == types.BinaryMode || mode == types.SoloMode {
+		if typ == types.TypeBinary || mode == types.SoloMode {
 			for i := 0; i < num; i++ {
 				ips = append(ips, "127.0.0.1")
 			}

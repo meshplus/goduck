@@ -10,12 +10,12 @@ function print_blue() {
 
 function printHelp() {
   print_blue "Usage:  "
-  echo "  private_chain.sh <mode>"
+  echo "  ethereum.sh <mode>"
   echo "    <mode> - one of 'binary', 'docker'"
   echo "      - 'binary' - bring up the ethereum with local binary geth"
   echo "      - 'docker' - clear the ethereum with geth in docker"
   echo "      - 'down' - shut down ethereum binary and docker container"
-  echo "  private_chain.sh -h (print this message)"
+  echo "  ethereum.sh -h (print this message)"
 }
 
 function binaryUp() {

@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -14,6 +11,7 @@ import (
 	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
+	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,7 +26,7 @@ func bitxhubCMD() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
-						Value: types.BinaryMode,
+						Value: types.TypeBinary,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
@@ -60,7 +58,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "type",
-						Value: types.BinaryMode,
+						Value: types.TypeBinary,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
@@ -89,13 +87,13 @@ func stopBitXHub(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.SCRIPT)) {
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.SCRIPT), "down")
+	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "down")
 
-	return execCmd(args, repoPath)
+	return utils.ExecCmd(args, repoPath)
 }
 
 func startBitXHub(ctx *cli.Context) error {
@@ -107,7 +105,7 @@ func startBitXHub(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.SCRIPT)) {
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
@@ -117,7 +115,7 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("init config error:%w", err)
 	}
 
-	if typ == types.BinaryMode {
+	if typ == types.TypeBinary {
 		err := downloadBinary(repoPath)
 		if err != nil {
 			return fmt.Errorf("download binary error:%w", err)
@@ -125,9 +123,9 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.SCRIPT), "up")
+	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
 	args = append(args, mode, typ, strconv.Itoa(num))
-	return execCmd(args, repoPath)
+	return utils.ExecCmd(args, repoPath)
 }
 
 func downloadBinary(repoPath string) error {
@@ -168,32 +166,5 @@ func downloadBinary(repoPath string) error {
 		}
 	}
 
-	return nil
-}
-
-func execCmd(args []string, repoRoot string) error {
-	cmd := exec.Command("/bin/bash", args...)
-	cmd.Dir = repoRoot
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("execute command: %s", err.Error())
-	}
-
-	scanner := bufio.NewScanner(stdout)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fmt.Println(m)
-	}
-
-	errStr, err := ioutil.ReadAll(stderr)
-	if err != nil {
-		return fmt.Errorf("execute command error:%w", err)
-	}
-	fmt.Println(string(errStr))
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("wait for command to finish: %s", err.Error())
-	}
 	return nil
 }
