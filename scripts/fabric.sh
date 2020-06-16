@@ -29,12 +29,12 @@ function print_blue() {
 
 function printHelp() {
   print_blue "Usage:  "
-  echo "  ffn.sh <mode>"
+  echo "  fabric.sh <mode>"
   echo "    <mode> - one of 'up', 'down', 'restart'"
   echo "      - 'up' - bring up the fabric first network"
   echo "      - 'down' - clear the fabric first network"
   echo "      - 'restart' - restart the fabric first network"
-  echo "  ffn.sh -h (print this message)"
+  echo "  fabric.sh -h (print this message)"
 }
 
 function prepare() {

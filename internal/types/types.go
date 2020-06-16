@@ -1,11 +1,14 @@
 package types
 
 const (
-	BinaryMode  = "binary"
-	ClusterMode = "cluster"
-	DockerMode  = "docker"
-	SoloMode    = "solo"
-	SCRIPT      = "playground.sh"
+	TypeBinary       = "binary"
+	TypeDocker       = "docker"
+	ClusterMode      = "cluster"
+	SoloMode         = "solo"
+	PlaygroundScript = "playground.sh"
+	FabricScript     = "fabric.sh"
+	ChaincodeScript  = "chaincode.sh"
+	EthereumScript   = "ethereum.sh"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"

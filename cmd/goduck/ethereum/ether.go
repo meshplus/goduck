@@ -1,29 +1,24 @@
 package ethereum
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
+	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"
-)
-
-const (
-	SCRIPT = "private_chain.sh"
 )
 
 func GetEtherCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "ether",
-		Usage: "operation about ethereum chain",
+		Usage: "Operation about ethereum chain",
 		Subcommands: []*cli.Command{
 			{
 				Name:   "start",
-				Usage:  "start a ethereum chain",
+				Usage:  "Start a ethereum chain",
 				Action: startEther,
 			},
 			{
@@ -42,7 +37,7 @@ func startEther(ctx *cli.Context) error {
 		return err
 	}
 
-	if err := StartEthereum(repoRoot, "binary"); err != nil {
+	if err := StartEthereum(repoRoot, types.TypeBinary); err != nil {
 		return err
 	}
 
@@ -65,54 +60,17 @@ func stopEther(ctx *cli.Context) error {
 }
 
 func StopEthereum(repoPath string) error {
-	if !fileutil.Exist(filepath.Join(repoPath, SCRIPT)) {
+	if !fileutil.Exist(filepath.Join(repoPath, types.EthereumScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	return execCmd([]string{SCRIPT, "down"}, repoPath)
+	return utils.ExecCmd([]string{types.EthereumScript, "down"}, repoPath)
 }
 
-func StartEthereum(repo, mode string) error {
-	switch mode {
-	case "binary":
-		args := []string{SCRIPT, "binary"}
-		if err := execCmd(args, repo); err != nil {
-			return err
-		}
-	case "docker":
-		args := []string{SCRIPT, "docker"}
-		if err := execCmd(args, repo); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("not supported mode")
-	}
-	return nil
-}
-
-func execCmd(args []string, repoRoot string) error {
-	cmd := exec.Command("/bin/bash", args...)
-	cmd.Dir = repoRoot
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("execute command: %s", err.Error())
+func StartEthereum(repoPath, mod string) error {
+	if !fileutil.Exist(filepath.Join(repoPath, types.EthereumScript)) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
-	scanner := bufio.NewScanner(stdout)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fmt.Println(m)
-	}
-
-	errStr, err := ioutil.ReadAll(stderr)
-	if err != nil {
-		return fmt.Errorf("execute command error:%w", err)
-	}
-	fmt.Println(string(errStr))
-	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("wait for command to finish: %s", err.Error())
-	}
-	return nil
+	return utils.ExecCmd([]string{types.EthereumScript, mod}, repoPath)
 }
