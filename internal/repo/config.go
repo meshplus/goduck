@@ -26,6 +26,8 @@ const (
 	AgencyName = "agency"
 	// key name
 	KeyName = "key.json"
+	// Pier config name
+	PierConfigName = "pier.toml"
 )
 
 func PathRoot() (string, error) {

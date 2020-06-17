@@ -1,0 +1,25 @@
+title = "Pier"
+
+[port]
+pprof = 44555
+
+[log]
+level = "debug"
+dir = "logs"
+filename = "pier.log"
+report_caller = false
+
+[mode]
+type = "{{.Mode}}" # relay or direct
+[mode.relay]
+addr = "{{.Bitxhub}}"
+quorum = 2
+validators = [
+    {{.Validators}}
+]
+[mode.direct]
+peers = [{{.Peers}}]
+
+[appchain]
+plugin = "{{.PluginFile}}"
+config = "{{.PluginConfig}}"

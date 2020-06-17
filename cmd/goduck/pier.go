@@ -43,6 +43,55 @@ var pierCMD = &cli.Command{
 			},
 			Action: pierStop,
 		},
+		{
+			Name:  "config",
+			Usage: "Generate configuration for Pier",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "mode",
+					Value: types.PierModeDirect,
+					Usage: "configuration mode, one of direct or relay",
+				},
+				&cli.StringFlag{
+					Name:  "type",
+					Value: types.TypeBinary,
+					Usage: "configuration type, one of binary or docker",
+				},
+				&cli.StringFlag{
+					Name:  "bitxhub",
+					Usage: "BitXHub's address, only useful when in relay mode",
+				},
+				&cli.StringSliceFlag{
+					Name:  "validators",
+					Usage: "BitXHub's validators, only useful when in relay mode",
+				},
+				&cli.IntFlag{
+					Name:  "port",
+					Value: 5001,
+					Usage: "pier's port, only useful when in direct mode",
+				},
+				&cli.StringSliceFlag{
+					Name:  "peers",
+					Usage: "peers' address, only useful when in direct mode",
+				},
+				&cli.StringFlag{
+					Name:  "appchainType",
+					Value: "ether",
+					Usage: "appchain type, one of ether or fabric",
+				},
+				&cli.StringFlag{
+					Name:  "appchainIP",
+					Value: "127.0.0.1",
+					Usage: "appchain IP address",
+				},
+				&cli.StringFlag{
+					Name:  "target",
+					Value: ".",
+					Usage: "where to put the generated configuration files",
+				},
+			},
+			Action: generatePierConfig,
+		},
 	},
 }
 
