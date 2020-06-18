@@ -31,6 +31,7 @@ func main() {
 	app.Commands = []*cli.Command{
 		getVersionCMD(),
 		GetInitCMD(),
+		GetStatusCMD(),
 		fabric.GetFabricCMD(),
 		ethereum.GetEtherCMD(),
 		keyCMD(),

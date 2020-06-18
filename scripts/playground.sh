@@ -28,8 +28,10 @@ function binary_prepare() {
     mkdir -p bin && cd bin
     if [ "${SYSTEM}" == "Linux" ]; then
       tar xf bitxhub_linux_amd64.tar.gz
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/
     elif [ "${SYSTEM}" == "Darwin" ]; then
       tar xf bitxhub_macos_x86_64.tar.gz
+      install_name_tool -change @rpath/libwasmer.dylib "${CURRENT_PATH}"/bin/libwasmer.dylib "${CURRENT_PATH}"/bin/bitxhub
     else
       print_red "Bitxhub does not support the current operating system"
     fi
@@ -87,7 +89,6 @@ function bitxhub_binary_cluster() {
       cp -r bin/plugins/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
-    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/ \
     nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start >/dev/null 2>&1 &
 
     echo $! >>"${CURRENT_PATH}"/bitxhub.pid
