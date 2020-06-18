@@ -1,7 +1,7 @@
 [Ether]
 addr = "ws://{{.}}:8546"
 name = "ether"
-contract_address = "0x639285a4a610833c5C50B0e562D9d38f1B628c06"
+contract_address = "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4"
 abi_path = "broker.abi"
 key_path = "account.key"
 password = "password"
