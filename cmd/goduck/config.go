@@ -331,7 +331,11 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 
 	dstDir := filepath.Join(p.target, p.appchainType)
 	srcDir := filepath.Join("pier", p.appchainType)
-	if err := renderConfigFiles(dstDir, srcDir, []string{p.appchainType + ".toml"}, p.appchainIP); err != nil {
+	configFile := p.appchainType + ".toml"
+	if p.appchainType == types.ChainTypeEther {
+		configFile = "ethereum.toml"
+	}
+	if err := renderConfigFiles(dstDir, srcDir, []string{configFile}, p.appchainIP); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
