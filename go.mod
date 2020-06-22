@@ -7,6 +7,7 @@ require (
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/cheggaaa/pb v2.0.7+incompatible
+	github.com/cheynewallace/tabby v1.1.0
 	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
@@ -26,6 +27,7 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.2 // indirect
+	github.com/shirou/gopsutil v2.20.5+incompatible
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/urfave/cli/v2 v2.2.0
