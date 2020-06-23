@@ -68,25 +68,8 @@ function prepare() {
     cp "${CURRENT_PATH}"/config-template.yaml "${CURRENT_PATH}"/config.yaml
   fi
 
-  if [ ! -f configB.yaml ]; then
-    cp "${CURRENT_PATH}"/config-template.yaml "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/7050/7055/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/7051/7052/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/8051/8052/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/9051/9052/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/10051/10052/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/crypto-config/crypto-configB/g' "${CURRENT_PATH}"/configB.yaml
-    x_replace 's/example/example1/g' "${CURRENT_PATH}"/configB.yaml
-  fi
-
-
   if [ ! -d crypto-config ]; then
-    print_red "===> Please provide the 'crypto-config'(first fabric network)"
-    exit 1
-  fi
-
-  if [ ! -d crypto-configB ]; then
-    print_red "===> Please provide the 'crypto-configB'(second fabric network)"
+    print_red "===> Please provide the 'crypto-config' of your fabric network"
     exit 1
   fi
 }
