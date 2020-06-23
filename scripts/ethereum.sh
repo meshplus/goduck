@@ -30,8 +30,9 @@ function binaryUp() {
   # clean up datadir
   cd ${WORKDIR}
   rm -rf datadir
-  tar xvf datadir.tar.gz
+  tar xf datadir.tar.gz
 
+  print_blue "start geth with datadir in ${WORKDIR}/datadir"
   nohup geth --datadir $HOME/.goduck/ethereum/datadir --dev --ws --rpc \
       --rpccorsdomain https://remix.ethereum.org \
       --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
@@ -56,7 +57,7 @@ function dockerUp() {
         --rpcapi "eth,web3,personal,net,miner,admin,debug"
     fi
   else
-    print_red "ethereum-node is already running, check your container with 'docker ps | grep ethereum-node' command"
+    print_red "ethereum-node is already running, use old container..."
   fi
 
 }
@@ -78,7 +79,7 @@ function etherDown() {
 
   if [ "$(docker container ls | grep -c ethereum-node)" -ge 1 ]; then
     docker rm -f ethereum-node
-    echo "ethereum docker stop"
+    echo "ethereum docker container stopped"
   fi
 }
 

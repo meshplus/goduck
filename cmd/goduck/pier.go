@@ -1,7 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/pier"
+	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
@@ -22,8 +29,14 @@ var pierCMD = &cli.Command{
 					Value:    types.Ethereum,
 				},
 				&cli.StringFlag{
-					Name:     "type",
-					Usage:    "specify up mode, docker(default) or binary",
+					Name:     "chain-type",
+					Usage:    "specify appchain up type, docker(default) or binary",
+					Required: false,
+					Value:    types.TypeDocker,
+				},
+				&cli.StringFlag{
+					Name:     "pier-type",
+					Usage:    "specify pier up type, docker(default) or binary",
 					Required: false,
 					Value:    types.TypeDocker,
 				},
@@ -97,14 +110,24 @@ var pierCMD = &cli.Command{
 
 func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
-	upType := ctx.String("type")
+	chainUpType := ctx.String("chain-type")
+	pierUpType := ctx.String("pier-type")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	return pier.StartAppchain(repoRoot, chainType, upType)
+	if pierUpType == types.TypeBinary {
+		if !fileutil.Exist(filepath.Join(repoRoot, "bin/pier")) {
+			if err := downloadPierBinary(repoRoot); err != nil {
+				return fmt.Errorf("download pier binary error:%w", err)
+			}
+		}
+	}
+
+	// start pier with specific appchain
+	return pier.StartPier(repoRoot, chainType, chainUpType, pierUpType)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -115,5 +138,48 @@ func pierStop(ctx *cli.Context) error {
 		return err
 	}
 
-	return pier.StopAppchain(repoRoot, chainType)
+	return pier.StopPier(repoRoot, chainType)
+}
+
+func downloadPierBinary(repoPath string) error {
+	root := filepath.Join(repoPath, "bin")
+	if !fileutil.Exist(root) {
+		err := os.Mkdir(root, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	if runtime.GOOS == "linux" {
+		if !fileutil.Exist(filepath.Join(root, "pier")) {
+			err := download.Download(root, types.PierUrlLinux)
+			if err != nil {
+				return err
+			}
+
+			if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
+				err := download.Download(root, types.LinuxWasmLibUrl)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if runtime.GOOS == "darwin" {
+		if !fileutil.Exist(filepath.Join(root, "pier")) {
+			err := download.Download(root, types.PierUrlMacOS)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
+			err := download.Download(root, types.MacOSWasmLibUrl)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
