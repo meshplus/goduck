@@ -310,10 +310,9 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 	}
 
 	pluginFile := "fabric-client-1.4.so"
-	pluginConfig := types.ChainTypeFabric
+	pluginConfig := p.appchainType
 	if p.appchainType == types.ChainTypeEther {
 		pluginFile = "eth-client.so"
-		pluginConfig = types.ChainTypeEther
 	}
 
 	data := struct {
@@ -407,7 +406,7 @@ func (p *PierConfigGenerator) ProcessParams() error {
 	}
 
 	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
-		return fmt.Errorf("invalid appchain type, choose one of ether or fabric")
+		return fmt.Errorf("invalid appchain type, choose one of ethereum or fabric")
 	}
 
 	if err := checkIPs([]string{p.appchainIP}); err != nil {
@@ -432,8 +431,8 @@ func generatePierConfig(ctx *cli.Context) error {
 	bitxhub := ctx.String("bitxhub")
 	validators := ctx.StringSlice("validators")
 	peers := ctx.StringSlice("peers")
-	appchainType := ctx.String("appchainType")
-	appchainIP := ctx.String("appchainIP")
+	appchainType := ctx.String("appchain-type")
+	appchainIP := ctx.String("appchain-IP")
 	target := ctx.String("target")
 	port := ctx.Int("port")
 

@@ -59,28 +59,28 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:  "bitxhub",
-					Usage: "BitXHub's address, only useful when in relay mode",
+					Usage: "BitXHub's address, only useful in relay mode",
 				},
 				&cli.StringSliceFlag{
 					Name:  "validators",
-					Usage: "BitXHub's validators, only useful when in relay mode",
+					Usage: "BitXHub's validators, only useful in relay mode",
 				},
 				&cli.IntFlag{
 					Name:  "port",
 					Value: 5001,
-					Usage: "pier's port, only useful when in direct mode",
+					Usage: "pier's port, only useful in direct mode",
 				},
 				&cli.StringSliceFlag{
 					Name:  "peers",
-					Usage: "peers' address, only useful when in direct mode",
+					Usage: "peers' address, only useful in direct mode",
 				},
 				&cli.StringFlag{
-					Name:  "appchainType",
-					Value: "ether",
-					Usage: "appchain type, one of ether or fabric",
+					Name:  "appchain-type",
+					Value: "ethereum",
+					Usage: "appchain type, one of ethereum or fabric",
 				},
 				&cli.StringFlag{
-					Name:  "appchainIP",
+					Name:  "appchain-IP",
 					Value: "127.0.0.1",
 					Usage: "appchain IP address",
 				},

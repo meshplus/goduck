@@ -8,7 +8,7 @@ const (
 	PierModeDirect = "direct"
 	PierModeRelay  = "relay"
 
-	ChainTypeEther  = "ether"
+	ChainTypeEther  = "ethereum"
 	ChainTypeFabric = "fabric"
 
 	PlaygroundScript = "playground.sh"
