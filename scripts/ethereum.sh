@@ -4,8 +4,16 @@ set -e
 
 WORKDIR=ethereum
 
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 function print_blue() {
   printf "${BLUE}%s${NC}\n" "$1"
+}
+
+function print_red() {
+  printf "${RED}%s${NC}\n" "$1"
 }
 
 function printHelp() {
@@ -32,13 +40,25 @@ function binaryUp() {
 }
 
 function dockerUp() {
-  docker run -d --name ethereum-node \
-  -p 8545:8545 -p 8546:8546 -p 30303:30303 \
-  meshplus/ethereum:1.0.0 \
-      --datadir /root/datadir --dev --ws --rpc \
-      --rpccorsdomain https://remix.ethereum.org \
-      --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" \
-      --rpcapi "eth,web3,personal,net,miner,admin,debug"
+  if [ ! "$(docker ps -q -f name=ethereum-node)" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=ethereum-node)" ]; then
+        # restart your container
+        print_blue "restart your ethereum-node container"
+        docker restart ethereum-node
+    else
+      print_blue "start a new ethereum-node container"
+      docker run -d --name ethereum-node \
+        -p 8545:8545 -p 8546:8546 -p 30303:30303 \
+        meshplus/ethereum:1.0.0 \
+        --datadir /root/datadir --dev --ws --rpc \
+        --rpccorsdomain https://remix.ethereum.org \
+        --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" \
+        --rpcapi "eth,web3,personal,net,miner,admin,debug"
+    fi
+  else
+    print_red "ethereum-node is already running, check your container with 'docker ps | grep ethereum-node' command"
+  fi
+
 }
 
 function etherDown() {

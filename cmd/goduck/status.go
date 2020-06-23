@@ -17,6 +17,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var processes = []string{
+	"bitxhub.pid",
+	"ethereum/ethereum.pid",
+	"pier/pier.pid",
+}
+
 func GetStatusCMD() *cli.Command {
 	return &cli.Command{
 		Name:   "status",
@@ -37,13 +43,11 @@ func showStatus(ctx *cli.Context) error {
 	var table [][]string
 	table = append(table, []string{"Name", "Component", "PID", "Status", "Created Time", "Args"})
 
-	table, err = existProcess(filepath.Join(repoRoot, "bitxhub.pid"), table)
-	if err != nil {
-		return err
-	}
-	table, err = existProcess(filepath.Join(repoRoot, "pier.pid"), table)
-	if err != nil {
-		return err
+	for _, pro := range processes {
+		table, err = existProcess(filepath.Join(repoRoot, pro), table)
+		if err != nil {
+			return err
+		}
 	}
 
 	PrintTable(table, true)
@@ -90,13 +94,17 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 		nodeName := fmt.Sprintf(name+"-%d", i)
 
 		slice, _ := process.CmdlineSlice()
+		args := strings.Join(slice, " ")
+		if len(strings.Join(slice, " ")) > 50 {
+			args = args[:50] + "..."
+		}
 		table = append(table, []string{
 			nodeName,
 			name,
 			strconv.Itoa(pid),
 			status,
 			timeFormat,
-			strings.Join(slice, " "),
+			args,
 		})
 		i++
 	}
