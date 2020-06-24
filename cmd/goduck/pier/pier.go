@@ -6,34 +6,57 @@ import (
 	"github.com/meshplus/goduck/cmd/goduck/ethereum"
 	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/meshplus/goduck/internal/types"
+	"github.com/meshplus/goduck/internal/utils"
 )
 
-func StartAppchain(repoRoot, chainType, mode string) error {
-	switch mode {
+func StartPier(repoRoot, chainType, chainUpType, pierUpType string) error {
+	// start appchain first
+	switch chainUpType {
 	case types.TypeBinary:
 		switch chainType {
 		case types.Fabric:
 			return fmt.Errorf("fabric is not supported to start up with binary")
 		case types.Ethereum:
-			return ethereum.StartEthereum(repoRoot, types.TypeBinary)
+			if err := ethereum.StartEthereum(repoRoot, types.TypeBinary); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("chain type %s is not supported", chainType)
 		}
 	case types.TypeDocker:
 		switch chainType {
 		case types.Fabric:
-			return fabric.Start(repoRoot)
+			if err := fabric.Start(repoRoot); err != nil {
+				return err
+			}
 		case types.Ethereum:
-			return ethereum.StartEthereum(repoRoot, types.TypeDocker)
+			if err := ethereum.StartEthereum(repoRoot, types.TypeDocker); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("chain type %s is not supported", chainType)
 		}
 	default:
-		return fmt.Errorf("start up mode %s is not supported", chainType)
+		return fmt.Errorf("appchain start up type %s is not supported", chainUpType)
 	}
+	// start pier with appchain plugin, install chaincode if appchain is fabric
+	if chainType == types.Fabric {
+		if err := utils.ExecCmd([]string{types.ChaincodeScript, "install"}, repoRoot); err != nil {
+			return err
+		}
+	}
+
+	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType, "-r", ".pier_" + chainType}
+	return utils.ExecCmd(args, repoRoot)
 }
 
-func StopAppchain(repoRoot, chainType string) error {
+func StopPier(repoRoot, chainType string) error {
+	// stop pier first, then appchain
+	args := []string{types.PierScript, "down", "-m", chainType}
+	if err := utils.ExecCmd(args, repoRoot); err != nil {
+		return err
+	}
+
 	switch chainType {
 	case types.Fabric:
 		return fabric.Stop(repoRoot)

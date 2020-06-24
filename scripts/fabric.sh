@@ -47,6 +47,11 @@ function prepare() {
 
 
 function networkUp() {
+  if [ "$(docker ps | grep hyperledger/fabric)" ]; then
+    print_blue "fabric network already running"
+    exit 0
+  fi
+
   prepare
 
   cd "${FABRIC_SAMPLE_PATH}"/first-network

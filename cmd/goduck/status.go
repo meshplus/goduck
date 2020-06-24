@@ -20,7 +20,8 @@ import (
 var processes = []string{
 	"bitxhub.pid",
 	"ethereum/ethereum.pid",
-	"pier/pier.pid",
+	"pier/pier-ethereum.pid",
+	"pier/pier-fabric.pid",
 }
 
 func GetStatusCMD() *cli.Command {
