@@ -21,22 +21,26 @@ The command will initialize and start BitXHub nodes in solo mode.
 goduck pier start
 ```
 The command will start pier and its ethereum appchain.   
-You can also start its fabric appchain by carrying parameter "--chain fabric".
+You can also start its fabric appchain by carrying parameter `--chain fabric`.
 ## Usage
 ```shell script
 goduck [global options] command [command options] [arguments...]
 ```
 #### command
 - `version`         Goduck version  
-- `init`          init config home for goduck  
+- `init`          Init config home for goduck  
 - `status`          List the status of instantiated components  
 - `fabric`          Operation about fabric network
-- `ether`          Operation about ethereum chain]
+- `ether`          Operation about ethereum chain
 - `key`          Create and show key information
-- `bitxhub`          start or stop BitXHub nodes
+- `bitxhub`          Start or stop BitXHub nodes
 - `pier`          Operation about pier  
 - `help, h`          Shows a list of commands or help for one command
 
 #### global options
-- `--repo value`          GoDuck storage repo path
+- `--repo value`          Goduck storage repo path
 - `--help, -h`
+
+See 
+[usage documentation](https://github.com/meshplus/goduck/wiki/%E9%83%A8%E7%BD%B2%E5%B7%A5%E5%85%B7goduck%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3)
+ in the wiki.
