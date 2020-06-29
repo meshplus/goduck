@@ -55,10 +55,24 @@ function networkUp() {
   prepare
 
   cd "${FABRIC_SAMPLE_PATH}"/first-network
-  ./byfn.sh generate
+  # choose to regenerate crypto-config or not
+  if [ -z "${CRYPTO_CONFIG_PATH}" ]; then
+    print_blue "fabric crypto-config not specified, use new generated crypto-config..."
+    ./byfn.sh generate
+  else
+    print_blue "use existing crypto-config in "${CRYPTO_CONFIG_PATH}"..."
+    if [  -d "crypto-config" ]; then
+      rm -r ./crypto-config
+    fi
+    git clean -f -d
+    cp -r "${CRYPTO_CONFIG_PATH}" ./crypto-config
+  fi
+
+  cp "${CURRENT_PATH}"/byfn.sh ./byfn.sh
   ./byfn.sh up -n
+
   rm -rf "${CURRENT_PATH}"/crypto-config
-  cp -rf "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/crypto-config
+  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/crypto-config
 }
 
 function networkDown() {
@@ -79,6 +93,7 @@ function networkRestart() {
 print_blue "===> Script version: $VERSION"
 
 MODE=$1
+CRYPTO_CONFIG_PATH=$2
 
 if [ "$MODE" == "up" ]; then
   networkUp

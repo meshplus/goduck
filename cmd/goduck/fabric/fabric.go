@@ -17,13 +17,22 @@ func GetFabricCMD() *cli.Command {
 			{
 				Name:  "start",
 				Usage: "Start a fabric network",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "crypto-config",
+						Usage:    "specify fabric network crypto-config directory path",
+						Required: false,
+					},
+				},
 				Action: func(ctx *cli.Context) error {
 					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 					if err != nil {
 						return err
 					}
 
-					return Start(repoRoot)
+					cryptoConfigPath := ctx.String("crypto-config")
+
+					return Start(repoRoot, cryptoConfigPath)
 				},
 			},
 			{
@@ -42,8 +51,19 @@ func GetFabricCMD() *cli.Command {
 	}
 }
 
-func Start(repoRoot string) error {
-	args := []string{filepath.Join(repoRoot, types.FabricScript), "up"}
+func Start(repoRoot, cryptoConfigPath string) error {
+	var (
+		cryptoPath string
+		err        error
+	)
+	if cryptoConfigPath != "" {
+		cryptoPath, err = filepath.Abs(cryptoConfigPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	args := []string{filepath.Join(repoRoot, types.FabricScript), "up", cryptoPath}
 
 	return utils.ExecCmd(args, repoRoot)
 }
