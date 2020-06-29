@@ -88,13 +88,14 @@ type PierConfigGenerator struct {
 	validators   []string
 	peers        []string
 	port         int
+	id           int
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips}
 }
 
-func NewPierConfigGenerator(mode string, appchainType string, appchainIP string, bitxhub string, target string, validators []string, peers []string, port int) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, id int) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
 		appchainType: appchainType,
@@ -104,6 +105,7 @@ func NewPierConfigGenerator(mode string, appchainType string, appchainIP string,
 		validators:   validators,
 		peers:        peers,
 		port:         port,
+		id:           id,
 	}
 }
 
@@ -322,9 +324,14 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		Peers        string
 		PluginFile   string
 		PluginConfig string
-	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig}
+		Id           int
+	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig, p.id}
 
-	if err := renderConfigFile(p.target, filepath.Join("pier", "pier.toml"), data); err != nil {
+	files := []string{
+		filepath.Join("pier", "api"),
+		filepath.Join("pier", "pier.toml"),
+	}
+	if err := renderConfigFile(p.target, files, data); err != nil {
 		return fmt.Errorf("initialize Pier configuration file: %w", err)
 	}
 
@@ -402,11 +409,15 @@ func (p *PierConfigGenerator) ProcessParams() error {
 	}
 
 	if p.mode == types.PierModeDirect && len(p.peers) == 0 {
-		return fmt.Errorf("peers' information is needed in direct mode")
+		fmt.Println("You have to add peers' information manually after the configuration files are generated")
 	}
 
 	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
 		return fmt.Errorf("invalid appchain type, choose one of ethereum or fabric")
+	}
+
+	if p.id < 0 || p.id > 9 {
+		return fmt.Errorf("invalid ID, should be in [0, 9]")
 	}
 
 	if err := checkIPs([]string{p.appchainIP}); err != nil {
@@ -435,8 +446,9 @@ func generatePierConfig(ctx *cli.Context) error {
 	appchainIP := ctx.String("appchain-IP")
 	target := ctx.String("target")
 	port := ctx.Int("port")
+	id := ctx.Int("ID")
 
-	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port)
+	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, id)
 }
 
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string) error {
@@ -444,8 +456,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string) error {
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port int) error {
-	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port)
+func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, id int) error {
+	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, id)
 	return pcg.InitConfig()
 }
 
@@ -923,23 +935,30 @@ func renderConfigFiles(dstDir, srcDir string, filesToRender []string, data inter
 	return nil
 }
 
-func renderConfigFile(dstDir, srcFile string, data interface{}) error {
+func renderConfigFile(dstDir string, srcFiles []string, data interface{}) error {
 	box := packr.NewBox(PackPath)
-	fileStr, err := box.FindString(srcFile)
-	if err != nil {
-		return fmt.Errorf("find file in box: %w", err)
+
+	for _, srcFile := range srcFiles {
+		fileStr, err := box.FindString(srcFile)
+		if err != nil {
+			return fmt.Errorf("find file in box: %w", err)
+		}
+
+		t := template.New(filepath.Base(srcFile))
+		t, err = t.Parse(fileStr)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Create(filepath.Join(dstDir, filepath.Base(srcFile)))
+		if err != nil {
+			return err
+		}
+
+		if err := t.Execute(f, data); err != nil {
+			return err
+		}
 	}
 
-	t := template.New(filepath.Base(srcFile))
-	t, err = t.Parse(fileStr)
-	if err != nil {
-		return err
-	}
-
-	f, err := os.Create(filepath.Join(dstDir, filepath.Base(srcFile)))
-	if err != nil {
-		return err
-	}
-
-	return t.Execute(f, data)
+	return nil
 }
