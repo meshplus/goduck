@@ -27,7 +27,7 @@ func StartPier(repoRoot, chainType, chainUpType, pierUpType string, cleanData bo
 	case types.TypeDocker:
 		switch chainType {
 		case types.Fabric:
-			if err := fabric.Start(repoRoot); err != nil {
+			if err := fabric.Start(repoRoot, ""); err != nil {
 				return err
 			}
 		case types.Ethereum:
