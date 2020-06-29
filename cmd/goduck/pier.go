@@ -113,6 +113,11 @@ var pierCMD = &cli.Command{
 					Value: ".",
 					Usage: "where to put the generated configuration files",
 				},
+				&cli.IntFlag{
+					Name:  "ID",
+					Value: 0,
+					Usage: "specify Pier's ID which is in [0,9], cannot exist 2 or more Piers with same ID in one OS",
+				},
 			},
 			Action: generatePierConfig,
 		},
