@@ -48,7 +48,7 @@ function prepare() {
 
 function networkUp() {
   if [ "$(docker ps | grep hyperledger/fabric)" ]; then
-    print_blue "fabric network already running"
+    print_blue "fabric network already running, use old container..."
     exit 0
   fi
 

@@ -33,6 +33,7 @@ function printHelp() {
 }
 
 function prepare() {
+  # download pier binary package and extract
   if [ ! -a bin/bitxhub ]; then
     mkdir -p bin && cd bin
     if [ "${SYSTEM}" == "Linux" ]; then
@@ -50,6 +51,14 @@ function prepare() {
   if [ ! -f pier ]; then
     print_red "pier binary is not downloaded, please download pier first"
     exit 1
+  fi
+
+  # judge whether to clean old storage of pier
+  if [ "$CLEAN_DATA" == "true" ]; then
+    if [ -d "${CURRENT_PATH}"/"${PIER_ROOT}"/store ]; then
+      print_blue "===> remove old storage in "${PIER_ROOT}"/store"
+      rm -rf "${CURRENT_PATH}"/"${PIER_ROOT}"/store
+    fi
   fi
 
   if [ "$MODE" == "fabric" ]; then
@@ -208,38 +217,38 @@ function pier_up() {
 
 function pier_down() {
   set +e
-  print_blue "===> Kill $MODE pier in $TYPE"
 
-  if [ "$TYPE" == "binary" ]; then
-    cd "${CURRENT_PATH}"/pier
-    if [ -a pier-$MODE.pid ]; then
-      pid=$(cat pier-$MODE.pid)
-      kill "$pid"
-      if [ $? -eq 0 ]; then
-        echo "pier-$MODE pid:$pid exit"
-      else
-        print_red "pier exit fail, try use kill -9 $pid"
-      fi
-      rm pier-$MODE.pid
+  print_blue "===> Kill $MODE pier in binary"
+  cd "${CURRENT_PATH}"/pier
+  if [ -a pier-$MODE.pid ]; then
+    pid=$(cat pier-$MODE.pid)
+    kill "$pid"
+    if [ $? -eq 0 ]; then
+      echo "pier-$MODE pid:$pid exit"
+    else
+      print_red "pier exit fail, try use kill -9 $pid"
     fi
-  else
-    if [ "$(docker ps -q -f name=pier-$MODE)" ]; then
-      docker rm -f pier-$MODE
-      exit 0
-    fi
-    echo "pier-$MODE container is not running"
+    rm pier-$MODE.pid
   fi
+
+  print_blue "===> Kill $MODE pier in docker"
+  if [ "$(docker ps -q -f name=pier-$MODE)" ]; then
+    docker rm -f pier-$MODE
+    exit 0
+  fi
+  echo "pier-$MODE container is not running"
 }
 
 PIER_ROOT=.pier_fabric
 BITXHUB_ADDR="localhost:60011"
+CLEAN_DATA="true"
 MODE="fabric"
 TYPE="binary"
 
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:" opt; do
+while getopts "h?t:m:r:b:c:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -256,6 +265,9 @@ while getopts "h?t:m:r:b:" opt; do
     ;;
   b)
     BITXHUB_ADDR=$OPTARG
+    ;;
+  c)
+    CLEAN_DATA=$OPTARG
     ;;
   esac
 done

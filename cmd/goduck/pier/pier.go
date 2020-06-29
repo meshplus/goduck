@@ -2,6 +2,7 @@ package pier
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/meshplus/goduck/cmd/goduck/ethereum"
 	"github.com/meshplus/goduck/cmd/goduck/fabric"
@@ -9,7 +10,7 @@ import (
 	"github.com/meshplus/goduck/internal/utils"
 )
 
-func StartPier(repoRoot, chainType, chainUpType, pierUpType string) error {
+func StartPier(repoRoot, chainType, chainUpType, pierUpType string, cleanData bool) error {
 	// start appchain first
 	switch chainUpType {
 	case types.TypeBinary:
@@ -46,15 +47,20 @@ func StartPier(repoRoot, chainType, chainUpType, pierUpType string) error {
 		}
 	}
 
-	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType, "-r", ".pier_" + chainType}
+	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
+		"-r", ".pier_" + chainType, "-c", strconv.FormatBool(cleanData)}
 	return utils.ExecCmd(args, repoRoot)
 }
 
-func StopPier(repoRoot, chainType string) error {
+func StopPier(repoRoot, chainType string, pierOnly bool) error {
 	// stop pier first, then appchain
 	args := []string{types.PierScript, "down", "-m", chainType}
 	if err := utils.ExecCmd(args, repoRoot); err != nil {
 		return err
+	}
+
+	if pierOnly {
+		return nil
 	}
 
 	switch chainType {
