@@ -32,7 +32,7 @@ func GetFabricCMD() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "config",
-						Usage:    "specify fabric network config file path",
+						Usage:    "specify fabric network config.yaml file path",
 						Required: true,
 					},
 				},
