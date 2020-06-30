@@ -36,6 +36,18 @@ func GetFabricCMD() *cli.Command {
 				},
 			},
 			{
+				Name:  "stop",
+				Usage: "Stop a fabric network",
+				Action: func(ctx *cli.Context) error {
+					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+					if err != nil {
+						return err
+					}
+
+					return Stop(repoRoot)
+				},
+			},
+			{
 				Name:  "chaincode",
 				Usage: "Deploy chaincode on your network",
 				Flags: []cli.Flag{
@@ -43,6 +55,11 @@ func GetFabricCMD() *cli.Command {
 						Name:     "config",
 						Usage:    "specify fabric network config.yaml file path",
 						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "code",
+						Usage:    "specify chain code path, default(our interchain chaincode)",
+						Required: false,
 					},
 				},
 				Action: installChaincode,
@@ -75,6 +92,7 @@ func Stop(repoRoot string) error {
 }
 
 func installChaincode(ctx *cli.Context) error {
+	codePath := ctx.String("code")
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
@@ -82,7 +100,7 @@ func installChaincode(ctx *cli.Context) error {
 
 	fabricConfig := ctx.String("config")
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig)
+	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig, "-g", codePath)
 
 	return utils.ExecCmd(args, repoRoot)
 }

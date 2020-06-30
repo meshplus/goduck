@@ -17,8 +17,16 @@ func GetEtherCMD() *cli.Command {
 		Usage: "Operation about ethereum chain",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "start",
-				Usage:  "Start a ethereum chain",
+				Name:  "start",
+				Usage: "Start a ethereum chain",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "specify ethereum up type, docker(default) or binary",
+						Required: false,
+						Value:    types.TypeDocker,
+					},
+				},
 				Action: startEther,
 			},
 			{
@@ -37,7 +45,7 @@ func startEther(ctx *cli.Context) error {
 		return err
 	}
 
-	if err := StartEthereum(repoRoot, types.TypeBinary); err != nil {
+	if err := StartEthereum(repoRoot, ctx.String("type")); err != nil {
 		return err
 	}
 
@@ -55,7 +63,7 @@ func stopEther(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("start ethereum private chain with data directory in %s/ethereum/datadir.\n", repoRoot)
+	fmt.Printf("Start ethereum private chain")
 	return nil
 }
 
