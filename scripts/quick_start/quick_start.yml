@@ -1,0 +1,46 @@
+version: "2"
+services:
+  bitxhub_solo:
+    restart: always
+    container_name: bitxhub_solo
+    image: hub-mirror.c.163.com/meshplus/bitxhub-solo:1.0.1
+    ports:
+      - 60011:60011
+      - 9091:9091
+      - 53121:53121
+      - 40011:40011
+  ethereum-1:
+    image: hub-mirror.c.163.com/meshplus/ethereum:1.0.0
+    container_name: ethereum-1
+    command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
+    restart: always
+    ports:
+      - 8546:8546
+      - 8545:8545
+      - 30303:30303
+  ethereum-2:
+    image: hub-mirror.c.163.com/meshplus/ethereum:1.0.0
+    container_name: ethereum-2
+    command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
+    restart: always
+    ports:
+      - 8548:8546
+      - 8547:8545
+      - 30304:30303
+  pier-ethereum-1:
+    restart: always
+    container_name: pier-ethereum-1
+    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
+    depends_on:
+      - bitxhub_solo
+      - ethereum-1
+  pier-ethereum-2:
+    restart: always
+    container_name: pier-ethereum-2
+    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
+    depends_on:
+      - bitxhub_solo
+      - ethereum-2
+    volumes:
+      - ./ethereum.toml:/root/.pier/ether/ethereum.toml
+      - ./key.json:/root/.pier/key.json
