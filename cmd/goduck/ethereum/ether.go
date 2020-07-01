@@ -63,7 +63,7 @@ func stopEther(ctx *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Start ethereum private chain")
+	fmt.Println("Stop ethereum private chain")
 	return nil
 }
 
