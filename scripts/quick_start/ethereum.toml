@@ -1,0 +1,7 @@
+[Ether]
+addr = "ws://host.docker.internal:8548"
+name = "ether"
+contract_address = "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4"
+abi_path = "broker.abi"
+key_path = "account.key"
+password = "password"
