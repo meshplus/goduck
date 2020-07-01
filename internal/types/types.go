@@ -16,6 +16,7 @@ const (
 	ChaincodeScript  = "chaincode.sh"
 	EthereumScript   = "ethereum.sh"
 	PierScript       = "run_pier.sh"
+	QuickStartScript = "quick_start.sh"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
