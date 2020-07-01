@@ -32,17 +32,12 @@ function print_red() {
 function printHelp() {
   print_blue "Usage:  "
   echo "  chaincode.sh <mode> [-c <config_path>] [-v <chaincode_version>] [-t <target_appchain_id>]"
-  echo "    <mode> - one of 'install', 'upgrade', 'init','get_balance','get_data','interchain_transfer','interchain_get'"
+  echo "    <mode> - one of 'install', 'upgrade', 'init'"
   echo "      - 'install' - install broker, transfer and data_swapper chaincode"
   echo "      - 'upgrade <chaincode_version(default: v1)>' - upgrade broker, transfer and data_swapper chaincode"
-  echo "      - 'init' - init broker"
-  echo "      - 'get_balance' - get Alice balance from transfer chaincode"
-  echo "      - 'get_data' - get path value from data_swapper chaincode"
-  echo "      - 'interchain_transfer' - interchain transfer"
-  echo "      - 'interchain_get' - interchain get data"
   echo "    -c <config_path> - specify which config.yaml file use (default \"./config.yaml\")"
+  echo "    -g <chaincode_path> - specify which chaincode project to use (default \"./contracts/broker)"
   echo "    -v <chaincode_version> - upgrade fabric chaincode version (default \"v1\")"
-  echo "    -t <target_appchain_id> - when inter-chain interaction is required"
   echo "  chaincode.sh -h (print this message)"
 }
 
@@ -50,18 +45,6 @@ function prepare() {
   if ! type fabric-cli >/dev/null 2>&1; then
     print_blue "===> Install fabric-cli"
     go get github.com/securekey/fabric-examples/fabric-cli/cmd/fabric-cli
-  fi
-
-  if [ ! -d contracts ]; then
-    print_blue "===> Download chaincode"
-    wget https://github.com/meshplus/bitxhub/raw/master/scripts/quick_start/contracts.zip
-    unzip -q contracts.zip
-    rm contracts.zip
-  fi
-
-  if [ ! -f config-template.yaml ]; then
-    print_blue "===> Download config-template.yaml"
-    wget https://raw.githubusercontent.com/meshplus/bitxhub/master/scripts/quick_start/config-template.yaml
   fi
 
   if [ ! -f config.yaml ]; then
@@ -74,8 +57,45 @@ function prepare() {
   fi
 }
 
+function prepareContract() {
+  if [ ! -d contracts ]; then
+    print_blue "===> Download chaincode"
+    wget https://github.com/meshplus/bitxhub/raw/master/scripts/quick_start/contracts.zip
+    unzip -q contracts.zip
+    rm contracts.zip
+  fi
+}
+
 function installChaincode() {
   prepare
+
+  if [ -z "${CHAINCODE_PATH}" ]; then
+    print_blue "install default interchain chaincode"
+    installInterchainChaincode
+  else
+    print_blue "install chaincode in path "${CHAINCODE_PATH}""
+    installNormalChaincode
+  fi
+}
+
+function installNormalChaincode() {
+  cd "${CURRENT_PATH}"
+  export CONFIG_PATH=${CURRENT_PATH}
+
+  mkdir -p contracts/src
+  if [ ! -d "${CHAINCODE_PATH}" ]; then
+    print_red "chaincode path is not valid project directory"
+    exit 1
+  fi
+  cp -r "${CHAINCODE_PATH}" contracts/src/
+  CCName=$(basename "${CHAINCODE_PATH}")
+
+  fabric-cli chaincode install --gopath ./contracts --ccp "${CCName}" --ccid "${CCName}" --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
+  fabric-cli chaincode instantiate --ccp "${CCName}" --ccid "${CCName}" --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
+}
+
+function installInterchainChaincode() {
+  prepareContract
 
   print_blue "===> Install chaincode"
 
@@ -172,101 +192,14 @@ function upgradeChaincode() {
     --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
 }
 
-function initBroker() {
-  prepare
-
-  print_blue "===> Init broker chaincode"
-
-  cd "${CURRENT_PATH}"
-  export CONFIG_PATH=${CURRENT_PATH}
-
-
-  fabric-cli chaincode invoke --cid mychannel --ccid=broker \
-    --args='{"Func":"initialize"}' \
-    --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
-}
-
-function getBalance() {
-  prepare
-
-  print_blue "===> Query Alice balance"
-
-  cd "${CURRENT_PATH}"
-  export CONFIG_PATH=${CURRENT_PATH}
-
-
-  fabric-cli chaincode invoke --ccid=transfer \
-    --args '{"Func":"getBalance","Args":["Alice"]}' \
-    --config "${CONFIG_YAML}" --payload \
-    --orgid=org2 --user=Admin --cid=mychannel
-}
-
-function getData() {
-  prepare
-
-  cd "${CURRENT_PATH}"
-  export CONFIG_PATH=${CURRENT_PATH}
-
-
-  fabric-cli chaincode invoke --ccid=data_swapper \
-    --args '{"Func":"get","Args":["path"]}' \
-    --config "${CONFIG_YAML}" --payload \
-    --orgid=org2 --user=Admin --cid=mychannel
-}
-
-function interchainTransfer() {
-  prepare
-
-  if [ ! $TARGET_APPCHAIN_ID ]; then
-    echo "Please input target appchain"
-    exit 1
-  fi
-
-  cd "${CURRENT_PATH}"
-  export CONFIG_PATH=${CURRENT_PATH}
-
-
-  echo "===> Alice transfer token from one chain to another chain"
-  echo "===> Target appchain id: $TARGET_APPCHAIN_ID"
-
-  fabric-cli chaincode invoke --ccid transfer \
-    --args '{"Func":"transfer","Args":["'"${TARGET_APPCHAIN_ID}"'", "mychannel&transfer", "Alice","Alice","1"]}' \
-    --config "${CONFIG_YAML}" --payload \
-    --orgid=org2 --user=Admin --cid=mychannel
-}
-
-function interchainGet() {
-  prepare
-
-  if [ ! $TARGET_APPCHAIN_ID ]; then
-    echo "Please input target appchain"
-    exit 1
-  fi
-
-  cd "${CURRENT_PATH}"
-  export CONFIG_PATH=${CURRENT_PATH}
-
-
-  echo "===> Get path value from other appchain"
-  echo "===> Target appchain id: $TARGET_APPCHAIN_ID"
-
-  fabric-cli chaincode invoke --ccid data_swapper \
-    --args '{"Func":"get","Args":["'"${TARGET_APPCHAIN_ID}"'", "mychannel&data_swapper", "path"]}' \
-    --config "${CONFIG_YAML}" --payload \
-    --orgid=org2 --user=Admin --cid=mychannel
-}
-
-
 CONFIG_YAML=./config.yaml
+CHAINCODE_PATH=contracts/broker
 CHAINCODE_VERSION=v1
-TARGET_APPCHAIN_ID=""
-
-
 
 MODE=$1
 shift
 
-while getopts "h?c:v:t:" opt; do
+while getopts "h?c:g:v:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -275,11 +208,11 @@ while getopts "h?c:v:t:" opt; do
   c)
     CONFIG_YAML=$OPTARG
     ;;
+  g)
+    CHAINCODE_PATH=$OPTARG
+    ;;
   v)
     CHAINCODE_VERSION=$OPTARG
-    ;;
-  t)
-    TARGET_APPCHAIN_ID=$OPTARG
     ;;
   esac
 done
@@ -288,16 +221,6 @@ if [ "$MODE" == "install" ]; then
   installChaincode
 elif [ "$MODE" == "upgrade" ]; then
   upgradeChaincode
-elif [ "$MODE" == "init" ]; then
-  initBroker
-elif [ "$MODE" == "get_balance" ]; then
-  getBalance
-elif [ "$MODE" == "get_data" ]; then
-  getData
-elif [ "$MODE" == "interchain_transfer" ]; then
-  interchainTransfer
-elif [ "$MODE" == "interchain_get" ]; then
-  interchainGet
 else
   printHelp
   exit 1
