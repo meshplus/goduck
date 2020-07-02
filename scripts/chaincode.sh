@@ -193,7 +193,7 @@ function upgradeChaincode() {
 }
 
 CONFIG_YAML=./config.yaml
-CHAINCODE_PATH=contracts/broker
+CHAINCODE_PATH=""
 CHAINCODE_VERSION=v1
 
 MODE=$1

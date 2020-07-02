@@ -3,7 +3,7 @@ services:
   bitxhub_solo:
     restart: always
     container_name: bitxhub_solo
-    image: hub-mirror.c.163.com/meshplus/bitxhub-solo:1.0.1
+    image: hub-mirror.c.163.com/meshplus/bitxhub-solo:1.0.0-rc1
     ports:
       - 60011:60011
       - 9091:9091
@@ -30,14 +30,14 @@ services:
   pier-ethereum-1:
     restart: always
     container_name: pier-ethereum-1
-    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc2
+    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
     depends_on:
       - bitxhub_solo
       - ethereum-1
   pier-ethereum-2:
     restart: always
     container_name: pier-ethereum-2
-    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc2
+    image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
     depends_on:
       - bitxhub_solo
       - ethereum-2
