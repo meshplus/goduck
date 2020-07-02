@@ -63,7 +63,7 @@ function interchainTransfer() {
   goduck ether contract invoke \
   --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
   --ether_addr http://localhost:8547 \
-  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x9c13a0ee57f2b6f5c08c98a7395bcfc167dcde91,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xb132702a7500507411f3bd61ab33d9d350d41a37,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
   sleep 1
   print_blue "5. Query accounts after the second-round invocation"
