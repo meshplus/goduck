@@ -82,13 +82,13 @@ func Start(repoRoot, cryptoConfigPath string) error {
 
 	args := []string{filepath.Join(repoRoot, types.FabricScript), "up", cryptoPath}
 
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func Stop(repoRoot string) error {
 	args := []string{filepath.Join(repoRoot, types.FabricScript), "down"}
 
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func installChaincode(ctx *cli.Context) error {
@@ -102,5 +102,5 @@ func installChaincode(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig, "-g", codePath)
 
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }

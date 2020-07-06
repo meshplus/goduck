@@ -55,7 +55,7 @@ function interchainTransfer() {
   --ether_addr http://localhost:8545 \
   0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x9f5cf4b97965ababe19fcf3f1f12bb794a7dc279,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
-  sleep 1
+  sleep 2
   print_blue "3. Query accounts after the first-round invocation"
   queryAccount
 
@@ -65,7 +65,7 @@ function interchainTransfer() {
   --ether_addr http://localhost:8547 \
   0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xb132702a7500507411f3bd61ab33d9d350d41a37,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
-  sleep 1
+  sleep 2
   print_blue "5. Query accounts after the second-round invocation"
   queryAccount
 }

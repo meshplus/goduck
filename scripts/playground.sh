@@ -27,10 +27,12 @@ function binary_prepare() {
   if [ ! -a bin/bitxhub ]; then
     mkdir -p bin && cd bin
     if [ "${SYSTEM}" == "Linux" ]; then
-      tar xf bitxhub_linux_amd64.tar.gz
+      tar xf bitxhub_linux-amd64_v1.0.0-rc1.tar.gz
+      cp ./build/* . && rm -r build
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/
     elif [ "${SYSTEM}" == "Darwin" ]; then
-      tar xf bitxhub_macos_x86_64.tar.gz
+      tar xf bitxhub_macos_x86_64_v1.0.0-rc1.tar.gz
+      cp ./build/* . && rm -r build
       install_name_tool -change @rpath/libwasmer.dylib "${CURRENT_PATH}"/bin/libwasmer.dylib "${CURRENT_PATH}"/bin/bitxhub
     else
       print_red "Bitxhub does not support the current operating system"
@@ -49,7 +51,7 @@ function bitxhub_binary_solo() {
   cd "${CURRENT_PATH}"
   if [ ! -d nodeSolo/plugins ]; then
     mkdir nodeSolo/plugins
-    cp -r bin/plugins/solo.so nodeSolo/plugins
+    cp -r bin/solo.so nodeSolo/plugins
   fi
   print_blue "Start bitxhub solo by binary"
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/ \
@@ -86,7 +88,7 @@ function bitxhub_binary_cluster() {
   for ((i = 1; i < N + 1; i = i + 1)); do
     if [ ! -d node${i}/plugins ]; then
       mkdir node${i}/plugins
-      cp -r bin/plugins/raft.so node${i}/plugins
+      cp -r bin/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
     nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start >/dev/null 2>&1 &

@@ -93,7 +93,7 @@ func stopBitXHub(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "down")
 
-	return utils.ExecCmd(args, repoPath)
+	return utils.ExecuteShell(args, repoPath)
 }
 
 func startBitXHub(ctx *cli.Context) error {
@@ -125,7 +125,7 @@ func startBitXHub(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
 	args = append(args, mode, typ, strconv.Itoa(num))
-	return utils.ExecCmd(args, repoPath)
+	return utils.ExecuteShell(args, repoPath)
 }
 
 func downloadBinary(repoPath string) error {
