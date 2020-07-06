@@ -13,9 +13,14 @@ func quickStartCMD() *cli.Command {
 		Usage: "Set up and experience interchain system smoothly",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "up",
+				Name:   "start",
 				Usage:  "Start a demo interchain system",
 				Action: dockerUp,
+			},
+			{
+				Name:   "stop",
+				Usage:  "Stop demo interchain system",
+				Action: dockerDown,
 			},
 			{
 				Name:   "transfer",
@@ -33,6 +38,16 @@ func dockerUp(ctx *cli.Context) error {
 	}
 
 	args := []string{types.QuickStartScript, "up"}
+	return utils.ExecCmd(args, repoRoot)
+}
+
+func dockerDown(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	args := []string{types.QuickStartScript, "down"}
 	return utils.ExecCmd(args, repoRoot)
 }
 

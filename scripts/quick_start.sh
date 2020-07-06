@@ -29,15 +29,20 @@ function docker-compose-up() {
   docker-compose -f ./docker/quick_start/quick_start.yml up
 }
 
+function docker-compose-down() {
+  print_blue "Stop the demo system...."
+  docker-compose -f ./docker/quick_start/quick_start.yml down
+}
+
 function queryAccount() {
   print_blue "Query Alice account in ethereum-1 appchain"
   goduck ether contract invoke \
    --key_path ./docker/quick_start/account.key --ether_addr http://localhost:8545 \
-   --abi_path=./transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+   --abi_path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
   print_blue "Query Alice account in ethereum-2 appchain"
   goduck ether contract invoke \
    --key_path ./docker/quick_start/account.key --ether_addr http://localhost:8547 \
-   --abi_path=./transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+   --abi_path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
 }
 
 function interchainTransfer() {
@@ -46,7 +51,7 @@ function interchainTransfer() {
 
   print_blue "2. Send 1 coin from Alice in ethereum-1 to Alice in ethereum-2"
   goduck ether contract invoke \
-  --key_path ./docker/quick_start/account.key --abi_path ./transfer.abi \
+  --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
   --ether_addr http://localhost:8545 \
   0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x9f5cf4b97965ababe19fcf3f1f12bb794a7dc279,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
@@ -56,9 +61,9 @@ function interchainTransfer() {
 
   print_blue "4. Send 1 coin from Alice in ethereum-2 to Alice in ethereum-1"
   goduck ether contract invoke \
-  --key_path ./docker/quick_start/account.key --abi_path ./transfer.abi \
+  --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
   --ether_addr http://localhost:8547 \
-  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x9c13a0ee57f2b6f5c08c98a7395bcfc167dcde91,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xb132702a7500507411f3bd61ab33d9d350d41a37,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
   sleep 1
   print_blue "5. Query accounts after the second-round invocation"
@@ -69,6 +74,8 @@ MODE=$1
 
 if [ "$MODE" == "up" ]; then
   docker-compose-up
+elif [ "$MODE" == "down" ]; then
+  docker-compose-down
 elif [ "$MODE" == "transfer" ]; then
   interchainTransfer
 else

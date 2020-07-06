@@ -150,8 +150,8 @@ function rule_deploy() {
 
 function pier_docker_up() {
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
-  if [ ! "$(docker ps -q -f name=pier-${mode})" ]; then
-    if [ "$(docker ps -aq -f status=exited -f name=pier-${mode})" ]; then
+  if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
         # restart your container
         print_red "===> Remove old pier-${MODE} container"
         docker rm -f pier-${MODE}
@@ -160,15 +160,18 @@ function pier_docker_up() {
     print_blue "===> Start a new pier-${MODE} container"
     if [ "$MODE" == "fabric" ]; then
       docker run -d --name pier-fabric \
-      -v "${CURRENT_PATH}"/"${PIER_ROOT}"/fabric/crypto-config:/root/.pier/fabric/crypto-config \
-      meshplus/pier-fabric:1.0.0
+      -v "${CURRENT_PATH}"/crypto-config:/root/.pier/fabric/crypto-config \
+      meshplus/pier-fabric:1.0.0-rc1
     elif [ "$MODE" == "ethereum" ]; then
+      print_blue "===> Wait for ethereum-node container to start for seconds..."
+      sleep 5
       docker run -d --name pier-ethereum meshplus/pier-ethereum:1.0.0-rc1
     else
      echo "Not supported mode"
     fi
   else
     print_red "pier-${MODE} container already running, please stop them first"
+    exit 1
   fi
 
   print_green "===> Start pier successfully!!!"
