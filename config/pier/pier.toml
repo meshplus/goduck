@@ -4,7 +4,7 @@ title = "Pier"
 pprof = 4455{{.Id}}
 
 [log]
-level = "debug"
+level = "info"
 dir = "logs"
 filename = "pier.log"
 report_caller = false

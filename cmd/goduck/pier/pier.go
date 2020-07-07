@@ -42,20 +42,20 @@ func StartPier(repoRoot, chainType, chainUpType, pierUpType string, cleanData bo
 	}
 	// start pier with appchain plugin, install chaincode if appchain is fabric
 	if chainType == types.Fabric {
-		if err := utils.ExecCmd([]string{types.ChaincodeScript, "install"}, repoRoot); err != nil {
+		if err := utils.ExecuteShell([]string{types.ChaincodeScript, "install"}, repoRoot); err != nil {
 			return err
 		}
 	}
 
 	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
 		"-r", ".pier_" + chainType, "-c", strconv.FormatBool(cleanData)}
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func StopPier(repoRoot, chainType string, pierOnly bool) error {
 	// stop pier first, then appchain
 	args := []string{types.PierScript, "down", "-m", chainType}
-	if err := utils.ExecCmd(args, repoRoot); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 

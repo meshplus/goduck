@@ -38,7 +38,7 @@ func dockerUp(ctx *cli.Context) error {
 	}
 
 	args := []string{types.QuickStartScript, "up"}
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func dockerDown(ctx *cli.Context) error {
@@ -48,7 +48,7 @@ func dockerDown(ctx *cli.Context) error {
 	}
 
 	args := []string{types.QuickStartScript, "down"}
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func transfer(ctx *cli.Context) error {
@@ -58,5 +58,5 @@ func transfer(ctx *cli.Context) error {
 	}
 
 	args := []string{types.QuickStartScript, "transfer"}
-	return utils.ExecCmd(args, repoRoot)
+	return utils.ExecuteShell(args, repoRoot)
 }

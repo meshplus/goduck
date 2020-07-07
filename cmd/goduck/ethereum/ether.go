@@ -72,7 +72,7 @@ func StopEthereum(repoPath string) error {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	return utils.ExecCmd([]string{types.EthereumScript, "down"}, repoPath)
+	return utils.ExecuteShell([]string{types.EthereumScript, "down"}, repoPath)
 }
 
 func StartEthereum(repoPath, mod string) error {
@@ -80,5 +80,5 @@ func StartEthereum(repoPath, mod string) error {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	return utils.ExecCmd([]string{types.EthereumScript, mod}, repoPath)
+	return utils.ExecuteShell([]string{types.EthereumScript, mod}, repoPath)
 }
