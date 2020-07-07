@@ -2,3 +2,4 @@
 .DS_Store
 .vscode
 a_repo-packr.go
+bin/
