@@ -3,8 +3,8 @@
 set -e
 
 CURRENT_PATH=$(pwd)
-PIER_VERSION=v1.0.0-rc3
-PIER_CLIENT_FABRIC_VERSION=v1.0.0-rc3
+PIER_VERSION=v1.0.0-rc1
+PIER_CLIENT_FABRIC_VERSION=v1.0.0-rc1
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -83,7 +83,7 @@ function prepare() {
 
   if [ ! -f config-template.yaml ]; then
     print_blue "===> Downloading config-template.yaml"
-    wget https://raw.githubusercontent.com/meshplus/bitxhub/v1.0.0-rc3/scripts/quick_start/config-template.yaml
+    wget https://raw.githubusercontent.com/meshplus/bitxhub/v1.0.0-rc1/scripts/quick_start/config-template.yaml
   fi
 
   if [ ! -f config.yaml ]; then
@@ -103,7 +103,7 @@ function prepare() {
 
   if [ ! -f fabric_rule.wasm ]; then
     print_blue "===> Downloading fabric_rule.wasm"
-    wget https://github.com/meshplus/bitxhub/raw/v1.0.0-rc3/scripts/quick_start/fabric_rule.wasm
+    wget https://github.com/meshplus/bitxhub/raw/v1.0.0-rc1/scripts/quick_start/fabric_rule.wasm
   fi
 }
 
