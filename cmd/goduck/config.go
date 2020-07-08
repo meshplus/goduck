@@ -46,9 +46,15 @@ type Genesis struct {
 	Addresses []string `toml:"addresses" json:"addresses" `
 }
 
-// NetworkConfig is used for read in toml file
 type NetworkConfig struct {
-	Addrs [][]string `toml:"addrs" json:"addrs"`
+	ID    uint64 `toml:"id" json:"id"`
+	N     uint64
+	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
+}
+
+type NetworkNodes struct {
+	ID   uint64 `toml:"id" json:"id"`
+	Addr string `toml:"addr" json:"addr"`
 }
 
 type ConfigGenerator interface {
@@ -70,7 +76,7 @@ type BitXHubConfigGenerator struct {
 	mode   string
 	target string
 	num    int
-	ipss   [][]string
+	ips    []string
 }
 
 type PierConfigGenerator struct {
@@ -85,12 +91,8 @@ type PierConfigGenerator struct {
 	id           int
 }
 
-func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, rawips []string) *BitXHubConfigGenerator {
-	ipss := [][]string{}
-	for _, ips := range rawips {
-		ipss = append(ipss, strings.Split(ips, ","))
-	}
-	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ipss: ipss}
+func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string) *BitXHubConfigGenerator {
+	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips}
 }
 
 func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, id int) *PierConfigGenerator {
@@ -206,7 +208,7 @@ func (b *BitXHubConfigGenerator) InitConfig() error {
 		return fmt.Errorf("generate agency cert: %w", err)
 	}
 
-	addrs, nodes, err := b.generateNodesConfig(b.target, b.mode, agencyPrivKey, agencyCertPath, b.ipss)
+	addrs, nodes, err := b.generateNodesConfig(b.target, b.mode, agencyPrivKey, agencyCertPath, b.ips)
 	if err != nil {
 		return fmt.Errorf("generate nodes config: %w", err)
 	}
@@ -241,33 +243,27 @@ func (b *BitXHubConfigGenerator) ProcessParams() error {
 		return fmt.Errorf("docker type supports 4 nodes only")
 	}
 
-	if len(b.ipss) != 0 && len(b.ipss) != b.num {
+	if len(b.ips) != 0 && len(b.ips) != b.num {
 		return fmt.Errorf("IPs' number is not equal to nodes' number")
 	}
 
-	if len(b.ipss) == 0 && b.num >= 10 {
+	if len(b.ips) == 0 && b.num >= 10 {
 		return fmt.Errorf("can not create more than 10 nodes with one IP address")
 	}
 
-	ipss1d := []string{}
-	for _, ips := range b.ipss {
-		for _, ip := range ips {
-			ipss1d = append(ipss1d, ip)
-		}
-	}
-	if err := checkIPs(ipss1d); err != nil {
+	if err := checkIPs(b.ips); err != nil {
 		return err
 	}
 
-	if len(b.ipss) == 0 {
+	if len(b.ips) == 0 {
 		if b.typ == types.TypeBinary || b.mode == types.SoloMode {
 			for i := 0; i < b.num; i++ {
-				b.ipss = append(b.ipss, []string{"127.0.0.1"})
+				b.ips = append(b.ips, "127.0.0.1")
 			}
 		} else {
 			for i := 2; i < b.num+2; i++ {
 				ip := fmt.Sprintf("172.19.0.%d", i)
-				b.ipss = append(b.ipss, []string{ip})
+				b.ips = append(b.ips, ip)
 			}
 		}
 	}
@@ -465,30 +461,29 @@ func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, vali
 	return pcg.InitConfig()
 }
 
-func (b *BitXHubConfigGenerator) generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ipss [][]string) ([]string, [][]string, error) {
-	count := len(ipss)
+func (b *BitXHubConfigGenerator) generateNodesConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ips []string) ([]string, []*NetworkNodes, error) {
+	count := len(ips)
 	ipToId := make(map[string]int)
 	addrs := make([]string, 0, count)
-	nodes := make([][]string, 0, count)
+	nodes := make([]*NetworkNodes, 0, count)
 
 	for i := 1; i <= count; i++ {
-		ips := ipss[i-1]
-		for j := 0; j < len(ips); j++ {
-			ipToId[ips[j]]++
-		}
-		addr, nodeIPAddrs, err := b.generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ips, i, ipToId)
+		ip := ips[i-1]
+		ipToId[ip]++
+
+		addr, node, err := b.generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip, i, ipToId)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		addrs = append(addrs, addr)
-		nodes = append(nodes, nodeIPAddrs)
+		nodes = append(nodes, node)
 	}
 
 	return addrs, nodes, nil
 }
 
-func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath string, ips []string, id int, ipToId map[string]int) (string, []string, error) {
+func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
 	name := "node"
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
@@ -514,19 +509,7 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
-	maxid := 0
-	for _, ip := range ips {
-		if ipToId[ip] > maxid {
-			maxid = ipToId[ip]
-		}
-	}
-
-	bitxhubID := maxid
-	if maxid > id {
-		bitxhubID = id
-	}
-
-	if err := b.copyConfigFiles(nodeRoot, bitxhubID); err != nil {
+	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
 
@@ -540,20 +523,12 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, fmt.Errorf("get pid from private key: %w", err)
 	}
 
-	nodeIPAddrs := []string{}
-
-	ipLen := make(map[string]int)
-	ipNoi := make(map[string]int)
-	for _, ip := range ips {
-		ipLen[ip]++
+	node := &NetworkNodes{
+		ID:   uint64(id),
+		Addr: fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip, 4000+ipToId[ip], pid),
 	}
 
-	for _, ip := range ips {
-		ipNoi[ip]++
-		nodeIPAddrs = append(nodeIPAddrs, fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip, 4000+ipToId[ip]-ipLen[ip]+ipNoi[ip], pid))
-	}
-
-	return addr, nodeIPAddrs, nil
+	return addr, node, nil
 }
 
 func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error {
@@ -573,7 +548,7 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 	return renderConfigFiles(nodeRoot, "bitxhub", files, data)
 }
 
-func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes [][]string) error {
+func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes) error {
 	genesis := Genesis{Addresses: addrs}
 	content, err := json.MarshalIndent(genesis, "", " ")
 	if err != nil {
@@ -592,7 +567,9 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes [][]str
 		}
 
 		netConfig := NetworkConfig{
-			Addrs: nodes,
+			ID:    uint64(i),
+			N:     uint64(count),
+			Nodes: nodes,
 		}
 
 		netContent, err := toml.Marshal(netConfig)
