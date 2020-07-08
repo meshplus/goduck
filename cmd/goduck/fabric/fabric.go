@@ -52,9 +52,8 @@ func GetFabricCMD() *cli.Command {
 				Usage: "Deploy chaincode on your network",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:     "config",
-						Usage:    "specify fabric network config.yaml file path",
-						Required: true,
+						Name:  "config",
+						Usage: "specify fabric network config.yaml file path",
 					},
 					&cli.StringFlag{
 						Name:     "code",

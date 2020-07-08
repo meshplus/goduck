@@ -47,6 +47,11 @@ function prepare() {
     go get github.com/securekey/fabric-examples/fabric-cli/cmd/fabric-cli
   fi
 
+  if [ ! -f config-template.yaml ]; then
+    print_blue "===> Download config-template.yaml"
+    wget https://raw.githubusercontent.com/meshplus/bitxhub/v1.0.0-rc1/scripts/quick_start/config-template.yaml
+  fi
+
   if [ ! -f config.yaml ]; then
     cp "${CURRENT_PATH}"/config-template.yaml "${CURRENT_PATH}"/config.yaml
   fi
@@ -67,6 +72,9 @@ function prepareContract() {
 }
 
 function installChaincode() {
+  if [ -z ${CONFIG_YAML} ]; then
+    CONFIG_YAML=./config.yaml
+  fi
   prepare
 
   if [ -z "${CHAINCODE_PATH}" ]; then
