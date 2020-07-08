@@ -54,14 +54,14 @@ function prepare() {
 
   if [ ! -d contracts ]; then
     print_blue "===> Download chaincode"
-    wget https://github.com/meshplus/pier-client-fabric/raw/v1.0.0-rc4/example/contracts.zip
+    wget https://github.com/meshplus/pier-client-fabric/raw/v1.0.0-rc1/example/contracts.zip
     unzip -q contracts.zip
     rm contracts.zip
   fi
 
   if [ ! -f config-template.yaml ]; then
     print_blue "===> Download config-template.yaml"
-    wget https://raw.githubusercontent.com/meshplus/bitxhub/v1.0.0-rc3/scripts/quick_start/config-template.yaml
+    wget https://raw.githubusercontent.com/meshplus/bitxhub/v1.0.0-rc1/scripts/quick_start/config-template.yaml
   fi
 
   if [ ! -f config.yaml ]; then
