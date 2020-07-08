@@ -215,7 +215,7 @@ func invoke(ctx *cli.Context) error {
 	}
 
 	fmt.Printf("\n======= invoke function %s =======\n", function)
-	fmt.Printf("\n=============== Transaction hash is ==============\n\t%s\n", signedTx.Hash().Hex())
+	fmt.Printf("\n=============== Transaction hash is ==============\n%s\n", signedTx.Hash().Hex())
 	return nil
 }
 

@@ -9,23 +9,14 @@ import (
 
 func quickStartCMD() *cli.Command {
 	return &cli.Command{
-		Name:  "quick-start",
-		Usage: "Set up and experience interchain system smoothly",
+		Name:   "quickstart",
+		Usage:  "Set up and experience interchain system smoothly",
+		Action: dockerUp,
 		Subcommands: []*cli.Command{
-			{
-				Name:   "start",
-				Usage:  "Start a demo interchain system",
-				Action: dockerUp,
-			},
 			{
 				Name:   "stop",
 				Usage:  "Stop demo interchain system",
 				Action: dockerDown,
-			},
-			{
-				Name:   "transfer",
-				Usage:  "Invoke bidirectional transfer in demo interchain system",
-				Action: transfer,
 			},
 		},
 	}
