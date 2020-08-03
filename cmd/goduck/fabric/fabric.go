@@ -1,6 +1,7 @@
 package fabric
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/meshplus/goduck/internal/repo"
@@ -63,6 +64,14 @@ func GetFabricCMD() *cli.Command {
 				},
 				Action: installChaincode,
 			},
+			{
+				Name:      "invoke",
+				Usage:     "Invoke fabric chaincode",
+				ArgsUsage: "command: goduck fabric invoke [chaincode_id] [function] [args(optional)]",
+				Action: func(ctx *cli.Context) error {
+					return invokeChaincode(ctx)
+				},
+			},
 		},
 	}
 }
@@ -102,4 +111,22 @@ func installChaincode(ctx *cli.Context) error {
 	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig, "-g", codePath)
 
 	return utils.ExecuteShell(args, repoRoot)
+}
+
+func invokeChaincode(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	args := ctx.Args().Slice()
+	if len(args) < 2 {
+		return fmt.Errorf("args must be (chaincode_id function args[optional])")
+	}
+
+	if len(args) == 2 {
+		args = append(args, "")
+	}
+
+	return Invoke(repoRoot, args[0], args[1], args[2])
 }
