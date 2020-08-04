@@ -72,3 +72,9 @@ func StopPier(repoRoot, chainType string, pierOnly bool) error {
 		return fmt.Errorf("chain type %s is not supported", chainType)
 	}
 }
+
+func GetPierID(repoRoot, chainType, pierUpType string) error {
+	args := []string{types.PierScript, "id", "-m", chainType, "-t", pierUpType,
+		"-r", ".pier_" + chainType}
+	return utils.ExecuteShell(args, repoRoot)
+}

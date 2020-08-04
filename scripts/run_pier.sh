@@ -242,6 +242,18 @@ function pier_down() {
   echo "pier-$MODE container is not running"
 }
 
+function pier_id() {
+  if [ "${TYPE}" == "docker" ]; then
+    print_blue "===> pier id of pier-$MODE in docker is as follow"
+    docker exec pier-"$MODE" pier --repo=/root/.pier id
+  elif [ "${TYPE}" == "binary" ]; then
+    print_blue "===> pier id of $MODE is as follow"
+    "${CURRENT_PATH}"/bin/pier --repo "${CURRENT_PATH}"/"${PIER_ROOT}"
+  else
+   echo "Not supported up type "${TYPE}" for pier"
+  fi
+}
+
 PIER_ROOT=.pier_fabric
 BITXHUB_ADDR="localhost:60011"
 CLEAN_DATA="true"
@@ -279,6 +291,8 @@ if [ "$OPT" == "up" ]; then
   pier_up
 elif [ "$OPT" == "down" ]; then
   pier_down
+elif [ "$OPT" == "id" ]; then
+  pier_id
 else
   printHelp
   exit 1
