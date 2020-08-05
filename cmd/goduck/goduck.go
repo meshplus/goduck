@@ -37,7 +37,7 @@ func main() {
 		keyCMD(),
 		bitxhubCMD(),
 		pierCMD,
-		quickStartCMD(),
+		playgroundCMD(),
 	}
 
 	err := app.Run(os.Args)
