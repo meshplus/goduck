@@ -7,15 +7,24 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func quickStartCMD() *cli.Command {
+func playgroundCMD() *cli.Command {
 	return &cli.Command{
-		Name:   "quickstart",
-		Usage:  "Set up and experience interchain system smoothly",
-		Action: dockerUp,
+		Name:  "playground",
+		Usage: "Set up and experience interchain system smoothly",
 		Subcommands: []*cli.Command{
 			{
+				Name:   "start",
+				Usage:  "Start a demo interchain system",
+				Action: dockerUp,
+			},
+			{
 				Name:   "stop",
-				Usage:  "Stop demo interchain system",
+				Usage:  "Stop demo interchain system(container remained)",
+				Action: dockerStop,
+			},
+			{
+				Name:   "clean",
+				Usage:  "Clean up the demo interchain system",
 				Action: dockerDown,
 			},
 		},
@@ -39,6 +48,16 @@ func dockerDown(ctx *cli.Context) error {
 	}
 
 	args := []string{types.QuickStartScript, "down"}
+	return utils.ExecuteShell(args, repoRoot)
+}
+
+func dockerStop(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	args := []string{types.QuickStartScript, "stop"}
 	return utils.ExecuteShell(args, repoRoot)
 }
 

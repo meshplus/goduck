@@ -25,13 +25,23 @@ function printHelp() {
 }
 
 function docker-compose-up() {
-  print_blue "======> Start the demo cluster...."
-  docker-compose -f ./docker/quick_start/quick_start.yml up
+  if [ ! "$(docker network ls -f name=quick_start_default)" ]; then
+    print_blue "======> Start the demo service...."
+    docker-compose -f ./docker/quick_start/quick_start.yml up
+  else
+    print_blue "======> Restart the demo service...."
+    docker-compose -f ./docker/quick_start/quick_start.yml restart
+  fi
 }
 
 function docker-compose-down() {
-  print_blue "======> Stop the demo cluster...."
+  print_blue "======> Clean up the demo service...."
   docker-compose -f ./docker/quick_start/quick_start.yml down
+}
+
+function docker-compose-stop() {
+  print_blue "======> Stop the demo cluster...."
+  docker-compose -f ./docker/quick_start/quick_start.yml stop
 }
 
 function queryAccount() {
@@ -76,6 +86,8 @@ if [ "$MODE" == "up" ]; then
   docker-compose-up
 elif [ "$MODE" == "down" ]; then
   docker-compose-down
+elif [ "$MODE" == "stop" ]; then
+  docker-compose-stop
 elif [ "$MODE" == "transfer" ]; then
   interchainTransfer
 else
