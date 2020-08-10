@@ -18,14 +18,16 @@ function print_red() {
 function printHelp() {
   print_blue "Usage:  "
   echo "  quick_start <mode>"
-  echo "    <mode> - one of 'up', 'transfer'"
+  echo "    <mode> - one of 'up', 'down', 'stop', 'transfer'"
   echo "      - 'up' - bring up the demo interchain system"
+  echo "      - 'down' - bring down the demo interchain system"
+  echo "      - 'stop' - stop containers in demo interchain system"
   echo "      - 'transfer' - invoke demo transfer event"
   echo "  quick_start.sh -h (print this message)"
 }
 
 function docker-compose-up() {
-  if [ ! "$(docker network ls -f name=quick_start_default)" ]; then
+  if [ ! "$(docker network ls -q -f name=quick_start_default)" ]; then
     print_blue "======> Start the demo service...."
     docker-compose -f ./docker/quick_start/quick_start.yml up
   else

@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/meshplus/goduck/internal/repo"
-
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"

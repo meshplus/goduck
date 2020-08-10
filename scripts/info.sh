@@ -27,14 +27,20 @@ function printHelp() {
 
 function showBxhInfo() {
   if [ -d ${CURRENT_PATH}/nodeSolo ]; then
-    print_blue "======> Show address of solo bitxhub node started in binary"
-    bitxhub key address --path ${CURRENT_PATH}/nodeSolo/certs/node.priv
+    if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
+      print_blue "======> Show address of solo bitxhub node started in binary"
+      bitxhub key address --path ${CURRENT_PATH}/nodeSolo/certs/node.priv
+    fi
   fi
 
-  if [ -d ${CURRENT_PATH}/nodeSolo ]; then
-    print_blue "======> Show address of each bitxhub node started in binary"
-    nodes=$(ls ${CURRENT_PATH}/)
-    bitxhub key address --path ${CURRENT_PATH}/nodeSolo/certs/node.priv
+  nodes=$(ls ${CURRENT_PATH} | grep node | grep -v nodeSolo || true)
+  if [ -n "$nodes" ]; then
+    if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
+      print_blue "======> Show address of each bitxhub node started in binary"
+      for n in $nodes ; do
+        bitxhub key address --path ${CURRENT_PATH}/$n/certs/node.priv
+      done
+    fi
   fi
 
   if [ "$(docker ps -q -f name=bitxhub_solo)" ]; then
@@ -74,13 +80,17 @@ function showPierInfo() {
   fi
 
   if [ -d ${CURRENT_PATH}/.pier_ethereum ]; then
-    print_blue "======> info about piers of ethereum in binary"
-    ${CURRENT_PATH}/bin/pier --repo=${CURRENT_PATH}/.pier_ethereum id
+    if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
+      print_blue "======> info about piers of ethereum in binary"
+      ${CURRENT_PATH}/bin/pier --repo=${CURRENT_PATH}/.pier_ethereum id
+    fi
   fi
 
   if [ -d ${CURRENT_PATH}/.pier_fabric ]; then
-    print_blue "======> info about piers of fabric in binary"
-    ${CURRENT_PATH}/bin/pier --repo=${CURRENT_PATH}/.pier_fabric id
+    if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
+      print_blue "======> info about piers of fabric in binary"
+      ${CURRENT_PATH}/bin/pier --repo=${CURRENT_PATH}/.pier_fabric id
+    fi
   fi
 }
 
