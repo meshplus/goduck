@@ -38,6 +38,7 @@ func main() {
 		bitxhubCMD(),
 		pierCMD,
 		playgroundCMD(),
+		infoCMD(),
 	}
 
 	err := app.Run(os.Args)
