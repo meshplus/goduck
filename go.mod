@@ -3,6 +3,7 @@ module github.com/meshplus/goduck
 go 1.14
 
 require (
+	github.com/Rican7/retry v0.1.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/cheggaaa/pb v2.0.7+incompatible
 	github.com/cheynewallace/tabby v1.1.0

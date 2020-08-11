@@ -101,6 +101,11 @@ func Stop(repoRoot string) error {
 
 func installChaincode(ctx *cli.Context) error {
 	codePath := ctx.String("code")
+	absPath, err := filepath.Abs(codePath)
+	if err != nil {
+		return err
+	}
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
@@ -108,7 +113,7 @@ func installChaincode(ctx *cli.Context) error {
 
 	fabricConfig := ctx.String("config")
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig, "-g", codePath)
+	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", fabricConfig, "-g", absPath)
 
 	return utils.ExecuteShell(args, repoRoot)
 }
