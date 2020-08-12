@@ -54,6 +54,7 @@ function prepare() {
 
   if [ ! -f config.yaml ]; then
     cp "${CURRENT_PATH}"/config-template.yaml "${CURRENT_PATH}"/config.yaml
+    x_replace "s|\${CONFIG_PATH}|${CURRENT_PATH}|g" config.yaml
   fi
 
   if [ ! -d crypto-config ]; then
