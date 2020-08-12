@@ -8,11 +8,15 @@ import (
 	"io/ioutil"
 	"reflect"
 	"strings"
+	"time"
 
+	"github.com/Rican7/retry"
+	"github.com/Rican7/retry/strategy"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/urfave/cli/v2"
@@ -102,10 +106,26 @@ func deploy(ctx *cli.Context) error {
 		}
 
 		code := strings.TrimPrefix(strings.TrimSpace(bin), "0x")
-		addr, _, _, err := bind.DeployContract(auth, parsed, common.FromHex(code), etherCli)
+		addr, tx, _, err := bind.DeployContract(auth, parsed, common.FromHex(code), etherCli)
 		if err != nil {
 			return err
 		}
+		var r *types.Receipt
+		if err := retry.Retry(func(attempt uint) error {
+			r, err = etherCli.TransactionReceipt(context.Background(), tx.Hash())
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, strategy.Wait(1*time.Second)); err != nil {
+			return err
+		}
+
+		if r.Status == types.ReceiptStatusFailed {
+			return fmt.Errorf("deploy contract failed, tx hash is: %s", r.TxHash.Hex())
+		}
+
 		fmt.Printf("\n======= %s =======\n", compileResult.Types[i])
 		fmt.Printf("Deployed contract address is %s\n", addr.Hex())
 		fmt.Printf("Contract JSON ABI\n%s\n", compileResult.Abi[i])
