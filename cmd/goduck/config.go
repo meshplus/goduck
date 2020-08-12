@@ -178,7 +178,7 @@ func (b *BitXHubConfigGenerator) InitConfig() error {
 		return fmt.Errorf("check if BitXHub is initialized: %w", err)
 	} else if ok {
 		fmt.Println("BitXHub configuration file already exists")
-		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
+		fmt.Println("reinitializing would overwrite your configuration, Y/N (default: N)?")
 		input := bufio.NewScanner(os.Stdin)
 		input.Scan()
 

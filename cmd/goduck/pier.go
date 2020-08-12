@@ -40,11 +40,6 @@ var pierCMD = &cli.Command{
 					Required: false,
 					Value:    types.TypeDocker,
 				},
-				&cli.BoolFlag{
-					Name:  "clean-data",
-					Usage: "remove storage of existing pier or not",
-					Value: true,
-				},
 			},
 			Action: pierStart,
 		},
@@ -66,6 +61,25 @@ var pierCMD = &cli.Command{
 				},
 			},
 			Action: pierStop,
+		},
+		{
+			Name:  "clean",
+			Usage: "Clean pier with its appchain",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "chain",
+					Usage:    "specify appchain type, ethereum(default) or fabric",
+					Required: false,
+					Value:    types.Ethereum,
+				},
+				&cli.BoolFlag{
+					Name:     "pier-only",
+					Usage:    "clean pier only or clean pier with its appchain",
+					Required: false,
+					Value:    true,
+				},
+			},
+			Action: pierClean,
 		},
 		{
 			Name:  "config",
@@ -128,7 +142,6 @@ func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
 	chainUpType := ctx.String("chain-type")
 	pierUpType := ctx.String("pier-type")
-	cleanData := ctx.Bool("clean-data")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -144,7 +157,7 @@ func pierStart(ctx *cli.Context) error {
 	}
 
 	// start pier with specific appchain
-	return pier.StartPier(repoRoot, chainType, chainUpType, pierUpType, cleanData)
+	return pier.StartPier(repoRoot, chainType, chainUpType, pierUpType)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -157,6 +170,18 @@ func pierStop(ctx *cli.Context) error {
 	}
 
 	return pier.StopPier(repoRoot, chainType, isPierOnly)
+}
+
+func pierClean(ctx *cli.Context) error {
+	chainType := ctx.String("chain")
+	isPierOnly := ctx.Bool("pier-only")
+
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	return pier.CleanPier(repoRoot, chainType, isPierOnly)
 }
 
 func downloadPierBinary(repoPath string) error {
