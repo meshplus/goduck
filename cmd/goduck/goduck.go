@@ -29,6 +29,7 @@ func main() {
 	}
 
 	app.Commands = []*cli.Command{
+		deployCMD(),
 		getVersionCMD(),
 		GetInitCMD(),
 		GetStatusCMD(),

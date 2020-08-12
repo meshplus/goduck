@@ -7,6 +7,7 @@ require (
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/cheggaaa/pb v2.0.7+incompatible
 	github.com/cheynewallace/tabby v1.1.0
+	github.com/codeskyblue/go-sh v0.0.0-20200712050446-30169cf553fe
 	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
