@@ -101,9 +101,13 @@ func Stop(repoRoot string) error {
 
 func installChaincode(ctx *cli.Context) error {
 	codePath := ctx.String("code")
-	absPath, err := filepath.Abs(codePath)
-	if err != nil {
-		return err
+	absPath := ""
+	if codePath != "" {
+		absP, err := filepath.Abs(codePath)
+		if err != nil {
+			return err
+		}
+		absPath = absP
 	}
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
