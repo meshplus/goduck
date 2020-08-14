@@ -2,7 +2,6 @@ package fabric
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
@@ -10,14 +9,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
-func Invoke(repoRoot, ccID, function, arg string) error {
+func Invoke(configPath, ccID, function, arg string) error {
 	s := strings.Split(strings.TrimSpace(arg), ",")
 	var args [][]byte
 	for _, v := range s {
 		args = append(args, []byte(strings.TrimSpace(v)))
 	}
 
-	fabCli, err := NewFabric(repoRoot)
+	fabCli, err := NewFabric(configPath)
 	if err != nil {
 		return err
 	}
@@ -37,11 +36,9 @@ func Invoke(repoRoot, ccID, function, arg string) error {
 	return nil
 }
 
-func NewFabric(repoRoot string) (*channel.Client, error) {
-	filePath := filepath.Join(repoRoot, "config.yaml")
-
+func NewFabric(configPath string) (*channel.Client, error) {
 	// read config file，create SDK
-	configProvider := config.FromFile(filePath)
+	configProvider := config.FromFile(configPath)
 	sdk, err := fabsdk.New(configProvider)
 	if err != nil {
 		return nil, fmt.Errorf("create sdk fail: %w\n", err)
