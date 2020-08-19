@@ -68,6 +68,13 @@ func GetFabricCMD() *cli.Command {
 				Name:      "invoke",
 				Usage:     "Invoke fabric chaincode",
 				ArgsUsage: "command: goduck fabric invoke [chaincode_id] [function] [args(optional)]",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "config_path",
+						Usage:    "the path of fabric config, default(our fabric config)",
+						Required: false,
+					},
+				},
 				Action: func(ctx *cli.Context) error {
 					return invokeChaincode(ctx)
 				},
@@ -123,9 +130,14 @@ func installChaincode(ctx *cli.Context) error {
 }
 
 func invokeChaincode(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
-	if err != nil {
-		return err
+	configPath := ctx.String("config_path")
+
+	if configPath == "" {
+		repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+		if err != nil {
+			return err
+		}
+		configPath = filepath.Join(repoRoot, "config.yaml")
 	}
 
 	args := ctx.Args().Slice()
@@ -137,5 +149,5 @@ func invokeChaincode(ctx *cli.Context) error {
 		args = append(args, "")
 	}
 
-	return Invoke(repoRoot, args[0], args[1], args[2])
+	return Invoke(configPath, args[0], args[1], args[2])
 }
