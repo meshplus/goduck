@@ -107,6 +107,8 @@ function bitxhub_docker_cluster() {
 
 function bitxhub_down() {
   set +e
+  print_blue "===> Stop bitxhub"
+
   if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
     list=$(cat "${CURRENT_PATH}"/bitxhub.pid)
     for pid in $list; do
@@ -169,6 +171,32 @@ function bitxhub_up() {
   esac
 }
 
+function bitxhub_clean() {
+  set +e
+
+  bitxhub_down
+
+  print_blue "===> Clean bitxhub"
+
+  file_list=`ls ${CURRENT_PATH} 2> /dev/null | grep -v '^$'`
+  for file_name in $file_list ; do
+    if [ "${file_name: 0: 4}" == "node" ]; then
+        rm -r "${CURRENT_PATH}"/"$file_name"
+        echo "remove bitxhub configure $file_name"
+    fi
+  done
+
+  if [ "$(docker ps -a | grep -c bitxhub_node)" -ge 1 ]; then
+    docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml rm -f
+    echo "bitxhub docker cluster clean"
+  fi
+
+  if [ "$(docker ps -a | grep -c bitxhub_solo)" -ge 1 ]; then
+    docker rm bitxhub_solo
+    echo "bitxhub docker solo clean"
+  fi
+}
+
 function bitxhub_restart() {
   bitxhub_down
   bitxhub_up
@@ -180,6 +208,8 @@ if [ "$OPT" == "up" ]; then
   bitxhub_up
 elif [ "$OPT" == "down" ]; then
   bitxhub_down
+elif [ "$OPT" == "clean" ]; then
+  bitxhub_clean
 elif [ "$OPT" == "restart" ]; then
   bitxhub_restart
 else

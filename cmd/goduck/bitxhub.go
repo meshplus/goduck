@@ -48,6 +48,11 @@ func bitxhubCMD() *cli.Command {
 				Action: stopBitXHub,
 			},
 			{
+				Name:   "clean",
+				Usage:  "Clean bitxhub nodes",
+				Action: cleanBitXHub,
+			},
+			{
 				Name:  "config",
 				Usage: "Generate configuration for BitXHub nodes",
 				Flags: []cli.Flag{
@@ -125,6 +130,20 @@ func startBitXHub(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
 	args = append(args, mode, typ, strconv.Itoa(num))
+	return utils.ExecuteShell(args, repoPath)
+}
+
+func cleanBitXHub(ctx *cli.Context) error {
+	repoPath, err := repo.PathRoot()
+	if err != nil {
+		return fmt.Errorf("parse repo path error:%w", err)
+	}
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+	args := make([]string, 0)
+	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "clean")
+
 	return utils.ExecuteShell(args, repoPath)
 }
 

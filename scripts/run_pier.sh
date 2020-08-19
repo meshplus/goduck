@@ -53,14 +53,6 @@ function prepare() {
     exit 1
   fi
 
-  # judge whether to clean old storage of pier
-  if [ "$CLEAN_DATA" == "true" ]; then
-    if [ -d "${CURRENT_PATH}"/"${PIER_ROOT}"/store ]; then
-      print_blue "===> remove old storage in "${PIER_ROOT}"/store"
-      rm -rf "${CURRENT_PATH}"/"${PIER_ROOT}"/store
-    fi
-  fi
-
   if [ "$MODE" == "fabric" ]; then
     cd "${CURRENT_PATH}"
     print_blue "===> Generate fabric pier configure"
@@ -152,9 +144,8 @@ function pier_docker_up() {
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
     if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
-        # restart your container
-        print_red "===> Remove old pier-${MODE} container"
-        docker rm -f pier-${MODE}
+      print_red "pier-${MODE} container already exists, please clean them first"
+      exit 1
     fi
 
     print_blue "===> Start a new pier-${MODE} container"
@@ -232,26 +223,49 @@ function pier_down() {
       print_red "pier exit fail, try use kill -9 $pid"
     fi
     rm pier-$MODE.pid
+  else
+    echo "pier-$MODE binary is not running"
   fi
 
   print_blue "===> Kill $MODE pier in docker"
   if [ "$(docker ps -q -f name=pier-$MODE)" ]; then
-    docker rm -f pier-$MODE
-    exit 0
+    docker stop pier-$MODE
+  else
+    echo "pier-$MODE container is not running"
   fi
-  echo "pier-$MODE container is not running"
+}
+
+function pier_clean() {
+  set +e
+
+  pier_down
+
+  print_blue "===> Clean $MODE pier in binary"
+
+  if [ -d "${CURRENT_PATH}"/".pier_$MODE" ]; then
+    echo "remove $MODE pier configure"
+    rm -r "${CURRENT_PATH}"/".pier_$MODE"
+  else
+    echo "pier-$MODE configure is not existed"
+  fi
+
+  print_blue "===> Clean $MODE pier in docker"
+  if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
+    docker rm pier-$MODE
+  else
+    echo "pier-$MODE container is not existed"
+  fi
 }
 
 PIER_ROOT=.pier_fabric
 BITXHUB_ADDR="localhost:60011"
-CLEAN_DATA="true"
 MODE="fabric"
 TYPE="binary"
 
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:c:" opt; do
+while getopts "h?t:m:r:b:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -269,9 +283,6 @@ while getopts "h?t:m:r:b:c:" opt; do
   b)
     BITXHUB_ADDR=$OPTARG
     ;;
-  c)
-    CLEAN_DATA=$OPTARG
-    ;;
   esac
 done
 
@@ -279,6 +290,8 @@ if [ "$OPT" == "up" ]; then
   pier_up
 elif [ "$OPT" == "down" ]; then
   pier_down
+elif [ "$OPT" == "clean" ]; then
+  pier_clean
 else
   printHelp
   exit 1
