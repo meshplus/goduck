@@ -57,6 +57,10 @@ type NetworkNodes struct {
 	Addr string `toml:"addr" json:"addr"`
 }
 
+type ReadinNetworkConfig struct {
+	Addrs [][]string
+}
+
 type ConfigGenerator interface {
 	// Initialized
 	Initialized() (bool, error)
@@ -72,11 +76,12 @@ type ConfigGenerator interface {
 }
 
 type BitXHubConfigGenerator struct {
-	typ    string
-	mode   string
-	target string
-	num    int
-	ips    []string
+	typ     string
+	mode    string
+	target  string
+	num     int
+	ips     []string
+	version string
 }
 
 type PierConfigGenerator struct {
@@ -91,8 +96,8 @@ type PierConfigGenerator struct {
 	id           int
 }
 
-func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string) *BitXHubConfigGenerator {
-	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips}
+func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, version string) *BitXHubConfigGenerator {
+	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, version: version}
 }
 
 func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, id int) *PierConfigGenerator {
@@ -209,11 +214,12 @@ func (b *BitXHubConfigGenerator) InitConfig() error {
 	}
 
 	addrs, nodes, err := b.generateNodesConfig(b.target, b.mode, agencyPrivKey, agencyCertPath, b.ips)
+
 	if err != nil {
 		return fmt.Errorf("generate nodes config: %w", err)
 	}
 
-	if err := writeNetworkAndGenesis(b.target, b.mode, addrs, nodes); err != nil {
+	if err := writeNetworkAndGenesis(b.target, b.mode, addrs, nodes, b.version); err != nil {
 		return fmt.Errorf("write network and genesis config: %w", err)
 	}
 
@@ -434,7 +440,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	ips := ctx.StringSlice("ips")
 	target := ctx.String("target")
 
-	return InitBitXHubConfig(typ, mode, target, num, ips)
+	return InitBitXHubConfig(typ, mode, target, num, ips, "")
 }
 
 func generatePierConfig(ctx *cli.Context) error {
@@ -451,8 +457,8 @@ func generatePierConfig(ctx *cli.Context) error {
 	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, id)
 }
 
-func InitBitXHubConfig(typ, mode, target string, num int, ips []string) error {
-	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips)
+func InitBitXHubConfig(typ, mode, target string, num int, ips []string, version string) error {
+	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, version)
 	return bcg.InitConfig()
 }
 
@@ -548,7 +554,7 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 	return renderConfigFiles(nodeRoot, "bitxhub", files, data)
 }
 
-func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes) error {
+func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes, version string) error {
 	genesis := Genesis{Addresses: addrs}
 	content, err := json.MarshalIndent(genesis, "", " ")
 	if err != nil {
@@ -556,6 +562,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 	}
 
 	count := len(addrs)
+
 	for i := 1; i <= count; i++ {
 		nodeRoot := filepath.Join(repoRoot, "node"+strconv.Itoa(i))
 		if mode == "solo" {
@@ -566,6 +573,22 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 			return err
 		}
 
+		if version >= "v1.1.0-rc1" {
+			var addrs [][]string
+			for _, node := range nodes {
+				addrs = append(addrs, []string{node.Addr})
+			}
+			netConfig := ReadinNetworkConfig{Addrs: addrs}
+			netContent, err := toml.Marshal(netConfig)
+			if err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
+				return err
+			}
+			continue
+		}
 		netConfig := NetworkConfig{
 			ID:    uint64(i),
 			N:     uint64(count),

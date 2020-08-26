@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/meshplus/goduck/internal/repo"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/meshplus/goduck"
 	"github.com/urfave/cli/v2"
@@ -10,12 +13,37 @@ import (
 func getVersionCMD() *cli.Command {
 	return &cli.Command{
 		Name:   "version",
-		Usage:  "Goduck version",
-		Action: version,
+		Usage:  "Components version",
+		Subcommands: []*cli.Command{
+			{
+				Name: "all",
+				Usage: "all components version",
+				Action: allVersion,
+			},
+			{
+				Name: "goduck",
+				Usage: "goduck version",
+				Action: goduckVersion,
+			},
+		},
 	}
 }
 
-func version(ctx *cli.Context) error {
+func allVersion(ctx *cli.Context) error {
+	root, err := repo.PathRoot()
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadFile(filepath.Join(root, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(data))
+	return nil
+}
+
+func goduckVersion(ctx *cli.Context) error {
 	printVersion()
 
 	return nil

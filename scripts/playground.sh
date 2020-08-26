@@ -3,14 +3,16 @@
 set -e
 source x.sh
 
-VERSION=1.0
 CURRENT_PATH=$(pwd)
+CONFIG_PATH="${CURRENT_PATH}"/bitxhub
 
 OPT=$1
-TYPE=$2
-MODE=$3
-N=$4
+VERSION=$2
+TYPE=$3
+MODE=$4
+N=$5
 SYSTEM=$(uname -s)
+BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${VERSION}"
 
 function printHelp() {
   print_blue "Usage:  "
@@ -23,23 +25,22 @@ function printHelp() {
 }
 
 function binary_prepare() {
-  cd "${CURRENT_PATH}"
-  if [ ! -a bin/bitxhub ]; then
-    mkdir -p bin && cd bin
+  cd "${BXH_PATH}"
+  if [ ! -a "${BXH_PATH}"/bitxhub ]; then
     if [ "${SYSTEM}" == "Linux" ]; then
-      tar xf bitxhub_linux-amd64_v1.0.0-rc1.tar.gz
+      tar xf bitxhub_linux-amd64_$VERSION.tar.gz
       cp ./build/* . && rm -r build
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"${BXH_PATH}"/
     elif [ "${SYSTEM}" == "Darwin" ]; then
-      tar xf bitxhub_macos_x86_64_v1.0.0-rc1.tar.gz
+      tar xf bitxhub_macos_x86_64_$VERSION.tar.gz
       cp ./build/* . && rm -r build
-      install_name_tool -change @rpath/libwasmer.dylib "${CURRENT_PATH}"/bin/libwasmer.dylib "${CURRENT_PATH}"/bin/bitxhub
+      install_name_tool -change @rpath/libwasmer.dylib "${BXH_PATH}"/libwasmer.dylib "${BXH_PATH}"/bitxhub
     else
       print_red "Bitxhub does not support the current operating system"
     fi
   fi
 
-  if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
+  if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
     print_red "Bitxhub already run in daemon processes"
     exit 1
   fi
@@ -48,15 +49,21 @@ function binary_prepare() {
 function bitxhub_binary_solo() {
   binary_prepare
 
-  cd "${CURRENT_PATH}"
+  cd "${CONFIG_PATH}"
   if [ ! -d nodeSolo/plugins ]; then
     mkdir nodeSolo/plugins
-    cp -r bin/solo.so nodeSolo/plugins
+    cp -r "${BXH_PATH}"/solo.so nodeSolo/plugins
   fi
   print_blue "Start bitxhub solo by binary"
-  LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CURRENT_PATH}/bin/ \
-  nohup "${CURRENT_PATH}"/bin/bitxhub --repo "${CURRENT_PATH}"/nodeSolo start >/dev/null 2>&1 &
-  echo $! >bitxhub.pid
+  nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
+  PID=$!
+  sleep 1
+  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
+    echo "===> Start bitxhub solo node successful"
+    echo $! >>"${CONFIG_PATH}"/bitxhub.pid
+  else
+    print_red "===> Start bitxhub solo node fail"
+  fi
 }
 
 function bitxhub_docker_solo() {
@@ -70,12 +77,12 @@ function bitxhub_docker_solo() {
   else
     docker run -d --name bitxhub_solo \
       -p 60011:60011 -p 9091:9091 -p 53121:53121 -p 40011:40011 \
-      -v "${CURRENT_PATH}"/nodeSolo/api:/root/.bitxhub/api \
-      -v "${CURRENT_PATH}"/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml \
-      -v "${CURRENT_PATH}"/nodeSolo/genesis.json:/root/.bitxhub/genesis.json \
-      -v "${CURRENT_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
-      -v "${CURRENT_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
-      -v "${CURRENT_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
+      -v "${CONFIG_PATH}"/nodeSolo/api:/root/.bitxhub/api \
+      -v "${CONFIG_PATH}"/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml \
+      -v "${CONFIG_PATH}"/nodeSolo/genesis.json:/root/.bitxhub/genesis.json \
+      -v "${CONFIG_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
+      -v "${CONFIG_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
+      -v "${CONFIG_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
       meshplus/bitxhub-solo
   fi
 }
@@ -83,17 +90,24 @@ function bitxhub_docker_solo() {
 function bitxhub_binary_cluster() {
   binary_prepare
 
-  cd "${CURRENT_PATH}"
+  cd "${CONFIG_PATH}"
   print_blue "Start bitxhub cluster"
   for ((i = 1; i < N + 1; i = i + 1)); do
     if [ ! -d node${i}/plugins ]; then
       mkdir node${i}/plugins
-      cp -r bin/raft.so node${i}/plugins
+      cp -r "${BXH_PATH}"/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
-    nohup "${CURRENT_PATH}"/bin/bitxhub --repo="${CURRENT_PATH}"/node${i} start >/dev/null 2>&1 &
+    nohup "${BXH_PATH}"/bitxhub --repo="${CONFIG_PATH}"/node${i} start >/dev/null 2>&1 &
+    PID=$!
+    sleep 1
+    if [ -n "$(ps -p ${PID} -o pid=)" ]; then
+      echo "===> Start bitxhub solo node successful"
+      echo $! >>"${CONFIG_PATH}"/bitxhub.pid
+    else
+      print_red "===> Start bitxhub solo node fail"
+    fi
 
-    echo $! >>"${CURRENT_PATH}"/bitxhub.pid
   done
 }
 
@@ -109,8 +123,8 @@ function bitxhub_down() {
   set +e
   print_blue "===> Stop bitxhub"
 
-  if [ -a "${CURRENT_PATH}"/bitxhub.pid ]; then
-    list=$(cat "${CURRENT_PATH}"/bitxhub.pid)
+  if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
+    list=$(cat "${CONFIG_PATH}"/bitxhub.pid)
     for pid in $list; do
       kill "$pid"
       if [ $? -eq 0 ]; then
@@ -119,7 +133,7 @@ function bitxhub_down() {
         print_red "program exit fail, try use kill -9 $pid"
       fi
     done
-    rm "${CURRENT_PATH}"/bitxhub.pid
+    rm "${CONFIG_PATH}"/bitxhub.pid
   fi
 
   if [ "$(docker container ls | grep -c bitxhub_node)" -ge 1 ]; then
@@ -178,11 +192,11 @@ function bitxhub_clean() {
 
   print_blue "===> Clean bitxhub"
 
-  file_list=`ls ${CURRENT_PATH} 2> /dev/null | grep -v '^$'`
-  for file_name in $file_list ; do
-    if [ "${file_name: 0: 4}" == "node" ]; then
-        rm -r "${CURRENT_PATH}"/"$file_name"
-        echo "remove bitxhub configure $file_name"
+  file_list=$(ls ${CONFIG_PATH} 2>/dev/null | grep -v '^$')
+  for file_name in $file_list; do
+    if [ "${file_name:0:4}" == "node" ]; then
+      rm -r "${CONFIG_PATH}"/"$file_name"
+      echo "remove bitxhub configure $file_name"
     fi
   done
 
@@ -201,8 +215,6 @@ function bitxhub_restart() {
   bitxhub_down
   bitxhub_up
 }
-
-print_blue "===> Script version: $VERSION"
 
 if [ "$OPT" == "up" ]; then
   bitxhub_up
