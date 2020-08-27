@@ -459,7 +459,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(bitxhub_executor_apply_transactions_duration_seconds_bucket{job=\"$job\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(bitxhub_executor_apply_transactions_duration_seconds_bucket{job=\"$job\"}[10s])) by (le))",
           "interval": "",
           "legendFormat": "apply_txs_time",
           "refId": "A"
