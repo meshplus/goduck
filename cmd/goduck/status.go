@@ -18,7 +18,7 @@ import (
 )
 
 var processes = []string{
-	"bitxhub.pid",
+	"bitxhub/bitxhub.pid",
 	"ethereum/ethereum.pid",
 	"pier/pier-ethereum.pid",
 	"pier/pier-fabric.pid",

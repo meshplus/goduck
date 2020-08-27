@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,6 +41,11 @@ var pierCMD = &cli.Command{
 					Usage:    "specify pier up type, docker(default) or binary",
 					Required: false,
 					Value:    types.TypeDocker,
+				},
+				&cli.StringFlag{
+					Name:  "version,v",
+					Value: "v1.1.0-rc1",
+					Usage: "pier version",
 				},
 			},
 			Action: pierStart,
@@ -142,15 +149,30 @@ func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
 	chainUpType := ctx.String("chain-type")
 	pierUpType := ctx.String("pier-type")
+	version := ctx.String("version")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Pier) {
+		return fmt.Errorf("unsupport pier verison")
+	}
+
 	if pierUpType == types.TypeBinary {
 		if !fileutil.Exist(filepath.Join(repoRoot, "bin/pier")) {
-			if err := downloadPierBinary(repoRoot); err != nil {
+			if err := downloadPierBinary(repoRoot, version); err != nil {
 				return fmt.Errorf("download pier binary error:%w", err)
 			}
 		}
@@ -184,10 +206,11 @@ func pierClean(ctx *cli.Context) error {
 	return pier.CleanPier(repoRoot, chainType, isPierOnly)
 }
 
-func downloadPierBinary(repoPath string) error {
-	root := filepath.Join(repoPath, "bin")
+func downloadPierBinary(repoPath string, version string) error {
+	path := fmt.Sprintf("pier_%s", version)
+	root := filepath.Join(repoPath, "bin", path)
 	if !fileutil.Exist(root) {
-		err := os.Mkdir(root, 0755)
+		err := os.MkdirAll(root, 0755)
 		if err != nil {
 			return err
 		}
@@ -195,7 +218,8 @@ func downloadPierBinary(repoPath string) error {
 
 	if runtime.GOOS == "linux" {
 		if !fileutil.Exist(filepath.Join(root, "pier")) {
-			err := download.Download(root, types.PierUrlLinux)
+			url := fmt.Sprintf(types.PierUrlLinux, version)
+			err := download.Download(root, url)
 			if err != nil {
 				return err
 			}
@@ -210,7 +234,8 @@ func downloadPierBinary(repoPath string) error {
 	}
 	if runtime.GOOS == "darwin" {
 		if !fileutil.Exist(filepath.Join(root, "pier")) {
-			err := download.Download(root, types.PierUrlMacOS)
+			url := fmt.Sprintf(types.PierUrlMacOS, version)
+			err := download.Download(root, url)
 			if err != nil {
 				return err
 			}

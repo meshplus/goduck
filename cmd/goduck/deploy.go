@@ -67,7 +67,7 @@ func deployBitXHub(ctx *cli.Context) error {
 
 	ips := strings.Split(ctx.String("ips"), ",")
 
-	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips)
+	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, "")
 
 	if err := generator.InitConfig(); err != nil {
 		return err
