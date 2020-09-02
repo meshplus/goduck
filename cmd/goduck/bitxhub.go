@@ -92,6 +92,11 @@ func bitxhubCMD() *cli.Command {
 						Value: ".",
 						Usage: "where to put the generated configuration files",
 					},
+					&cli.StringFlag{
+						Name:  "version,v",
+						Value: "v1.1.0-rc1",
+						Usage: "bitxhub version",
+					},
 				},
 				Action: generateBitXHubConfig,
 			},

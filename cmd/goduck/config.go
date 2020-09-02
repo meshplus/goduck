@@ -439,8 +439,9 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	mode := ctx.String("mode")
 	ips := ctx.StringSlice("ips")
 	target := ctx.String("target")
+	version := ctx.String("version")
 
-	return InitBitXHubConfig(typ, mode, target, num, ips, "")
+	return InitBitXHubConfig(typ, mode, target, num, ips, version)
 }
 
 func generatePierConfig(ctx *cli.Context) error {
