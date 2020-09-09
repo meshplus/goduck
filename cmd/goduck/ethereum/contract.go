@@ -22,78 +22,67 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var contractCMD = &cli.Command{
-	Name:  "contract",
-	Usage: "operation about solidity contract",
-	Subcommands: []*cli.Command{
-		{
-			Name:  "deploy",
-			Usage: "deploy solidity contract to ethereum chain",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:     "ether_addr",
-					Usage:    "the address of ethereum chain",
-					Value:    "http://localhost:8545",
-					Required: false,
+func EtherContractCMD() *cli.Command {
+	return &cli.Command{
+		Name:  "ether",
+		Usage: "operation about contract in ethereum chain",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "deploy",
+				Usage: "deploy solidity contract on ethereum chain",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "ether_addr",
+						Usage:    "the address of ethereum chain",
+						Value:    "http://localhost:8545",
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:     "key_path",
+						Usage:    "the ethereum account private key path",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "code_path",
+						Usage:    "the path of solidity contract",
+						Required: true,
+					},
 				},
-				&cli.StringFlag{
-					Name:     "key_path",
-					Usage:    "the ethereum account private key path",
-					Required: true,
-				},
-				&cli.StringFlag{
-					Name:     "password",
-					Usage:    "the ethereum account password",
-					Value:    "",
-					Required: false,
-				},
-				&cli.StringFlag{
-					Name:     "code_path",
-					Usage:    "the path of solidity contract",
-					Required: true,
-				},
+				Action: deploy,
 			},
-			Action: deploy,
-		},
-		{
-			Name:  "invoke",
-			Usage: "invoke solidity contract on ethereum chain",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:     "ether_addr",
-					Usage:    "the address of ethereum chain",
-					Value:    "http://localhost:8545",
-					Required: false,
+			{
+				Name:  "invoke",
+				Usage: "invoke solidity contract on ethereum chain",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "ether_addr",
+						Usage:    "the address of ethereum chain",
+						Value:    "http://localhost:8545",
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:     "key_path",
+						Usage:    "the ethereum account private key path",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "abi_path",
+						Usage:    "the path of solidity contract abi file",
+						Required: true,
+					},
 				},
-				&cli.StringFlag{
-					Name:     "key_path",
-					Usage:    "the ethereum account private key path",
-					Required: true,
-				},
-				&cli.StringFlag{
-					Name:     "password",
-					Usage:    "the ethereum account password",
-					Value:    "",
-					Required: false,
-				},
-				&cli.StringFlag{
-					Name:     "abi_path",
-					Usage:    "the path of solidity contract abi file",
-					Required: true,
-				},
+				Action: invoke,
 			},
-			Action: invoke,
 		},
-	},
+	}
 }
 
 func deploy(ctx *cli.Context) error {
 	etherAddr := ctx.String("ether_addr")
 	keyPath := ctx.String("key_path")
 	codePath := ctx.String("code_path")
-	password := ctx.String("password")
 
-	etherCli, privateKey, err := helper(etherAddr, keyPath, password)
+	etherCli, privateKey, err := helper(etherAddr, keyPath)
 	if err != nil {
 		return err
 	}
@@ -151,7 +140,6 @@ func invoke(ctx *cli.Context) error {
 	etherAddr := ctx.String("ether_addr")
 	keyPath := ctx.String("key_path")
 	abiPath := ctx.String("abi_path")
-	password := ctx.String("password")
 
 	if ctx.NArg() < 2 {
 		return fmt.Errorf("invoke contract must include address and function")
@@ -170,7 +158,7 @@ func invoke(ctx *cli.Context) error {
 		return err
 	}
 
-	etherCli, privateKey, err := helper(etherAddr, keyPath, password)
+	etherCli, privateKey, err := helper(etherAddr, keyPath)
 	if err != nil {
 		return err
 	}
@@ -253,7 +241,7 @@ func invoke(ctx *cli.Context) error {
 	return nil
 }
 
-func helper(etherAddr, keyPath, password string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
+func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
 	etherCli, err := ethclient.Dial(etherAddr)
 	if err != nil {
 		return nil, nil, err
@@ -263,7 +251,7 @@ func helper(etherAddr, keyPath, password string) (*ethclient.Client, *ecdsa.Priv
 	if err != nil {
 		return nil, nil, err
 	}
-	unlockedKey, err := keystore.DecryptKey(keyByte, password)
+	unlockedKey, err := keystore.DecryptKey(keyByte, "")
 	if err != nil {
 		return nil, nil, err
 	}
