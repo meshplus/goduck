@@ -42,6 +42,12 @@ var contractCMD = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
+					Name:     "password",
+					Usage:    "the ethereum account password",
+					Value:    "",
+					Required: false,
+				},
+				&cli.StringFlag{
 					Name:     "code_path",
 					Usage:    "the path of solidity contract",
 					Required: true,
@@ -65,6 +71,12 @@ var contractCMD = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
+					Name:     "password",
+					Usage:    "the ethereum account password",
+					Value:    "",
+					Required: false,
+				},
+				&cli.StringFlag{
 					Name:     "abi_path",
 					Usage:    "the path of solidity contract abi file",
 					Required: true,
@@ -79,8 +91,9 @@ func deploy(ctx *cli.Context) error {
 	etherAddr := ctx.String("ether_addr")
 	keyPath := ctx.String("key_path")
 	codePath := ctx.String("code_path")
+	password := ctx.String("password")
 
-	etherCli, privateKey, err := helper(etherAddr, keyPath)
+	etherCli, privateKey, err := helper(etherAddr, keyPath, password)
 	if err != nil {
 		return err
 	}
@@ -138,6 +151,7 @@ func invoke(ctx *cli.Context) error {
 	etherAddr := ctx.String("ether_addr")
 	keyPath := ctx.String("key_path")
 	abiPath := ctx.String("abi_path")
+	password := ctx.String("password")
 
 	if ctx.NArg() < 2 {
 		return fmt.Errorf("invoke contract must include address and function")
@@ -156,7 +170,7 @@ func invoke(ctx *cli.Context) error {
 		return err
 	}
 
-	etherCli, privateKey, err := helper(etherAddr, keyPath)
+	etherCli, privateKey, err := helper(etherAddr, keyPath, password)
 	if err != nil {
 		return err
 	}
@@ -239,7 +253,7 @@ func invoke(ctx *cli.Context) error {
 	return nil
 }
 
-func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
+func helper(etherAddr, keyPath, password string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
 	etherCli, err := ethclient.Dial(etherAddr)
 	if err != nil {
 		return nil, nil, err
@@ -249,7 +263,7 @@ func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, er
 	if err != nil {
 		return nil, nil, err
 	}
-	unlockedKey, err := keystore.DecryptKey(keyByte, "")
+	unlockedKey, err := keystore.DecryptKey(keyByte, password)
 	if err != nil {
 		return nil, nil, err
 	}
