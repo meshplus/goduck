@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/meshplus/goduck/cmd/goduck/ethereum"
-	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,8 +31,6 @@ func main() {
 		getVersionCMD(),
 		GetInitCMD(),
 		GetStatusCMD(),
-		fabric.FabricContractCMD(),
-		ethereum.EtherContractCMD(),
 		keyCMD(),
 		bitxhubCMD(),
 		pierCMD,
