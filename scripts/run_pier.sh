@@ -16,7 +16,7 @@ function printHelp() {
   echo "      - 'down' - clear a new pier"
   echo "    -t <mode> - pier type (default \"fabric\")"
   echo "    -r <pier_root> - pier repo path (default \".pier_fabric\")"
-  echo "    -v <pier_version> - pier version (default \"v1.0.0\")"
+  echo "    -v <pier_version> - pier version (default \"v1.1.0-rc1\")"
   echo "    -b <bitxhub_addr> - bitxhub addr(default \"localhost:60011\")"
   echo "  run_pier.sh -h (print this message)"
 }
@@ -26,11 +26,11 @@ function prepare() {
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
     if [ "${SYSTEM}" == "Linux" ]; then
-      tar xf pier-linux-amd64.tar.gz
+      tar xf pier_linux_amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
     elif [ "${SYSTEM}" == "Darwin" ]; then
-      tar xf pier-macos-x86-64.tar.gz
-      install_name_tool -change @rpath/libwasmer.dylib "${PIER_PATH}"/libwasmer.dylib "${PIER_PATH}"/pier
+      tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
+      install_name_tool -change @rpath/libwasmer.dylib $GODUCK_REPO_PATH/bin/libwasmer.dylib "${PIER_PATH}"/pier
     else
       print_red "Pier does not support the current operating system"
     fi
@@ -47,10 +47,10 @@ function prepare() {
     goduck pier config \
       --mode "relay" \
       --bitxhub "localhost:60011" \
-      --validators "0xe6f8c9cf6e38bd506fae93b73ee5e80cc8f73667" \
-      --validators "0x8374bb1e41d4a4bb4ac465e74caa37d242825efc" \
-      --validators "0x759801eab44c9a9bbc3e09cb7f1f85ac57298708" \
-      --validators "0xf2d66e2c27e93ff083ee3999acb678a36bb349bb" \
+      --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
+      --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
+      --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
+      --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "fabric" \
       --appchain-IP "127.0.0.1" \
       --target "${CONFIG_PATH}"
@@ -67,13 +67,19 @@ function prepare() {
 
     # copy plugins file to pier root
     print_blue "===> Copy fabric plugin"
-    if [ ! -f "${PIER_PATH}"/fabric1.4-client.so ]; then
+    if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
+      PLUGIN="fabric-client-1.4.so"
+    else
+      PLUGIN="fabric-client-1.4"
+    fi
+
+    if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for fabric first"
       exit 1
     fi
-    cp "${PIER_PATH}"/fabric1.4-client.so "${CONFIG_PATH}"/plugins/fabric-client-1.4.so
+    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
 
-    cd "${PIER_PATH}"
+    cd "${CONFIG_PATH}"
     if [ ! -f fabric_rule.wasm ]; then
       print_blue "===> Downloading fabric_rule.wasm"
       wget https://github.com/meshplus/bitxhub/blob/master/scripts/quick_start/fabric_rule.wasm
@@ -87,10 +93,10 @@ function prepare() {
     goduck pier config \
       --mode "relay" \
       --bitxhub "localhost:60011" \
-      --validators "0xe6f8c9cf6e38bd506fae93b73ee5e80cc8f73667" \
-      --validators "0x8374bb1e41d4a4bb4ac465e74caa37d242825efc" \
-      --validators "0x759801eab44c9a9bbc3e09cb7f1f85ac57298708" \
-      --validators "0xf2d66e2c27e93ff083ee3999acb678a36bb349bb" \
+      --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
+      --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
+      --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
+      --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "ethereum" \
       --appchain-IP "127.0.0.1" \
       --target "${CONFIG_PATH}"
@@ -99,11 +105,17 @@ function prepare() {
 
     # copy plugins file to pier root
     print_blue "===> Copy ethereum plugin"
-    if [ ! -f "${PIER_PATH}"/eth-client.so ]; then
+    if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
+      PLUGIN="eth-client.so"
+    else
+      PLUGIN="eth-client"
+    fi
+
+    if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for ethereum first"
       exit 1
     fi
-    cp "${PIER_PATH}"/eth-client.so "${CONFIG_PATH}"/plugins/eth-client.so
+    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
 
     cd "${CONFIG_PATH}"
     if [ ! -f ethereum_rule.wasm ]; then
@@ -128,7 +140,7 @@ function rule_deploy() {
 }
 
 function pier_docker_up() {
-  print_blue "===> Start pier of ${MODE} in ${TYPE}..."
+  print_blue "===> Start pier of ${MODE}-${VERSION} in ${TYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
     if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
       print_red "pier-${MODE} container already exists, please clean them first"
@@ -136,6 +148,7 @@ function pier_docker_up() {
     fi
 
     print_blue "===> Start a new pier-${MODE} container"
+    VERSION=${VERSION:1}
     if [ "$MODE" == "fabric" ]; then
       docker run -d --name pier-fabric \
         -v "${CURRENT_PATH}"/crypto-config:/root/.pier/fabric/crypto-config \
@@ -248,11 +261,7 @@ PIER_ROOT=.pier_fabric
 BITXHUB_ADDR="localhost:60011"
 MODE="fabric"
 TYPE="binary"
-VERSION="v1.0.0-rc1"
-
-CONFIG_PATH="${CURRENT_PATH}"/pier/${PIER_ROOT}
-PIER_PATH="${CURRENT_PATH}/bin/pier_${VERSION}"
-
+VERSION="v1.1.0-rc1"
 
 OPT=$1
 shift
@@ -280,6 +289,9 @@ while getopts "h?t:m:r:b:v:" opt; do
     ;;
   esac
 done
+
+CONFIG_PATH="${CURRENT_PATH}"/pier/${PIER_ROOT}
+PIER_PATH="${CURRENT_PATH}/bin/pier_${VERSION}"
 
 if [ "$OPT" == "up" ]; then
   pier_up

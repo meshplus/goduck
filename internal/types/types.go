@@ -24,8 +24,8 @@ const (
 
 	BitxhubUrlLinux = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_linux-amd64_%s.tar.gz"
 	BitxhubUrlMacOS = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_macos_x86_64_%s.tar.gz"
-	PierUrlLinux    = "https://github.com/meshplus/pier/releases/download/%s/pier-linux-amd64.tar.gz"
-	PierUrlMacOS    = "https://github.com/meshplus/pier/releases/download/%s/pier-macos-x86-64.tar.gz"
+	PierUrlLinux    = "https://github.com/meshplus/pier/releases/download/%s/pier_linux_amd64_%s.tar.gz"
+	PierUrlMacOS    = "https://github.com/meshplus/pier/releases/download/%s/pier_darwin_x86_64_%s.tar.gz"
 
 	Ethereum = "ethereum"
 	Fabric   = "fabric"
