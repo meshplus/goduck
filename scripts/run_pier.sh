@@ -59,11 +59,12 @@ function prepare() {
 
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
-    if [ ! -d "${CURRENT_PATH}"/crypto-config ]; then
+    if [ ! -d "${CRYPTOPATH}" ]; then
+      echo ${CRYPTOPATH}
       print_red "crypto-config not found, please start fabric network first"
       exit 1
     fi
-    cp -r "${CURRENT_PATH}"/crypto-config "${CONFIG_PATH}"/fabric/
+    cp -r "${CRYPTOPATH}" "${CONFIG_PATH}"/fabric/
 
     # copy plugins file to pier root
     print_blue "===> Copy fabric plugin"
@@ -262,11 +263,12 @@ BITXHUB_ADDR="localhost:60011"
 MODE="fabric"
 TYPE="binary"
 VERSION="v1.1.0-rc1"
+CRYPTOPATH="$HOME/crypto-config"
 
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:v:" opt; do
+while getopts "h?t:m:r:b:v:p:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -286,6 +288,9 @@ while getopts "h?t:m:r:b:v:" opt; do
     ;;
   v)
     VERSION=$OPTARG
+    ;;
+  p)
+    CRYPTOPATH=$OPTARG
     ;;
   esac
 done
