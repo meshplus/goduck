@@ -31,10 +31,9 @@ var pierCMD = &cli.Command{
 					Value:    types.Ethereum,
 				},
 				&cli.StringFlag{
-					Name:     "chain-type",
-					Usage:    "specify appchain up type, docker(default) or binary",
+					Name:     "cryptoPath",
+					Usage:    "path of crypto-config, only useful for fabric chain",
 					Required: false,
-					Value:    types.TypeDocker,
 				},
 				&cli.StringFlag{
 					Name:     "pier-type",
@@ -59,12 +58,6 @@ var pierCMD = &cli.Command{
 					Usage:    "specify appchain type, ethereum(default) or fabric",
 					Required: false,
 					Value:    types.Ethereum,
-				},
-				&cli.BoolFlag{
-					Name:     "pier-only",
-					Usage:    "stop pier only or stop pier with its appchain",
-					Required: false,
-					Value:    true,
 				},
 			},
 			Action: pierStop,
@@ -147,9 +140,13 @@ var pierCMD = &cli.Command{
 
 func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
-	chainUpType := ctx.String("chain-type")
+	cryptoPath := ctx.String("cryptoPath")
 	pierUpType := ctx.String("pier-type")
 	version := ctx.String("version")
+
+	if chainType == "fabric" && cryptoPath == "" {
+		return fmt.Errorf("start fabric pier need crypto-config path")
+	}
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -171,27 +168,25 @@ func pierStart(ctx *cli.Context) error {
 	}
 
 	if pierUpType == types.TypeBinary {
-		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s", version))) {
+		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s/pier", version))) {
 			if err := downloadPierBinary(repoRoot, version); err != nil {
 				return fmt.Errorf("download pier binary error:%w", err)
 			}
 		}
 	}
 
-	// start pier with specific appchain
-	return pier.StartPier(repoRoot, chainType, chainUpType, pierUpType, version)
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version)
 }
 
 func pierStop(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
-	isPierOnly := ctx.Bool("pier-only")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	return pier.StopPier(repoRoot, chainType, isPierOnly)
+	return pier.StopPier(repoRoot, chainType)
 }
 
 func pierClean(ctx *cli.Context) error {
