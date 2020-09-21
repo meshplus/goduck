@@ -1,6 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -13,8 +18,16 @@ func playgroundCMD() *cli.Command {
 		Usage: "Set up and experience interchain system smoothly",
 		Subcommands: []*cli.Command{
 			{
-				Name:   "start",
-				Usage:  "Start a demo interchain system",
+				Name:  "start",
+				Usage: "Start a demo interchain system",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "version",
+						Usage:    "version of the demo interchain system",
+						Value:    "v1.0.0-rc1",
+						Required: false,
+					},
+				},
 				Action: dockerUp,
 			},
 			{
@@ -32,12 +45,29 @@ func playgroundCMD() *cli.Command {
 }
 
 func dockerUp(ctx *cli.Context) error {
+	version := ctx.String("version")
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Bitxhub) {
+		return fmt.Errorf("unsupport verison")
+	}
+
 	args := []string{types.QuickStartScript, "up"}
+	args = append(args, version)
 	return utils.ExecuteShell(args, repoRoot)
 }
 
