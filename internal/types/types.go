@@ -18,6 +18,7 @@ const (
 	PierScript       = "run_pier.sh"
 	QuickStartScript = "quick_start.sh"
 	InfoScript       = "info.sh"
+	Prometheus       = "prometheus.sh"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
