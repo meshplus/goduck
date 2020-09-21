@@ -1,19 +1,13 @@
 #!/usr/bin/env bash
 
 set -e
+source x.sh
 
 CURRENT_PATH=$(pwd)
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
-
-function print_blue() {
-  printf "${BLUE}%s${NC}\n" "$1"
-}
-
-function print_red() {
-  printf "${RED}%s${NC}\n" "$1"
-}
+QUICK_PATH="${CURRENT_PATH}/docker/quick_start"
 
 function printHelp() {
   print_blue "Usage:  "
@@ -27,6 +21,12 @@ function printHelp() {
 }
 
 function docker-compose-up() {
+  version=${VERSION:1}
+  quickConfig=$QUICK_PATH/quick_start.yml
+  x_replace "s/bitxhub-solo:1.0.0-rc1/bitxhub-solo:${version}/g" "${quickConfig}"
+  x_replace "s/pier-ethereum:1.0.0-rc1/pier-ethereum:${version}/g" "${quickConfig}"
+  x_replace "s/ethereum:1.0.0/ethereum:${version%-*}/g" "${quickConfig}"
+
   if [ ! "$(docker network ls -q -f name=quick_start_default)" ]; then
     print_blue "======> Start the demo service...."
     docker-compose -f ./docker/quick_start/quick_start.yml up
@@ -83,6 +83,7 @@ function interchainTransfer() {
 }
 
 MODE=$1
+VERSION=$2
 
 if [ "$MODE" == "up" ]; then
   docker-compose-up
