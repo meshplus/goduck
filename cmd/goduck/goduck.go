@@ -40,6 +40,7 @@ func main() {
 		pierCMD,
 		playgroundCMD(),
 		infoCMD(),
+		prometheusCMD(),
 	}
 
 	err := app.Run(os.Args)
