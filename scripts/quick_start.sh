@@ -8,6 +8,7 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 QUICK_PATH="${CURRENT_PATH}/docker/quick_start"
+PROM_PATH="${CURRENT_PATH}/docker/prometheus"
 
 function printHelp() {
   print_blue "Usage:  "
@@ -29,10 +30,16 @@ function docker-compose-up() {
 
   if [ ! "$(docker network ls -q -f name=quick_start_default)" ]; then
     print_blue "======> Start the demo service...."
-    docker-compose -f ./docker/quick_start/quick_start.yml up
+    docker-compose -f ./docker/quick_start/quick_start.yml up -d
+    sleep 3
+    curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","basicAuth":false}'
+    curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json
   else
     print_blue "======> Restart the demo service...."
-    docker-compose -f ./docker/quick_start/quick_start.yml restart
+    docker-compose -f ./docker/quick_start/quick_start.yml restart -d
+    sleep 3
+    curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","basicAuth":false}'
+    curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json
   fi
 }
 
