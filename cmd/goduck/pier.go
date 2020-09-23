@@ -46,6 +46,11 @@ var pierCMD = &cli.Command{
 					Value: "v1.1.0-rc1",
 					Usage: "pier version",
 				},
+				&cli.StringFlag{
+					Name:  "pprof-port",
+					Value: "44550",
+					Usage: "pier pprof port, only useful for binary",
+				},
 			},
 			Action: pierStart,
 		},
@@ -143,6 +148,7 @@ func pierStart(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	pierUpType := ctx.String("pier-type")
 	version := ctx.String("version")
+	port := ctx.String("pprof-port")
 
 	if chainType == "fabric" && cryptoPath == "" {
 		return fmt.Errorf("start fabric pier need crypto-config path")
@@ -175,7 +181,7 @@ func pierStart(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version)
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, port)
 }
 
 func pierStop(ctx *cli.Context) error {

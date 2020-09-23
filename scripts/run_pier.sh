@@ -26,7 +26,7 @@ function prepare() {
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
     if [ "${SYSTEM}" == "Linux" ]; then
-      tar xf pier_linux_amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
+      tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
     elif [ "${SYSTEM}" == "Darwin" ]; then
       tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
@@ -54,8 +54,7 @@ function prepare() {
       --appchain-type "fabric" \
       --appchain-IP "127.0.0.1" \
       --target "${CONFIG_PATH}"
-
-    mkdir -p "${CONFIG_PATH}"/plugins
+    x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
 
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
@@ -65,9 +64,11 @@ function prepare() {
       exit 1
     fi
     cp -r "${CRYPTOPATH}" "${CONFIG_PATH}"/fabric/
+    cp "${CONFIG_PATH}"/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem "${CONFIG_PATH}"/fabric/fabric.validators
 
     # copy plugins file to pier root
     print_blue "===> Copy fabric plugin"
+    mkdir -p "${CONFIG_PATH}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="fabric-client-1.4.so"
     else
@@ -101,11 +102,11 @@ function prepare() {
       --appchain-type "ethereum" \
       --appchain-IP "127.0.0.1" \
       --target "${CONFIG_PATH}"
-
-    mkdir -p "${CONFIG_PATH}"/plugins
+    x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
 
     # copy plugins file to pier root
     print_blue "===> Copy ethereum plugin"
+    mkdir -p "${CONFIG_PATH}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="eth-client.so"
     else
@@ -124,6 +125,10 @@ function prepare() {
       wget https://github.com/meshplus/pier-client-ethereum/blob/master/config/validating.wasm
       mv validating.wasm ethereum_rule.wasm
     fi
+  fi
+
+  if [[ "${VERSION}" != "v1.0.0-rc1" && "${VERSION}" != "v1.0.0" ]]; then
+    mv "${CONFIG_PATH}"/plugins/"${PLUGIN}" "${CONFIG_PATH}"/plugins/appchain_plugin
   fi
 }
 
@@ -181,8 +186,7 @@ function pier_binary_up() {
     appchain_register chainA fabric chainA-description 1.4.3 fabric/fabric.validators
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy fabric
-    cd "${CURRENT_PATH}"
-    export CONFIG_PATH="${CONFIG_PATH}"/fabric
+    export START_PATH="${CONFIG_PATH}" && export CONFIG_PATH="${CONFIG_PATH}"/fabric
   fi
 
   if [ "$MODE" == "ethereum" ]; then
@@ -190,14 +194,14 @@ function pier_binary_up() {
     appchain_register chainB ether chainB-description 1.9.13 ethereum/ether.validators
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy ethereum
-    cd "${CURRENT_PATH}"
-    export CONFIG_PATH="${CONFIG_PATH}"/ether
+    export START_PATH="${CONFIG_PATH}"
   fi
 
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
-  nohup "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" start >/dev/null 2>&1 &
+  nohup "${PIER_PATH}"/pier --repo "${START_PATH}" start >/dev/null 2>&1 &
   echo $! >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
   print_green "===> Start pier successfully!!!"
+  echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}.addr"
 }
 
 function pier_up() {
@@ -245,7 +249,7 @@ function pier_clean() {
 
   if [ -d "${CONFIG_PATH}" ]; then
     echo "remove $MODE pier configure"
-    rm -r "${CONFIG_PATH}"
+    rm -r "${CONFIG_PATH}" ${CURRENT_PATH}/pier/pier-${MODE}.addr
   else
     echo "pier-$MODE configure is not existed"
   fi
@@ -264,11 +268,12 @@ MODE="fabric"
 TYPE="binary"
 VERSION="v1.1.0-rc1"
 CRYPTOPATH="$HOME/crypto-config"
+PORT="44550"
 
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:v:p:" opt; do
+while getopts "h?t:m:r:b:v:c:p:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -289,13 +294,16 @@ while getopts "h?t:m:r:b:v:p:" opt; do
   v)
     VERSION=$OPTARG
     ;;
-  p)
+  c)
     CRYPTOPATH=$OPTARG
+    ;;
+  p)
+    PORT=$OPTARG
     ;;
   esac
 done
 
-CONFIG_PATH="${CURRENT_PATH}"/pier/${PIER_ROOT}
+CONFIG_PATH="${CURRENT_PATH}"/pier/.pier_${MODE}
 PIER_PATH="${CURRENT_PATH}/bin/pier_${VERSION}"
 
 if [ "$OPT" == "up" ]; then
