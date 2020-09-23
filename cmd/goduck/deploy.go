@@ -54,9 +54,14 @@ func deployCMD() *cli.Command {
 						Usage: "configuration mode, one of direct or relay",
 					},
 					&cli.StringFlag{
+						Name:  "pprof-port",
+						Value: "44550",
+						Usage: "pier pprof port",
+					},
+					&cli.StringFlag{
 						Name:     "chain",
 						Usage:    "specify appchain type, ethereum or fabric (default: \"ethereum\")",
-						Required: true,
+						Required: false,
 					},
 					&cli.StringFlag{
 						Name:     "cryptoPath",
@@ -222,6 +227,7 @@ func deployPier(ctx *cli.Context) error {
 	}
 
 	mode := ctx.String("mode")
+	pprof := ctx.String("pprof-port")
 	chain := ctx.String("chain")
 	cryptoPath := ctx.String("cryptoPath")
 	if chain == "fabric" {
@@ -256,7 +262,7 @@ func deployPier(ctx *cli.Context) error {
 	who := fmt.Sprintf("%s@%s", username, ip)
 	target := fmt.Sprintf("%s:~/", who)
 
-	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, peers, port, id, cryptoPath)
+	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, peers, port, id, cryptoPath, pprof)
 	if err != nil {
 		return err
 	}
@@ -281,8 +287,8 @@ func deployPier(ctx *cli.Context) error {
 
 func pierStartRemote(who string, chain string) error {
 	color.Blue("===> Start pier of %s\n", chain)
-	err := sh.Command("ssh", who,
-		fmt.Sprintf("nohup $HOME/pier/pier --repo $HOME/.pier_%s start >/dev/null 2>&1 &", chain)).Run()
+	err := sh.
+		Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && export CONFIG_PATH=$HOME/.pier_fabric/fabric && nohup $HOME/pier/pier --repo $HOME/.pier_%s start >/dev/null 2>&1 &", chain)).Start()
 	if err != nil {
 		return err
 	}
@@ -294,7 +300,7 @@ func pierStartRemote(who string, chain string) error {
 func ruleDeploy(who string, chain string) error {
 	color.Blue("====> Deploy rule in bitxhub\n")
 	err := sh.Command("ssh", who,
-		fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/%s_rule.wasm", chain, chain, chain, chain)).Run()
+		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/%s_rule.wasm", chain, chain, chain, chain)).Run()
 	if err != nil {
 		return err
 	}
@@ -314,7 +320,7 @@ func appchainRegister(who, chain string) error {
 	}
 
 	err := sh.Command("ssh", who,
-		fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s appchain register "+
+		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s appchain register "+
 			"--name chain-%s "+
 			"--type %s "+
 			"--desc chain-%s-description "+
@@ -328,7 +334,7 @@ func appchainRegister(who, chain string) error {
 	return nil
 }
 
-func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, id int, cryptoPath string) error {
+func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, id int, cryptoPath, pprof string) error {
 	configPath := filepath.Join(repoRoot, "config")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
@@ -392,7 +398,10 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	if err != nil {
 		return err
 	}
-	err = sh.Command("ssh", who, fmt.Sprintf("cd $HOME/pier && tar xf %s -C $HOME/pier --strip-components 1", filename)).Run()
+	err = sh.
+		Command("ssh", who, fmt.Sprintf("cd $HOME/pier && tar xf %s -C $HOME/pier --strip-components 1", filename)).
+		Command("ssh", who, fmt.Sprintf("sed -i 's/pprof = 44550/pprof = %s/g' $HOME/.pier_%s/pier.toml", pprof, chain)).
+		Run()
 	if err != nil {
 		return err
 	}
@@ -412,16 +421,29 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			chainPlugin = "eth-client"
 		}
 	}
+
 	err = sh.
-		Command("ssh", who, "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/pier").
 		Command("ssh", who, fmt.Sprintf("mkdir -p $HOME/.pier_%s/plugins && cp $HOME/pier/%s $HOME/.pier_%s/plugins/", chain, chainPlugin, chain)).
 		Run()
 	if err != nil {
 		return err
 	}
 
+	if version != "v1.0.0" && version != "v1.0.0-rc1" {
+		err = sh.Command("ssh", who, fmt.Sprintf("mv $HOME/.pier_%s/plugins/%s $HOME/.pier_%s/plugins/appchain_plugin", chain, chainPlugin, chain)).Run()
+		if err != nil {
+			return err
+		}
+	}
+
 	if chain == "fabric" {
-		err = sh.Command("ssh", who, fmt.Sprintf("cp -r %s $HOME/.pier_%s/fabric/", cryptoPath, chain)).Run()
+		err = sh.
+			Command("ssh", who, fmt.Sprintf("cp -r %s $HOME/.pier_%s/fabric/", cryptoPath, chain)).
+			Run()
+		if err != nil {
+			return err
+		}
+		err = sh.Command("ssh", who, fmt.Sprintf("cp $HOME/.pier_%s/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem $HOME/.pier_%s/fabric/fabric.validators", chain, chain)).Run()
 		if err != nil {
 			return err
 		}
