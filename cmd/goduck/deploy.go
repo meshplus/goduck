@@ -157,7 +157,7 @@ func deployBitXHub(ctx *cli.Context) error {
 
 	ips := strings.Split(ctx.String("ips"), ",")
 
-	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, "")
+	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, version)
 
 	if err := generator.InitConfig(); err != nil {
 		return err
@@ -186,19 +186,22 @@ func deployBitXHub(ctx *cli.Context) error {
 		who := fmt.Sprintf("%s@%s", username, ip)
 		target := fmt.Sprintf("%s:~/", who)
 
-		err = sh.
-			Command("scp", "-r",
-				fmt.Sprintf("%s/node%d", dir, idx+1),
-				fmt.Sprintf("%s%s", target, "build")).
-			Command("scp", filePath, target).
+		err = sh.Command("ssh", who, fmt.Sprintf("mkdir -p ~/.bitxhub/node%d", idx+1)).
+			Command("scp", filePath, target).Run()
+		if err != nil {
+			return err
+		}
+
+		err = sh.Command("scp", "-r",
+			fmt.Sprintf("%s/node%d", dir, idx+1),
+			fmt.Sprintf("%s%s", target, ".bitxhub")).
 			Run()
 		if err != nil {
 			return err
 		}
 
 		err = sh.
-			Command("ssh", who, "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build").
-			Command("ssh", who, fmt.Sprintf("tar xzf %s && mkdir -p build/node%d/plugins && cp build/raft.so build/node%d/plugins", filename, idx+1, idx+1)).Run()
+			Command("ssh", who, fmt.Sprintf("tar xzf %s -C ~/.bitxhub --strip-components 1 && mkdir -p .bitxhub/node%d/plugins && cp .bitxhub/raft.so .bitxhub/node%d/plugins", filename, idx+1, idx+1)).Run()
 		if err != nil {
 			return err
 		}
@@ -207,9 +210,8 @@ func deployBitXHub(ctx *cli.Context) error {
 	color.Blue("====> Run\n")
 	for idx, ip := range ips {
 		who := fmt.Sprintf("%s@%s", username, ip)
-		err = sh.Command("ssh", who, "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/build").
-			Command("ssh", who,
-				fmt.Sprintf("cd ~/build && nohup bitxhub --repo node%d start &", idx+1)).Run()
+		err = sh.Command("ssh", who,
+			fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.bitxhub && cd ~/.bitxhub && nohup ./bitxhub --repo=node%d start >/dev/null 2>&1 &", idx+1)).Start()
 		if err != nil {
 			return err
 		} else {
