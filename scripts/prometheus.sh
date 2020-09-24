@@ -40,7 +40,7 @@ function prometheus_up() {
   curl -X POST \
   http://${GRAFANA_HOST}:3000/api/datasources \
   -H "Content-Type:application/json" \
-  -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","basicAuth":false}'
+  -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy", "isDefault":true}'
 
   echo ""
   print_blue "====> Create host dashboard"
