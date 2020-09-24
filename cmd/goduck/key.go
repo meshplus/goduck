@@ -43,8 +43,9 @@ func keyCMD() *cli.Command {
 				Action: showKey,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "path",
-						Usage: "Node Path",
+						Name:     "path",
+						Usage:    "Node Path",
+						Required: true,
 					},
 				},
 			},
@@ -119,12 +120,8 @@ func generateKey(ctx *cli.Context) error {
 }
 
 func showKey(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
-	if err != nil {
-		return err
-	}
-
-	keyPath := filepath.Join(repoRoot, repo.KeyName)
+	nodePath := ctx.String("path")
+	keyPath := filepath.Join(nodePath, repo.KeyName)
 	data, err := ioutil.ReadFile(keyPath)
 	if err != nil {
 		return err
