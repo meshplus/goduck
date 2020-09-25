@@ -52,10 +52,10 @@ function docker-compose-up() {
   fi
 
   sleep 3
-  docker-compose-check
-  curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}'
-  curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json
+  curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}' 2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
+  curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json 2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
   echo ""
+  docker-compose-check
 }
 
 function docker-compose-check() {
@@ -99,6 +99,26 @@ function docker-compose-check() {
     print_red "===> Fail to start grafana!!!"
   else
     print_green "===> Start grafana successfully!!!"
+  fi
+  
+  if [[ `cat $PROM_PATH/datasources1.log | grep '"message":"Datasource added"'` ]]; then
+    print_green "===> Add Create dashboards to grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/datasources2.log
+    cat $PROM_PATH/datasources1.log
+    echo ""
+    print_red "===> Fail to add datasource!!!"
+  fi
+
+  if [[ `cat $PROM_PATH/dashboards1.log | grep '"status":"success"'` ]]; then
+    print_green "===> Create dashboards of grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/dashboards2.log
+    cat $PROM_PATH/dashboards1.log
+    echo ""
+    print_red "===> Fail to create dashboards!!!"
   fi
 }
 
