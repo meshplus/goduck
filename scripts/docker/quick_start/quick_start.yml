@@ -30,6 +30,7 @@ services:
   pier-ethereum-1:
     restart: always
     container_name: pier-ethereum-1
+    command: --add-host host.docker.internal:0.0.0.0
     image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
     depends_on:
       - bitxhub_solo
@@ -37,6 +38,7 @@ services:
   pier-ethereum-2:
     restart: always
     container_name: pier-ethereum-2
+    command: --add-host host.docker.internal:0.0.0.0
     image: hub-mirror.c.163.com/meshplus/pier-ethereum:1.0.0-rc1
     depends_on:
       - bitxhub_solo
@@ -45,6 +47,8 @@ services:
       - ./ethereum.toml:/root/.pier/ether/ethereum.toml
       - ./key.json:/root/.pier/key.json
   prom:
+    restart: always
+    container_name: prometheus
     image: prom/prometheus:v2.0.0
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -52,6 +56,8 @@ services:
     ports:
       - 9090:9090
   grafana:
+    restart: always
+    container_name: grafana
     image: grafana/grafana
     ports:
       - 3000:3000
