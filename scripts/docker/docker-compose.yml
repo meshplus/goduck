@@ -5,12 +5,12 @@ services:
     container_name: bitxhub_node1
     image: meshplus/bitxhub:latest
     volumes:
-      - ../bithub/node1/api:/root/.bitxhub/api
-      - ../bithub/node1/bitxhub.toml:/root/.bitxhub/bitxhub.toml
-      - ../bithub/node1/genesis.json:/root/.bitxhub/genesis.json
-      - ../bithub/node1/network.toml:/root/.bitxhub/network.toml
-      - ../bithub/node1/order.toml:/root/.bitxhub/order.toml
-      - ../bithub/node1/certs:/root/.bitxhub/certs
+      - ../bitxhub/node1/api:/root/.bitxhub/api
+      - ../bitxhub/node1/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ../bitxhub/node1/genesis.json:/root/.bitxhub/genesis.json
+      - ../bitxhub/node1/network.toml:/root/.bitxhub/network.toml
+      - ../bitxhub/node1/order.toml:/root/.bitxhub/order.toml
+      - ../bitxhub/node1/certs:/root/.bitxhub/certs
     networks:
       p2p:
         ipv4_address: 172.19.0.2
@@ -24,12 +24,12 @@ services:
     container_name: bitxhub_node2
     image: meshplus/bitxhub:latest
     volumes:
-      - ../bithub/node2/api:/root/.bitxhub/api
-      - ../bithub/node2/bitxhub.toml:/root/.bitxhub/bitxhub.toml
-      - ../bithub/node2/genesis.json:/root/.bitxhub/genesis.json
-      - ../bithub/node2/network.toml:/root/.bitxhub/network.toml
-      - ../bithub/node2/order.toml:/root/.bitxhub/order.toml
-      - ../bithub/node2/certs:/root/.bitxhub/certs
+      - ../bitxhub/node2/api:/root/.bitxhub/api
+      - ../bitxhub/node2/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ../bitxhub/node2/genesis.json:/root/.bitxhub/genesis.json
+      - ../bitxhub/node2/network.toml:/root/.bitxhub/network.toml
+      - ../bitxhub/node2/order.toml:/root/.bitxhub/order.toml
+      - ../bitxhub/node2/certs:/root/.bitxhub/certs
     networks:
       p2p:
         ipv4_address: 172.19.0.3
@@ -43,12 +43,12 @@ services:
     container_name: bitxhub_node3
     image: meshplus/bitxhub:latest
     volumes:
-      - ../bithub/node3/api:/root/.bitxhub/api
-      - ../bithub/node3/bitxhub.toml:/root/.bitxhub/bitxhub.toml
-      - ../bithub/node3/genesis.json:/root/.bitxhub/genesis.json
-      - ../bithub/node3/network.toml:/root/.bitxhub/network.toml
-      - ../bithub/node3/order.toml:/root/.bitxhub/order.toml
-      - ../bithub/node3/certs:/root/.bitxhub/certs
+      - ../bitxhub/node3/api:/root/.bitxhub/api
+      - ../bitxhub/node3/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ../bitxhub/node3/genesis.json:/root/.bitxhub/genesis.json
+      - ../bitxhub/node3/network.toml:/root/.bitxhub/network.toml
+      - ../bitxhub/node3/order.toml:/root/.bitxhub/order.toml
+      - ../bitxhub/node3/certs:/root/.bitxhub/certs
     networks:
       p2p:
         ipv4_address: 172.19.0.4
@@ -62,12 +62,12 @@ services:
     container_name: bitxhub_node4
     image: meshplus/bitxhub:latest
     volumes:
-      - ../bithub/node4/api:/root/.bitxhub/api
-      - ../bithub/node4/bitxhub.toml:/root/.bitxhub/bitxhub.toml
-      - ../bithub/node4/genesis.json:/root/.bitxhub/genesis.json
-      - ../bithub/node4/network.toml:/root/.bitxhub/network.toml
-      - ../bithub/node4/order.toml:/root/.bitxhub/order.toml
-      - ../bithub/node4/certs:/root/.bitxhub/certs
+      - ../bitxhub/node4/api:/root/.bitxhub/api
+      - ../bitxhub/node4/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ../bitxhub/node4/genesis.json:/root/.bitxhub/genesis.json
+      - ../bitxhub/node4/network.toml:/root/.bitxhub/network.toml
+      - ../bitxhub/node4/order.toml:/root/.bitxhub/order.toml
+      - ../bitxhub/node4/certs:/root/.bitxhub/certs
     networks:
       p2p:
         ipv4_address: 172.19.0.5
