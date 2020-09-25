@@ -55,7 +55,7 @@ function prometheus_up() {
   echo ""
   prometheus_check
   print_green "Start prometheus successful!"
-  open "http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes"
+  print_green 'You can access to "http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes" to get prometheus information.'
 }
 
 function prometheus_check() {
