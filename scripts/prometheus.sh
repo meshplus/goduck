@@ -40,21 +40,46 @@ function prometheus_up() {
   curl -X POST \
   http://${GRAFANA_HOST}:3000/api/datasources \
   -H "Content-Type:application/json" \
-  -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy", "isDefault":true}'
+  -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy", "isDefault":true}' \
+  2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
 
-  echo ""
   print_blue "====> Create host dashboard"
   curl -X POST \
   http://${GRAFANA_HOST}:3000/api/dashboards/db \
   -H 'Accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'cache-control: no-cache' \
-  -d @$PROM_PATH/Go_Processes.json
+  -d @$PROM_PATH/Go_Processes.json \
+  2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
 
   echo ""
+  prometheus_check
   print_green "Start prometheus successful!"
+  print_green 'You can access to "http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes" to get prometheus information.'
+}
 
-  open "http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes"
+function prometheus_check() {
+  if [[ `cat $PROM_PATH/datasources1.log | grep '"message":"Datasource added"'` ]]; then
+    print_green "===> Add Create dashboards to grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/datasources2.log
+    cat $PROM_PATH/datasources1.log
+    echo ""
+    print_red "===> Fail to add datasource!!!"
+    exit 0
+  fi
+
+  if [[ `cat $PROM_PATH/dashboards1.log | grep '"status":"success"'` ]]; then
+    print_green "===> Create dashboards of grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/dashboards2.log
+    cat $PROM_PATH/dashboards1.log
+    echo ""
+    print_red "===> Fail to create dashboards!!!"
+    exit 0
+  fi
 }
 
 function prometheus_down() {

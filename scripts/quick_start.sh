@@ -9,6 +9,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 QUICK_PATH="${CURRENT_PATH}/docker/quick_start"
 PROM_PATH="${CURRENT_PATH}/docker/prometheus"
+SYSTEM=$(uname -s)
 
 function printHelp() {
   print_blue "Usage:  "
@@ -22,11 +23,25 @@ function printHelp() {
 }
 
 function docker-compose-up() {
+  if [ -z $VERSION ]; then
+      print_red "Please specify version！"
+      exit 0
+  fi
   version=${VERSION:1}
   quickConfig=$QUICK_PATH/quick_start.yml
   x_replace "s/bitxhub-solo:1.0.0-rc1/bitxhub-solo:${version}/g" "${quickConfig}"
   x_replace "s/pier-ethereum:1.0.0-rc1/pier-ethereum:${version}/g" "${quickConfig}"
   x_replace "s/ethereum:1.0.0/ethereum:${version%-*}/g" "${quickConfig}"
+
+  if [ $SYSTEM == "Darwin" ]; then
+    localIP=`ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\."`
+  elif [ $SYSTEM == "Linux" ]; then
+    localIP=`hostname -I | awk '{print $1}'`
+  else
+    print_red "Bitxhub does not support the current operating system"
+    exit 0
+  fi
+  x_replace "s/host.docker.internal:0.0.0.0/host.docker.internal:$localIP/g" $QUICK_PATH/quick_start.yml
 
   if [ ! "$(docker network ls -q -f name=quick_start_default)" ]; then
     print_blue "======> Start the demo service...."
@@ -37,8 +52,74 @@ function docker-compose-up() {
   fi
 
   sleep 3
-    curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}'
-    curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json
+  curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}' 2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
+  curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json 2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
+  echo ""
+  docker-compose-check
+}
+
+function docker-compose-check() {
+  if [[ -z `docker ps -qf "name=bitxhub_solo"` ]]; then
+    print_red "===> Fail to start bitxhub_solo!!!"
+  else
+    print_green "===> Start bitxhub_solo successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=ethereum-1"` ]]; then
+    print_red "===> Fail to start ethereum-1!!!"
+  else
+    print_green "===> Start ethereum-1 successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=ethereum-2"` ]]; then
+    print_red "===> Fail to start ethereum-2!!!"
+  else
+    print_green "===> Start ethereum-2 successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=pier-ethereum-1"` ]]; then
+    print_red "===> Fail to start pier-ethereum-1!!!"
+  else
+    print_green "===> Start pier-ethereum-1 successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=pier-ethereum-2"` ]]; then
+    print_red "===> Fail to start pier-ethereum-2!!!"
+  else
+    print_green "===> Start pier-ethereum-2 successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=prometheus"` ]]; then
+    print_red "===> Fail to start prometheus!!!"
+  else
+    print_green "===> Start prometheus successfully!!!"
+  fi
+
+  if [[ -z `docker ps -qf "name=grafana"` ]]; then
+    print_red "===> Fail to start grafana!!!"
+  else
+    print_green "===> Start grafana successfully!!!"
+  fi
+  
+  if [[ `cat $PROM_PATH/datasources1.log | grep '"message":"Datasource added"'` ]]; then
+    print_green "===> Add Create dashboards to grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/datasources2.log
+    cat $PROM_PATH/datasources1.log
+    echo ""
+    print_red "===> Fail to add datasource!!!"
+  fi
+
+  if [[ `cat $PROM_PATH/dashboards1.log | grep '"status":"success"'` ]]; then
+    print_green "===> Create dashboards of grafana successfully!!!"
+  else
+    echo ""
+    cat $PROM_PATH/dashboards2.log
+    cat $PROM_PATH/dashboards1.log
+    echo ""
+    print_red "===> Fail to create dashboards!!!"
+  fi
 }
 
 function docker-compose-down() {
