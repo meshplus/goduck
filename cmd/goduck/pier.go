@@ -32,7 +32,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:     "cryptoPath",
-					Usage:    "path of crypto-config, only useful for fabric chain",
+					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
 					Required: false,
 				},
 				&cli.StringFlag{

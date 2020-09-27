@@ -59,8 +59,7 @@ function prepare() {
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
     if [ ! -d "${CRYPTOPATH}" ]; then
-      echo ${CRYPTOPATH}
-      print_red "crypto-config not found, please start fabric network first"
+      print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
       exit 1
     fi
     cp -r "${CRYPTOPATH}" "${CONFIG_PATH}"/fabric/
@@ -156,13 +155,28 @@ function pier_docker_up() {
     print_blue "===> Start a new pier-${MODE} container"
     VERSION=${VERSION:1}
     if [ "$MODE" == "fabric" ]; then
-      docker run -d --name pier-fabric \
-        -v "${CURRENT_PATH}"/crypto-config:/root/.pier/fabric/crypto-config \
+      if [ ! -d "${CRYPTOPATH}" ]; then
+        print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
+        exit 1
+      fi
+      if [ $SYSTEM == "Linux" ]; then
+        docker run -d --name pier-fabric \
+        --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+        -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
+      else
+        docker run -d --name pier-fabric \
+        -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
+        meshplus/pier-fabric:"${VERSION}"
+      fi
     elif [ "$MODE" == "ethereum" ]; then
       print_blue "===> Wait for ethereum-node container to start for seconds..."
       sleep 5
-      docker run -d --name pier-ethereum meshplus/pier-ethereum:"${VERSION}"
+      if [ $SYSTEM == "Linux" ]; then
+          docker run -d --name pier-ethereum --add-host host.docker.internal:`hostname -I | awk '{print $1}'` meshplus/pier-ethereum:"${VERSION}"
+      else
+          docker run -d --name pier-ethereum meshplus/pier-ethereum:"${VERSION}"
+      fi
     else
       echo "Not supported mode"
     fi
@@ -171,7 +185,13 @@ function pier_docker_up() {
     exit 1
   fi
 
-  print_green "===> Start pier successfully!!!"
+  sleep 5
+  if [ -z `docker ps -qf "name=pier-$MODE"` ]; then
+    print_red "===> Fail to start pier!!!"
+  else
+    print_green "===> Start pier successfully!!!"
+  fi
+
 }
 
 function pier_binary_up() {
