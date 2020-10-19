@@ -67,8 +67,9 @@ function bitxhub_binary_solo() {
 }
 
 function bitxhub_docker_solo() {
-  if [[ -z "$(docker images -q meshplus/bitxhub-solo:latest 2>/dev/null)" ]]; then
-    docker pull meshplus/bitxhub-solo:latest
+  VERSION=${VERSION:1}
+  if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
+    docker pull meshplus/bitxhub-solo:$VERSION
   fi
 
   print_blue "Start bitxhub solo mode by docker"
@@ -83,7 +84,7 @@ function bitxhub_docker_solo() {
       -v "${CONFIG_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
       -v "${CONFIG_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
       -v "${CONFIG_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
-      meshplus/bitxhub-solo
+      meshplus/bitxhub-solo:$VERSION
   fi
 }
 
@@ -112,10 +113,12 @@ function bitxhub_binary_cluster() {
 }
 
 function bitxhub_docker_cluster() {
-  if [[ -z "$(docker images -q meshplus/bitxhub:latest 2>/dev/null)" ]]; then
-    docker pull meshplus/bitxhub:latest
+  VERSION=${VERSION:1}
+  if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
+    docker pull meshplus/bitxhub:$VERSION
   fi
   print_blue "Start bitxhub cluster mode by docker compose"
+  x_replace "s/bitxhub:latest/bitxhub:$VERSION/g" "${CURRENT_PATH}"/docker/docker-compose.yml
   docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
 }
 
