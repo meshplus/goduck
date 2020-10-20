@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cheynewallace/tabby"
+	"github.com/docker/docker/client"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
 	gops "github.com/shirou/gopsutil/process"
@@ -22,6 +24,13 @@ var processes = []string{
 	"ethereum/ethereum.pid",
 	"pier/pier-ethereum.pid",
 	"pier/pier-fabric.pid",
+}
+
+var containers = []string{
+	"bitxhub/bitxhub.cid",
+	"ethereum/ethereum.cid",
+	"pier/pier-ethereum.cid",
+	"pier/pier-fabric.cid",
 }
 
 func GetStatusCMD() *cli.Command {
@@ -41,6 +50,7 @@ func showStatus(ctx *cli.Context) error {
 	if !fileutil.Exist(repoRoot) {
 		return fmt.Errorf("please `goduck init` first")
 	}
+
 	var table [][]string
 	table = append(table, []string{"Name", "Component", "PID", "Status", "Created Time", "Args"})
 
@@ -51,6 +61,12 @@ func showStatus(ctx *cli.Context) error {
 		}
 	}
 
+	for _, con := range containers {
+		table, err = existContainer(filepath.Join(repoRoot, con), table)
+		if err != nil {
+			return err
+		}
+	}
 	PrintTable(table, true)
 	return nil
 }
@@ -111,6 +127,59 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 	}
 	return table, nil
 
+}
+
+func existContainer(cidPath string, table [][]string) ([][]string, error) {
+	if !fileutil.Exist(cidPath) {
+		return table, nil
+	}
+	fi, err := os.Open(cidPath)
+	if err != nil {
+		return table, err
+	}
+	defer fi.Close()
+
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return table, err
+	}
+
+	br := bufio.NewReader(fi)
+	for {
+		a, _, c := br.ReadLine()
+		if c == io.EOF {
+			break
+		}
+		cid := string(a)
+
+		containerInfo, err := cli.ContainerInspect(ctx, cid)
+		if err != nil {
+			return table, err
+		}
+
+		info, _, err := cli.ImageInspectWithRaw(ctx, containerInfo.Image[7:])
+		if err != nil {
+			return table, err
+		}
+
+		pos1 := strings.LastIndex(info.RepoTags[0], "/")
+		pos2 := strings.Index(info.RepoTags[0], "-")
+		if pos2 == -1 {
+			pos2 = len(info.RepoTags[0])
+		}
+		component := info.RepoTags[0][pos1+1 : pos2]
+
+		table = append(table, []string{
+			containerInfo.Name[1:],
+			component,
+			cid,
+			containerInfo.State.Status,
+			containerInfo.Created,
+			containerInfo.Args[0],
+		})
+	}
+	return table, nil
 }
 
 // PrintTable accepts a matrix of strings and print them as ASCII table to terminal

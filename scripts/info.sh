@@ -28,20 +28,22 @@ function printHelp() {
 }
 
 function showBxhInfo() {
-  if [ -d ${BITXHUB_PATH}/nodeSolo ]; then
-    if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
-      print_blue "======> Show address of solo bitxhub node started in binary"
-      bitxhub key address --path ${BITXHUB_PATH}/nodeSolo/certs/node.priv
+  if [ -e ${BITXHUB_PATH}/bitxhub.pid ]; then
+    if [ -d ${BITXHUB_PATH}/nodeSolo ]; then
+      if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
+        print_blue "======> Show address of solo bitxhub node started in binary"
+        bitxhub key address --path ${BITXHUB_PATH}/nodeSolo/certs/node.priv
+      fi
     fi
-  fi
 
-  nodes=$(ls ${BITXHUB_PATH} | grep node | grep -v nodeSolo || true)
-  if [ -n "$nodes" ]; then
-    if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
-      print_blue "======> Show address of each bitxhub node started in binary"
-      for n in $nodes ; do
-        bitxhub key address --path ${BITXHUB_PATH}/$n/certs/node.priv
-      done
+    nodes=$(ls ${BITXHUB_PATH} | grep node | grep -v nodeSolo || true)
+    if [ -n "$nodes" ]; then
+      if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
+        print_blue "======> Show address of each bitxhub node started in binary"
+        for n in $nodes ; do
+          bitxhub key address --path ${BITXHUB_PATH}/$n/certs/node.priv
+        done
+      fi
     fi
   fi
 
@@ -65,33 +67,25 @@ function showBxhInfo() {
 function showPierInfo() {
   if [ "$(docker ps -q -f name=pier-ethereum)" ]; then
     print_blue "======> info about piers of ethereum in docker"
-    piers=$(docker ps -q -f name=pier-ethereum)
-    for pier in ${piers[@]}; do
-      print_blue "pier id of ethereum is as follow: "
-      docker exec $pier pier --repo=/root/.pier id
-    done
+    cat ${CURRENT_PATH}/pier/pier-ethereum-docker.addr
   fi
 
   if [ "$(docker ps -q -f name=pier-fabric)" ]; then
     print_blue "======> info about piers of fabric in docker"
-    piers=$(docker ps -q -f name=pier-fabric)
-    for pier in $piers; do
-      print_blue "pier id of fabric is as follow: "
-      docker exec $pier pier --repo=/root/.pier id
-    done
+    cat ${CURRENT_PATH}/pier/pier-fabric-docker.addr
   fi
 
   if [ -d ${PIER_PATH}/.pier_ethereum ]; then
     if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
       print_blue "======> info about piers of ethereum in binary"
-      cat ${CURRENT_PATH}/pier/pier-ethereum.addr
+      cat ${CURRENT_PATH}/pier/pier-ethereum-binary.addr
     fi
   fi
 
   if [ -d ${PIER_PATH}/.pier_fabric ]; then
     if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
       print_blue "======> info about piers of fabric in binary"
-      cat ${CURRENT_PATH}/pier/pier-fabric.addr
+      cat ${CURRENT_PATH}/pier/pier-fabric-binary.addr
     fi
   fi
 }
