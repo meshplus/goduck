@@ -174,7 +174,7 @@ func pierStart(ctx *cli.Context) error {
 	}
 
 	if pierUpType == types.TypeBinary {
-		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s/pier", version))) {
+		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
 			if err := downloadPierBinary(repoRoot, version); err != nil {
 				return fmt.Errorf("download pier binary error:%w", err)
 			}
@@ -208,7 +208,7 @@ func pierClean(ctx *cli.Context) error {
 }
 
 func downloadPierBinary(repoPath string, version string) error {
-	path := fmt.Sprintf("pier_%s", version)
+	path := fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)
 	root := filepath.Join(repoPath, "bin", path)
 	if !fileutil.Exist(root) {
 		err := os.MkdirAll(root, 0755)

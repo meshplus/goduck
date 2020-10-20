@@ -12,7 +12,7 @@ TYPE=$3
 MODE=$4
 N=$5
 SYSTEM=$(uname -s)
-BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${VERSION}"
+BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_${VERSION}"
 
 function printHelp() {
   print_blue "Usage:  "
@@ -59,10 +59,10 @@ function bitxhub_binary_solo() {
   PID=$!
   sleep 1
   if [ -n "$(ps -p ${PID} -o pid=)" ]; then
-    echo "===> Start bitxhub solo node successful"
+    print_green "===> Start bitxhub solo successful"
     echo $! >>"${CONFIG_PATH}"/bitxhub.pid
   else
-    print_red "===> Start bitxhub solo node fail"
+    print_red "===> Start bitxhub solo fail"
   fi
 }
 
@@ -86,6 +86,15 @@ function bitxhub_docker_solo() {
       -v "${CONFIG_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
       meshplus/bitxhub-solo:$VERSION
   fi
+
+  sleep 1
+  if [ "$(docker container ls | grep -c bitxhub_solo)" -ge 1 ]; then
+    print_green "===> Start bitxhub solo successful"
+    CID=`docker container ls | grep bitxhub_solo`
+    echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
+  else
+    print_red "===> Start bitxhub solo fail"
+  fi
 }
 
 function bitxhub_binary_cluster() {
@@ -103,7 +112,7 @@ function bitxhub_binary_cluster() {
     PID=$!
     sleep 1
     if [ -n "$(ps -p ${PID} -o pid=)" ]; then
-      echo "===> Start bitxhub solo node successful"
+      print_green "===> Start bitxhub solo node successful"
       echo $! >>"${CONFIG_PATH}"/bitxhub.pid
     else
       print_red "===> Start bitxhub solo node fail"
@@ -120,6 +129,17 @@ function bitxhub_docker_cluster() {
   print_blue "Start bitxhub cluster mode by docker compose"
   x_replace "s/bitxhub:latest/bitxhub:$VERSION/g" "${CURRENT_PATH}"/docker/docker-compose.yml
   docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
+
+  sleep 1
+  if [ "$(docker container ls | grep -c bitxhub:$VERSION)" -ge 4 ]; then
+    print_green "===> Start bitxhub cluster successful"
+    for i in {1..4}; do
+      CID=`docker container ls | grep bitxhub_node$i`
+      echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
+    done
+  else
+    print_red "===> Start bitxhub cluster fail"
+  fi
 }
 
 function bitxhub_down() {
@@ -139,16 +159,18 @@ function bitxhub_down() {
     rm "${CONFIG_PATH}"/bitxhub.pid
   fi
 
-  if [ "$(docker container ls | grep -c bitxhub_node)" -ge 1 ]; then
-    docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml stop
-    echo "bitxhub docker cluster stop"
+ if [ -a "${CONFIG_PATH}"/bitxhub.cid ]; then
+    list=$(cat "${CONFIG_PATH}"/bitxhub.cid)
+    for cid in $list; do
+      docker kill "$cid"
+      if [ $? -eq 0 ]; then
+        echo "container id:$cid exit"
+      else
+        print_red "container exit fail"
+      fi
+    done
+    rm "${CONFIG_PATH}"/bitxhub.cid
   fi
-
-  if [ "$(docker container ls | grep -c bitxhub_solo)" -ge 1 ]; then
-    docker stop bitxhub_solo
-    echo "bitxhub docker solo stop"
-  fi
-
 }
 
 function bitxhub_up() {

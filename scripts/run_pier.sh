@@ -30,7 +30,7 @@ function prepare() {
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
     elif [ "${SYSTEM}" == "Darwin" ]; then
       tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
-      install_name_tool -change @rpath/libwasmer.dylib $GODUCK_REPO_PATH/bin/libwasmer.dylib "${PIER_PATH}"/pier
+      install_name_tool -change @rpath/libwasmer.dylib "${PIER_PATH}"/libwasmer.dylib "${PIER_PATH}"/pier
     else
       print_red "Pier does not support the current operating system"
     fi
@@ -147,7 +147,8 @@ function rule_deploy() {
 function pier_docker_up() {
   print_blue "===> Start pier of ${MODE}-${VERSION} in ${TYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
-    if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
+#    if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
+    if [ "$(docker ps -aq -f name=pier-${MODE})" ]; then
       print_red "pier-${MODE} container already exists, please clean them first"
       exit 1
     fi
@@ -178,7 +179,8 @@ function pier_docker_up() {
           docker run -d --name pier-ethereum meshplus/pier-ethereum:"${VERSION}"
       fi
     else
-      echo "Not supported mode"
+      print_red "Not supported mode"
+      exit 1
     fi
   else
     print_red "pier-${MODE} container already running, please stop them first"
@@ -187,9 +189,12 @@ function pier_docker_up() {
 
   sleep 5
   if [ -z `docker ps -qf "name=pier-$MODE"` ]; then
-    print_red "===> Fail to start pier!!!"
+    print_red "===> Start pier fail"
   else
-    print_green "===> Start pier successfully!!!"
+    print_green "===> Start pier successfully"
+    CID=`docker ps -qf "name=pier-$MODE"`
+    echo $CID >"${CURRENT_PATH}/pier/pier-${MODE}.cid"
+    echo `docker exec $CID pier --repo=/root/.pier id` >"${CURRENT_PATH}/pier/pier-${MODE}-docker.addr"
   fi
 
 }
@@ -219,9 +224,16 @@ function pier_binary_up() {
 
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
   nohup "${PIER_PATH}"/pier --repo "${START_PATH}" start >/dev/null 2>&1 &
-  echo $! >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
-  print_green "===> Start pier successfully!!!"
-  echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}.addr"
+  PID=$!
+
+  sleep 1
+  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
+    print_green "===> Start pier successfully!!!"
+    echo $! >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
+    echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
+  else
+    print_red "===> Start pier fail"
+  fi
 }
 
 function pier_up() {
@@ -240,23 +252,37 @@ function pier_down() {
   print_blue "===> Kill $MODE pier in binary"
   cd "${CURRENT_PATH}"/pier
   if [ -a pier-$MODE.pid ]; then
-    pid=$(cat pier-$MODE.pid)
-    kill "$pid"
-    if [ $? -eq 0 ]; then
-      echo "pier-$MODE pid:$pid exit"
-    else
-      print_red "pier exit fail, try use kill -9 $pid"
-    fi
+    list=$(cat pier-$MODE.pid)
+    for pid in $list; do
+      kill "$pid"
+      if [ $? -eq 0 ]; then
+        echo "pier-$MODE pid:$pid exit"
+      else
+        print_red "pier exit fail, try use kill -9 $pid"
+      fi
+    done
     rm pier-$MODE.pid
+    rm ${CURRENT_PATH}/pier/pier-${MODE}-binary.addr
   else
     echo "pier-$MODE binary is not running"
   fi
 
   print_blue "===> Kill $MODE pier in docker"
-  if [ "$(docker ps -q -f name=pier-$MODE)" ]; then
-    docker stop pier-$MODE
+  cd "${CURRENT_PATH}"/pier
+  if [ -a pier-$MODE.cid ]; then
+    list=$(cat pier-$MODE.cid)
+    for cid in $list; do
+      docker kill "$cid"
+      if [ $? -eq 0 ]; then
+        echo "pier-$MODE container id:$cid exit"
+      else
+        print_red "pier exit fail"
+      fi
+    done
+    rm pier-$MODE.cid
+    rm ${CURRENT_PATH}/pier/pier-${MODE}-docker.addr
   else
-    echo "pier-$MODE container is not running"
+    echo "pier-$MODE docker is not running"
   fi
 }
 
@@ -269,7 +295,7 @@ function pier_clean() {
 
   if [ -d "${CONFIG_PATH}" ]; then
     echo "remove $MODE pier configure"
-    rm -r "${CONFIG_PATH}" ${CURRENT_PATH}/pier/pier-${MODE}.addr
+    rm -r "${CONFIG_PATH}"
   else
     echo "pier-$MODE configure is not existed"
   fi
@@ -324,7 +350,7 @@ while getopts "h?t:m:r:b:v:c:p:" opt; do
 done
 
 CONFIG_PATH="${CURRENT_PATH}"/pier/.pier_${MODE}
-PIER_PATH="${CURRENT_PATH}/bin/pier_${VERSION}"
+PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
 
 if [ "$OPT" == "up" ]; then
   pier_up
