@@ -168,7 +168,7 @@ func startBitXHub(ctx *cli.Context) error {
 
 func AdjustVersion(version string, release []string) bool {
 	for _, bxhRelease := range release {
-		if version ==  bxhRelease {
+		if version == bxhRelease {
 			return true
 		}
 	}
@@ -189,7 +189,7 @@ func cleanBitXHub(ctx *cli.Context) error {
 }
 
 func downloadBinary(repoPath string, version string) error {
-	path := fmt.Sprintf("bitxhub_%s", version)
+	path := fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)
 	root := filepath.Join(repoPath, "bin", path)
 	if !fileutil.Exist(root) {
 		err := os.MkdirAll(root, 0755)

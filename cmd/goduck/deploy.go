@@ -143,13 +143,6 @@ func deployBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport bitxhub verison")
 	}
 
-	target := filepath.Join(repoRoot, "config")
-
-	err = os.MkdirAll(target, os.ModePerm)
-	if err != nil {
-		return err
-	}
-
 	dir, err := ioutil.TempDir("", "bitxhub")
 	if err != nil {
 		return err
@@ -163,7 +156,7 @@ func deployBitXHub(ctx *cli.Context) error {
 		return err
 	}
 
-	binPath := filepath.Join(repoRoot, "bin")
+	binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/bitxhub_linux_%s", version))
 
 	err = os.MkdirAll(binPath, os.ModePerm)
 	if err != nil {
@@ -210,9 +203,17 @@ func deployBitXHub(ctx *cli.Context) error {
 	color.Blue("====> Run\n")
 	for idx, ip := range ips {
 		who := fmt.Sprintf("%s@%s", username, ip)
+
 		err = sh.Command("ssh", who,
 			fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.bitxhub && cd ~/.bitxhub && nohup ./bitxhub --repo=node%d start >/dev/null 2>&1 &", idx+1)).Start()
 		if err != nil {
+			return err
+		}
+
+		err = sh.Command("ssh", who,
+			fmt.Sprintf("sleep 1 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} >> ~/.bitxhub/bitxhub.PID", idx+1)).Start()
+		if err != nil {
+			color.Red("====> Start bitxhub node%d fail\n", idx+1)
 			return err
 		} else {
 			color.Green("====> Start bitxhub node%d successful\n", idx+1)
@@ -337,13 +338,13 @@ func appchainRegister(who, chain string) error {
 }
 
 func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, id int, cryptoPath, pprof string) error {
-	configPath := filepath.Join(repoRoot, "config")
+	configPath := filepath.Join(repoRoot, "pier_deploy")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	binPath := filepath.Join(repoRoot, "bin")
+	binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/pier_linux_%s", version))
 	err = os.MkdirAll(binPath, os.ModePerm)
 	if err != nil {
 		return err
