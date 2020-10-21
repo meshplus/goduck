@@ -33,6 +33,11 @@ var containers = []string{
 	"pier/pier-fabric.cid",
 }
 
+var modes = []string{
+	"binary",
+	"docker",
+}
+
 func GetStatusCMD() *cli.Command {
 	return &cli.Command{
 		Name:   "status",
@@ -52,7 +57,7 @@ func showStatus(ctx *cli.Context) error {
 	}
 
 	var table [][]string
-	table = append(table, []string{"Name", "Component", "PID", "Status", "Created Time", "Args"})
+	table = append(table, []string{"Name", "Component", "Mode", "PID/ContanierID", "Status", "Created Time", "Args"})
 
 	for _, pro := range processes {
 		table, err = existProcess(filepath.Join(repoRoot, pro), table)
@@ -118,6 +123,7 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 		table = append(table, []string{
 			nodeName,
 			name,
+			modes[0],
 			strconv.Itoa(pid),
 			status,
 			timeFormat,
@@ -140,7 +146,7 @@ func existContainer(cidPath string, table [][]string) ([][]string, error) {
 	defer fi.Close()
 
 	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	mycli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return table, err
 	}
@@ -153,12 +159,12 @@ func existContainer(cidPath string, table [][]string) ([][]string, error) {
 		}
 		cid := string(a)
 
-		containerInfo, err := cli.ContainerInspect(ctx, cid)
+		containerInfo, err := mycli.ContainerInspect(ctx, cid)
 		if err != nil {
 			return table, err
 		}
 
-		info, _, err := cli.ImageInspectWithRaw(ctx, containerInfo.Image[7:])
+		info, _, err := mycli.ImageInspectWithRaw(ctx, containerInfo.Image[7:])
 		if err != nil {
 			return table, err
 		}
@@ -173,6 +179,7 @@ func existContainer(cidPath string, table [][]string) ([][]string, error) {
 		table = append(table, []string{
 			containerInfo.Name[1:],
 			component,
+			modes[1],
 			cid,
 			containerInfo.State.Status,
 			containerInfo.Created,

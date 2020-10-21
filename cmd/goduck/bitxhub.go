@@ -25,11 +25,11 @@ type Release struct {
 func bitxhubCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "bitxhub",
-		Usage: "start or stop BitXHub nodes",
+		Usage: "Start or stop BitXHub nodes",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "start",
-				Usage: "Start bitxhub nodes",
+				Usage: "Start BitXHub nodes",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
@@ -49,19 +49,19 @@ func bitxhubCMD() *cli.Command {
 					&cli.StringFlag{
 						Name:  "version,v",
 						Value: "v1.1.0-rc1",
-						Usage: "bitxhub version",
+						Usage: "BitXHub version",
 					},
 				},
 				Action: startBitXHub,
 			},
 			{
 				Name:   "stop",
-				Usage:  "Stop bitxhub nodes",
+				Usage:  "Stop BitXHub nodes",
 				Action: stopBitXHub,
 			},
 			{
 				Name:   "clean",
-				Usage:  "Clean bitxhub nodes",
+				Usage:  "Clean BitXHub nodes",
 				Action: cleanBitXHub,
 			},
 			{
@@ -85,7 +85,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringSliceFlag{
 						Name:  "ips",
-						Usage: "nodes' IP, use 127.0.0.1 for all nodes by default",
+						Usage: "nodes' IP, use 127.0.0.1 for all nodes by default, e.g. --ips \"127.0.0.1\" --ips \"127.0.0.2\" --ips \"127.0.0.3\" --ips \"127.0.0.4\" ",
 					},
 					&cli.StringFlag{
 						Name:  "target",
@@ -95,7 +95,7 @@ func bitxhubCMD() *cli.Command {
 					&cli.StringFlag{
 						Name:  "version,v",
 						Value: "v1.1.0-rc1",
-						Usage: "bitxhub version",
+						Usage: "BitXHub version",
 					},
 				},
 				Action: generateBitXHubConfig,
@@ -143,7 +143,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	if !AdjustVersion(version, release.Bitxhub) {
-		return fmt.Errorf("unsupport bitxhub verison")
+		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
 	bxhConfig := filepath.Join(repoPath, "bitxhub")

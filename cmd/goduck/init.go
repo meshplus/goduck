@@ -22,7 +22,7 @@ const (
 func GetInitCMD() *cli.Command {
 	return &cli.Command{
 		Name:   "init",
-		Usage:  "init config home for goduck",
+		Usage:  "Init config home for GoDuck",
 		Action: Initialize,
 	}
 }
@@ -37,7 +37,7 @@ func Initialize(ctx *cli.Context) error {
 		repoRoot = root
 	}
 	if fileutil.Exist(repoRoot) {
-		fmt.Println("goduck configuration file already exists")
+		fmt.Println("GoDuck configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
 		input := bufio.NewScanner(os.Stdin)
 		input.Scan()

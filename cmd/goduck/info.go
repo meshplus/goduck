@@ -14,12 +14,12 @@ func infoCMD() *cli.Command {
 		Subcommands: []*cli.Command{
 			{
 				Name:   "list",
-				Usage:  "list all basic info about interchain system",
+				Usage:  "List all basic info about interchain system",
 				Action: showInfo,
 			},
 			{
 				Name:  "bitxhub",
-				Usage: "list all basic info about bitxhub",
+				Usage: "List all basic info about BitXHub",
 				Action: func(ctx *cli.Context) error {
 					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 					if err != nil {
@@ -30,7 +30,7 @@ func infoCMD() *cli.Command {
 			},
 			{
 				Name:  "pier",
-				Usage: "list all basic info about piers",
+				Usage: "List all basic info about piers",
 				Action: func(ctx *cli.Context) error {
 					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 					if err != nil {

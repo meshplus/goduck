@@ -14,15 +14,15 @@ import (
 func prometheusCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "prometheus",
-		Usage: "start or stop prometheus",
+		Usage: "Start or stop prometheus",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "start",
-				Usage: "start prometheus to monitoring bitxhub",
+				Usage: "Start prometheus to monitoring BitXHub",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "addrs",
-						Usage:    "address of bitxhub nodes",
+						Usage:    "address of BitXHub nodes",
 						Value:    "host.docker.internal:40011 host.docker.internal:40012 host.docker.internal:40013 host.docker.internal:40014",
 						Required: false,
 					},
@@ -31,16 +31,16 @@ func prometheusCMD() *cli.Command {
 			},
 			{
 				Name:   "stop",
-				Usage:  "stop prometheus",
+				Usage:  "Stop prometheus",
 				Action: stopProm,
 			},
 			{
 				Name:  "restart",
-				Usage: "restart prometheus",
+				Usage: "Restart prometheus",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "addrs",
-						Usage:    "address of bitxhub nodes",
+						Usage:    "address of BitXHub nodes",
 						Value:    "host.docker.internal:40011 host.docker.internal:40012 host.docker.internal:40013 host.docker.internal:40014",
 						Required: false,
 					},
