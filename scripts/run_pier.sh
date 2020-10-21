@@ -300,11 +300,25 @@ function pier_clean() {
     echo "pier-$MODE configure is not existed"
   fi
 
+  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE.pid ]; then
+    rm "${CURRENT_PATH}"/pier/pier-$MODE.pid
+  fi
+  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE-binary.addr ]; then
+    rm "${CURRENT_PATH}"/pier/pier-$MODE-binary.addr
+  fi
+
   print_blue "===> Clean $MODE pier in docker"
   if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
     docker rm pier-$MODE
   else
     echo "pier-$MODE container is not existed"
+  fi
+
+  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE.cid ]; then
+    rm "${CURRENT_PATH}"/pier/pier-$MODE.cid
+  fi
+  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE-docker.addr ]; then
+    rm "${CURRENT_PATH}"/pier/pier-$MODE-docker.addr
   fi
 }
 

@@ -234,6 +234,13 @@ function bitxhub_clean() {
     docker rm bitxhub_solo
     echo "bitxhub docker solo clean"
   fi
+
+  if [ -e "${CONFIG_PATH}"/bitxhub.pid ]; then
+    rm "${CONFIG_PATH}"/bitxhub.pid
+  fi
+  if [ -e "${CONFIG_PATH}"/bitxhub.cid ]; then
+    rm "${CONFIG_PATH}"/bitxhub.cid
+  fi
 }
 
 function bitxhub_restart() {
