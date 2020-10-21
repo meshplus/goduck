@@ -77,12 +77,6 @@ var pierCMD = &cli.Command{
 					Required: false,
 					Value:    types.Ethereum,
 				},
-				&cli.BoolFlag{
-					Name:     "pier-only",
-					Usage:    "clean pier only or clean pier with its appchain",
-					Required: false,
-					Value:    true,
-				},
 			},
 			Action: pierClean,
 		},
@@ -197,14 +191,13 @@ func pierStop(ctx *cli.Context) error {
 
 func pierClean(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
-	isPierOnly := ctx.Bool("pier-only")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	return pier.CleanPier(repoRoot, chainType, isPierOnly)
+	return pier.CleanPier(repoRoot, chainType)
 }
 
 func downloadPierBinary(repoPath string, version string) error {

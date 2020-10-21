@@ -1,10 +1,6 @@
 package pier
 
 import (
-	"fmt"
-
-	"github.com/meshplus/goduck/cmd/goduck/ethereum"
-	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
 )
@@ -23,23 +19,12 @@ func StopPier(repoRoot, chainType string) error {
 	return nil
 }
 
-func CleanPier(repoRoot, chainType string, pierOnly bool) error {
+func CleanPier(repoRoot, chainType string) error {
 	// clean pier first, then appchain
 	args := []string{types.PierScript, "clean", "-m", chainType}
 	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 
-	if pierOnly {
-		return nil
-	}
-
-	switch chainType {
-	case types.Fabric:
-		return fabric.Stop(repoRoot)
-	case types.Ethereum:
-		return ethereum.StopEthereum(repoRoot)
-	default:
-		return fmt.Errorf("chain type %s is not supported", chainType)
-	}
+	return nil
 }
