@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -26,9 +25,8 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/libp2p/go-libp2p-core/peer"
 	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
-	ecdsa2 "github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
+	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
-	key2 "github.com/meshplus/bitxhub-kit/key"
 	"github.com/meshplus/bitxhub/pkg/cert"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
@@ -687,35 +685,13 @@ func existDir(path string) (bool, error) {
 }
 
 func generatePierKey(target string) (crypto2.PrivateKey, error) {
-	privKey, err := ecdsa2.GenerateKey(ecdsa2.Secp256r1)
+	privKey, err := asym.GenerateKeyPair(crypto2.Secp256k1)
 	if err != nil {
 		return nil, fmt.Errorf("generate key: %w", err)
 	}
 
-	keyBytes, err := privKey.Bytes()
-	if err != nil {
-		return nil, fmt.Errorf("get private key bytes: %w", err)
-	}
-
-	cipher := hex.EncodeToString(keyBytes)
-	address, err := privKey.PublicKey().Address()
-	if err != nil {
-		return nil, fmt.Errorf("get public key address: %w", err)
-	}
-
-	key := &key2.Key{
-		Address:    address,
-		PrivateKey: cipher,
-		Encrypted:  false,
-	}
-
-	ret, err := json.MarshalIndent(key, "", "	")
-	if err != nil {
-		return nil, fmt.Errorf("marshal key: %w", err)
-	}
-
 	keyPath := filepath.Join(target, repo.KeyName)
-	if err = ioutil.WriteFile(keyPath, ret, os.ModePerm); err != nil {
+	if err := asym.StorePrivateKey(privKey, keyPath, repo.KeyPassword); err != nil {
 		return nil, fmt.Errorf("persist key: %s", err)
 	}
 
