@@ -28,6 +28,8 @@ const (
 	KeyName = "key.json"
 	// Pier config name
 	PierConfigName = "pier.toml"
+	// KeyPassword
+	KeyPassword = "bitxhub"
 )
 
 func PathRoot() (string, error) {

@@ -17,8 +17,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
-	github.com/elastic/gosigar v0.10.5 // indirect
-	github.com/ethereum/go-ethereum v1.9.13
+	github.com/ethereum/go-ethereum v1.9.18
 	github.com/fatih/color v1.7.0
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
@@ -28,8 +27,8 @@ require (
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
 	github.com/libp2p/go-libp2p-core v0.5.7-0.20200520175250-264788628f5a
-	github.com/meshplus/bitxhub v1.0.0-rc2
-	github.com/meshplus/bitxhub-kit v1.0.1-0.20200525112026-df2160653e23
+	github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
+	github.com/meshplus/bitxhub-kit v1.0.1-0.20200813112754-a341f7bc198d
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -52,3 +51,5 @@ require (
 )
 
 replace github.com/go-kit/kit => github.com/go-kit/kit v0.8.0
+
+replace github.com/meshplus/bitxhub => github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
