@@ -20,11 +20,11 @@ import (
 func deployCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "deploy",
-		Usage: "Deploy bitxhub and pier",
+		Usage: "Deploy BitXHub and pier",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "bitxhub",
-				Usage: "Deploy bitxhub to remote server.",
+				Usage: "Deploy BitXHub to remote server",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "ips",
@@ -38,7 +38,7 @@ func deployCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:     "version,v",
-						Usage:    "bitxhub version",
+						Usage:    "BitXHub version",
 						Required: true,
 					},
 				},
@@ -46,7 +46,7 @@ func deployCMD() *cli.Command {
 			},
 			{
 				Name:  "pier",
-				Usage: "Deploy pier to remote server.",
+				Usage: "Deploy pier to remote server",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "mode",
@@ -140,7 +140,7 @@ func deployBitXHub(ctx *cli.Context) error {
 	}
 
 	if !AdjustVersion(version, release.Bitxhub) {
-		return fmt.Errorf("unsupport bitxhub verison")
+		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
 	dir, err := ioutil.TempDir("", "bitxhub")
@@ -213,10 +213,10 @@ func deployBitXHub(ctx *cli.Context) error {
 		err = sh.Command("ssh", who,
 			fmt.Sprintf("sleep 1 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} >> ~/.bitxhub/bitxhub.PID", idx+1)).Start()
 		if err != nil {
-			color.Red("====> Start bitxhub node%d fail\n", idx+1)
+			color.Red("====> Start BitXHub node%d fail\n", idx+1)
 			return err
 		} else {
-			color.Green("====> Start bitxhub node%d successful\n", idx+1)
+			color.Green("====> Start BitXHub node%d successful\n", idx+1)
 		}
 	}
 
@@ -311,7 +311,7 @@ func ruleDeploy(who string, chain string) error {
 }
 
 func appchainRegister(who, chain string) error {
-	color.Blue("====> Register pier(%s) to bitxhub \n", chain)
+	color.Blue("====> Register pier(%s) to BitXHub \n", chain)
 
 	chainVersion := ""
 	if chain == "fabric" {
@@ -462,6 +462,6 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		Command("ssh", who, fmt.Sprintf("mv $HOME/pier/%s_rule.wasm $HOME/.pier_%s/%s/%s_rule.wasm", chain, chain, chain, chain)).
 		Run()
 
-	color.Green("====> Pier_root: $HOME/.pier_%s, bitxhub_addr: %s\n", chain, bitxhub)
+	color.Green("====> Pier_root: $HOME/.pier_%s, BitXHub_addr: %s\n", chain, bitxhub)
 	return nil
 }

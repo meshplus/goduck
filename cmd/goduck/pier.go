@@ -100,7 +100,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringSliceFlag{
 					Name:  "validators",
-					Usage: "BitXHub's validators, only useful in relay mode",
+					Usage: "BitXHub's validators, only useful in relay mode, e.g. --validators \"0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013\" --validators \"0x79a1215469FaB6f9c63c1816b45183AD3624bE34\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\"",
 				},
 				&cli.IntFlag{
 					Name:  "port",
@@ -109,7 +109,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringSliceFlag{
 					Name:  "peers",
-					Usage: "peers' address, only useful in direct mode",
+					Usage: "peers' address, only useful in direct mode, e.g. --peers ",
 				},
 				&cli.StringFlag{
 					Name:  "appchain-type",

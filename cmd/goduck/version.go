@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/meshplus/goduck/internal/repo"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/meshplus/goduck/internal/repo"
 
 	"github.com/meshplus/goduck"
 	"github.com/urfave/cli/v2"
@@ -12,17 +13,17 @@ import (
 
 func getVersionCMD() *cli.Command {
 	return &cli.Command{
-		Name:   "version",
-		Usage:  "Components version",
+		Name:  "version",
+		Usage: "Components version",
 		Subcommands: []*cli.Command{
 			{
-				Name: "all",
-				Usage: "all components version",
+				Name:   "all",
+				Usage:  "All components version",
 				Action: allVersion,
 			},
 			{
-				Name: "goduck",
-				Usage: "goduck version",
+				Name:   "goduck",
+				Usage:  "Goduck version",
 				Action: goduckVersion,
 			},
 		},
