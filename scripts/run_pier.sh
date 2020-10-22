@@ -6,6 +6,7 @@ CURRENT_PATH=$(pwd)
 GODUCK_REPO_PATH=~/.goduck
 PIER_CLIENT_FABRIC_VERSION=master
 PIER_CLIENT_ETHEREUM_VERSION=master
+typeset -l SYSTEM
 SYSTEM=$(uname -s)
 
 function printHelp() {
@@ -25,10 +26,10 @@ function prepare() {
   cd "${PIER_PATH}"
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
-    if [ "${SYSTEM}" == "Linux" ]; then
+    if [ "${SYSTEM}" == "linux" ]; then
       tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
-    elif [ "${SYSTEM}" == "Darwin" ]; then
+    elif [ "${SYSTEM}" == "darwin" ]; then
       tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       install_name_tool -change @rpath/libwasmer.dylib "${PIER_PATH}"/libwasmer.dylib "${PIER_PATH}"/pier
     else
@@ -160,7 +161,7 @@ function pier_docker_up() {
         print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
         exit 1
       fi
-      if [ $SYSTEM == "Linux" ]; then
+      if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-fabric \
         --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
@@ -173,7 +174,7 @@ function pier_docker_up() {
     elif [ "$MODE" == "ethereum" ]; then
       print_blue "===> Wait for ethereum-node container to start for seconds..."
       sleep 5
-      if [ $SYSTEM == "Linux" ]; then
+      if [ $SYSTEM == "linux" ]; then
           docker run -d --name pier-ethereum --add-host host.docker.internal:`hostname -I | awk '{print $1}'` meshplus/pier-ethereum:"${VERSION}"
       else
           docker run -d --name pier-ethereum meshplus/pier-ethereum:"${VERSION}"
