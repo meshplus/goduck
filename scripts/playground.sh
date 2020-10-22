@@ -11,6 +11,7 @@ VERSION=$2
 TYPE=$3
 MODE=$4
 N=$5
+typeset -l SYSTEM
 SYSTEM=$(uname -s)
 BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_${VERSION}"
 
@@ -27,11 +28,11 @@ function printHelp() {
 function binary_prepare() {
   cd "${BXH_PATH}"
   if [ ! -a "${BXH_PATH}"/bitxhub ]; then
-    if [ "${SYSTEM}" == "Linux" ]; then
+    if [ "${SYSTEM}" == "linux" ]; then
       tar xf bitxhub_linux-amd64_$VERSION.tar.gz
       cp ./build/* . && rm -r build
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"${BXH_PATH}"/
-    elif [ "${SYSTEM}" == "Darwin" ]; then
+    elif [ "${SYSTEM}" == "darwin" ]; then
       tar xf bitxhub_macos_x86_64_$VERSION.tar.gz
       cp ./build/* . && rm -r build
       install_name_tool -change @rpath/libwasmer.dylib "${BXH_PATH}"/libwasmer.dylib "${BXH_PATH}"/bitxhub
