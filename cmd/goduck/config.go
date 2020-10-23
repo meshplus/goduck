@@ -439,6 +439,28 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	target := ctx.String("target")
 	version := ctx.String("version")
 
+	repoPath, err := repo.PathRoot()
+	if err != nil {
+		return fmt.Errorf("parse repo path error:%w", err)
+	}
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Bitxhub) {
+		return fmt.Errorf("unsupport BitXHub verison")
+	}
+
 	return InitBitXHubConfig(typ, mode, target, num, ips, version)
 }
 
