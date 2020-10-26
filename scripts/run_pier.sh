@@ -6,8 +6,12 @@ CURRENT_PATH=$(pwd)
 GODUCK_REPO_PATH=~/.goduck
 PIER_CLIENT_FABRIC_VERSION=master
 PIER_CLIENT_ETHEREUM_VERSION=master
-typeset -l SYSTEM
 SYSTEM=$(uname -s)
+if [ $SYSTEM == "Linux" ]; then
+  SYSTEM="linux"
+elif [ $SYSTEM == "Darwin" ]; then
+  SYSTEM="darwin"
+fi
 
 function printHelp() {
   print_blue "Usage:  "

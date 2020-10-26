@@ -11,8 +11,12 @@ VERSION=$2
 TYPE=$3
 MODE=$4
 N=$5
-typeset -l SYSTEM
 SYSTEM=$(uname -s)
+if [ $SYSTEM == "Linux" ]; then
+  SYSTEM="linux"
+elif [ $SYSTEM == "Darwin" ]; then
+  SYSTEM="darwin"
+fi 
 BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_${VERSION}"
 
 function printHelp() {
