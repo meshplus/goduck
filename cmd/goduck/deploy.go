@@ -338,7 +338,7 @@ func appchainRegister(who, chain string) error {
 }
 
 func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, apiPort, pprof int, cryptoPath string) error {
-	configPath := filepath.Join(repoRoot, "pier_deploy")
+	configPath := filepath.Join(repoRoot, "pier_deploy/.")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
 		return err
@@ -392,6 +392,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	if err != nil {
 		return err
 	}
+	// The files needed for deployment are placed in the ~/pier folder, and the configuration folder for actual deployment is ~/.pier_${chaintype}.
 	err = sh.
 		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
 		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
@@ -450,7 +451,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			return err
 		}
 	} else if chain == "ethereum" {
-		err = sh.Command("ssh", who, "mv $HOME/.pier_ethereum/ethereum/ether.validators $HOME/.pier_ethereum/ethereum/ethereum.validators").Run()
+		err = sh.Command("ssh", who, "if [ ! -e $HOME/.pier_ethereum/ethereum/ethereum.validators ]; then mv $HOME/.pier_ethereum/ethereum/ether.validators $HOME/.pier_ethereum/ethereum/ethereum.validators; fi").Run()
 		if err != nil {
 			return err
 		}
