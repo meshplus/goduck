@@ -216,7 +216,7 @@ func deployBitXHub(ctx *cli.Context) error {
 			color.Red("====> Start BitXHub node%d fail\n", idx+1)
 			return err
 		} else {
-			color.Green("====> Start BitXHub node%d successful\n", idx+1)
+			color.Green("====> Start BitXHub node%d end\n", idx+1)
 		}
 	}
 
@@ -396,7 +396,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	err = sh.
 		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
 		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
-		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s", target, chain)).
+		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s/", target, chain)).
 		Command("scp", filePath, fmt.Sprintf("%spier/", target)).
 		Run()
 	if err != nil {
@@ -405,6 +405,12 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	err = sh.
 		Command("ssh", who, fmt.Sprintf("cd $HOME/pier && tar xf %s -C $HOME/pier --strip-components 1", filename)).
 		Run()
+	if err != nil {
+		return err
+	}
+
+	color.Blue("====> Update key\n")
+	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && mv $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json && rm -r $HOME/.pier_%s/tmp", chain, chain, chain, chain, chain, chain)).Run()
 	if err != nil {
 		return err
 	}
