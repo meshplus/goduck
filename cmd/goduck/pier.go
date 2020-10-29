@@ -127,9 +127,19 @@ var pierCMD = &cli.Command{
 					Usage: "where to put the generated configuration files",
 				},
 				&cli.IntFlag{
-					Name:  "ID",
-					Value: 0,
-					Usage: "specify Pier's ID which is in [0,9], cannot exist 2 or more Piers with same ID in one OS",
+					Name:  "pprof-port",
+					Value: 44550,
+					Usage: "peer's pprof port",
+				},
+				&cli.IntFlag{
+					Name:  "api-port",
+					Value: 8080,
+					Usage: "peer's api port",
+				},
+				&cli.StringFlag{
+					Name:  "version",
+					Value: "v1.1.0-rc1",
+					Usage: "pier version",
 				},
 			},
 			Action: generatePierConfig,

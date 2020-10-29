@@ -58,7 +58,8 @@ function prepare() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "fabric" \
       --appchain-IP "127.0.0.1" \
-      --target "${CONFIG_PATH}"
+      --target "${CONFIG_PATH}" \
+      --version "${VERSION}"
     x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
 
     # copy appchain crypto-config and modify config.yaml
@@ -105,7 +106,8 @@ function prepare() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "ethereum" \
       --appchain-IP "127.0.0.1" \
-      --target "${CONFIG_PATH}"
+      --target "${CONFIG_PATH}" \
+      --version "${VERSION}"
     x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
 
     # copy plugins file to pier root
