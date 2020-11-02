@@ -91,14 +91,16 @@ type PierConfigGenerator struct {
 	validators   []string
 	peers        []string
 	port         int
-	id           int
+	pprofPort    int
+	apiPort      int
+	version      string
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, version string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, version: version}
 }
 
-func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, id int) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, pprofPort, apiPort int, version string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
 		appchainType: appchainType,
@@ -108,7 +110,9 @@ func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target stri
 		validators:   validators,
 		peers:        peers,
 		port:         port,
-		id:           id,
+		pprofPort:    pprofPort,
+		apiPort:      apiPort,
+		version:      version,
 	}
 }
 
@@ -315,10 +319,15 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		peers += "\"" + fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/p2p/%s", p.port, pid) + "\",\n"
 	}
 
-	pluginFile := "fabric-client-1.4.so"
 	pluginConfig := p.appchainType
-	if p.appchainType == types.ChainTypeEther {
-		pluginFile = "eth-client.so"
+
+	pluginFile := "appchain_plugin"
+	if p.version == "v1.0.0" || p.version == "v1.0.0-rc1" {
+		if p.appchainType == types.ChainTypeEther {
+			pluginFile = "eth-client.so"
+		} else if p.appchainType == types.ChainTypeFabric {
+			pluginFile = "fabric-client-1.4.so"
+		}
 	}
 
 	data := struct {
@@ -328,8 +337,9 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		Peers        string
 		PluginFile   string
 		PluginConfig string
-		Id           int
-	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig, p.id}
+		PprofPort    int
+		ApiPort      int
+	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig, p.pprofPort, p.apiPort}
 
 	files := []string{
 		filepath.Join("pier", "api"),
@@ -420,10 +430,6 @@ func (p *PierConfigGenerator) ProcessParams() error {
 		return fmt.Errorf("invalid appchain type, choose one of ethereum or fabric")
 	}
 
-	if p.id < 0 || p.id > 9 {
-		return fmt.Errorf("invalid ID, should be in [0, 9]")
-	}
-
 	if err := checkIPs([]string{p.appchainIP}); err != nil {
 		return err
 	}
@@ -465,6 +471,11 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 }
 
 func generatePierConfig(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRoot()
+	if err != nil {
+		return err
+	}
+
 	mode := ctx.String("mode")
 	bitxhub := ctx.String("bitxhub")
 	validators := ctx.StringSlice("validators")
@@ -473,9 +484,25 @@ func generatePierConfig(ctx *cli.Context) error {
 	appchainIP := ctx.String("appchain-IP")
 	target := ctx.String("target")
 	port := ctx.Int("port")
-	id := ctx.Int("ID")
+	pprofPort := ctx.Int("pprof-port")
+	apiPort := ctx.Int("api-port")
+	version := ctx.String("version")
 
-	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, id)
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Bitxhub) {
+		return fmt.Errorf("unsupport pier verison")
+	}
+
+	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, pprofPort, apiPort, version)
 }
 
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string, version string) error {
@@ -483,8 +510,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, version 
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, id int) error {
-	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, id)
+func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, pprofPort, apiPort int, version string) error {
+	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, pprofPort, apiPort, version)
 	return pcg.InitConfig()
 }
 

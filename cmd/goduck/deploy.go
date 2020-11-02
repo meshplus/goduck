@@ -53,9 +53,9 @@ func deployCMD() *cli.Command {
 						Value: types.PierModeRelay,
 						Usage: "configuration mode, one of direct or relay",
 					},
-					&cli.StringFlag{
+					&cli.IntFlag{
 						Name:  "pprof-port",
-						Value: "44550",
+						Value: 44550,
 						Usage: "pier pprof port",
 					},
 					&cli.StringFlag{
@@ -93,9 +93,9 @@ func deployCMD() *cli.Command {
 						Required: false,
 					},
 					&cli.IntFlag{
-						Name:     "ID",
-						Value:    0,
-						Usage:    "specify Pier's ID which is in [0,9], cannot exist 2 or more Piers with same ID in one OS",
+						Name:     "api-port",
+						Value:    8080,
+						Usage:    "peer's api port",
 						Required: false,
 					},
 					&cli.StringFlag{
@@ -216,7 +216,7 @@ func deployBitXHub(ctx *cli.Context) error {
 			color.Red("====> Start BitXHub node%d fail\n", idx+1)
 			return err
 		} else {
-			color.Green("====> Start BitXHub node%d successful\n", idx+1)
+			color.Green("====> Start BitXHub node%d end\n", idx+1)
 		}
 	}
 
@@ -230,7 +230,7 @@ func deployPier(ctx *cli.Context) error {
 	}
 
 	mode := ctx.String("mode")
-	pprof := ctx.String("pprof-port")
+	pprof := ctx.Int("pprof-port")
 	chain := ctx.String("chain")
 	cryptoPath := ctx.String("cryptoPath")
 	if chain == "fabric" {
@@ -243,7 +243,7 @@ func deployPier(ctx *cli.Context) error {
 	validators := strings.Fields(ctx.String("validators"))
 	peers := strings.Fields(ctx.String("peers"))
 	port := ctx.Int("port")
-	id := ctx.Int("ID")
+	apiPort := ctx.Int("api-port")
 	ip := ctx.String("ip")
 	username := ctx.String("username")
 	version := ctx.String("version")
@@ -265,7 +265,7 @@ func deployPier(ctx *cli.Context) error {
 	who := fmt.Sprintf("%s@%s", username, ip)
 	target := fmt.Sprintf("%s:~/", who)
 
-	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, peers, port, id, cryptoPath, pprof)
+	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, peers, port, apiPort, pprof, cryptoPath)
 	if err != nil {
 		return err
 	}
@@ -337,8 +337,8 @@ func appchainRegister(who, chain string) error {
 	return nil
 }
 
-func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, id int, cryptoPath, pprof string) error {
-	configPath := filepath.Join(repoRoot, "pier_deploy")
+func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, apiPort, pprof int, cryptoPath string) error {
+	configPath := filepath.Join(repoRoot, "pier_deploy/.")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
 		return err
@@ -382,7 +382,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	}
 
 	color.Blue("====> Generate pier configure locally\n")
-	err = InitPierConfig(mode, bitxhub, chain, ip, configPath, validators, peers, port, id)
+	err = InitPierConfig(mode, bitxhub, chain, ip, configPath, validators, peers, port, pprof, apiPort, version)
 	if err != nil {
 		return err
 	}
@@ -392,10 +392,11 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	if err != nil {
 		return err
 	}
+	// The files needed for deployment are placed in the ~/pier folder, and the configuration folder for actual deployment is ~/.pier_${chaintype}.
 	err = sh.
 		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
 		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
-		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s", target, chain)).
+		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s/", target, chain)).
 		Command("scp", filePath, fmt.Sprintf("%spier/", target)).
 		Run()
 	if err != nil {
@@ -403,8 +404,13 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	}
 	err = sh.
 		Command("ssh", who, fmt.Sprintf("cd $HOME/pier && tar xf %s -C $HOME/pier --strip-components 1", filename)).
-		Command("ssh", who, fmt.Sprintf("sed -i 's/pprof = 44550/pprof = %s/g' $HOME/.pier_%s/pier.toml", pprof, chain)).
 		Run()
+	if err != nil {
+		return err
+	}
+
+	color.Blue("====> Update key\n")
+	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && mv $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json && rm -r $HOME/.pier_%s/tmp", chain, chain, chain, chain, chain, chain)).Run()
 	if err != nil {
 		return err
 	}
@@ -451,7 +457,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			return err
 		}
 	} else if chain == "ethereum" {
-		err = sh.Command("ssh", who, "mv $HOME/.pier_ethereum/ethereum/ether.validators $HOME/.pier_ethereum/ethereum/ethereum.validators").Run()
+		err = sh.Command("ssh", who, "if [ ! -e $HOME/.pier_ethereum/ethereum/ethereum.validators ]; then mv $HOME/.pier_ethereum/ethereum/ether.validators $HOME/.pier_ethereum/ethereum/ethereum.validators; fi").Run()
 		if err != nil {
 			return err
 		}

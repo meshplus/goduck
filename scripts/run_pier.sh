@@ -58,8 +58,19 @@ function prepare() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "fabric" \
       --appchain-IP "127.0.0.1" \
-      --target "${CONFIG_PATH}"
-    x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
+      --target "${CONFIG_PATH}" \
+      --version "${VERSION}" \
+      --pprof-port "${PPORT}"\
+      --api-port "${APORT}"
+
+    mkdir "${CONFIG_PATH}"/tmp
+    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}"/tmp init
+    mv "${CONFIG_PATH}"/tmp/key.json "${CONFIG_PATH}"
+    rm -r "${CONFIG_PATH}"/tmp
+
+    x_replace "s/pprof = 44550/pprof = $PPORT/g" "${CONFIG_PATH}"/pier.toml
+    x_replace "s/localhost:8080/localhost:$APORT/g" "${CONFIG_PATH}"/api
+
 
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
@@ -105,8 +116,17 @@ function prepare() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "ethereum" \
       --appchain-IP "127.0.0.1" \
-      --target "${CONFIG_PATH}"
-    x_replace "s/pprof = 44550/pprof = $PORT/g" "${CONFIG_PATH}"/pier.toml
+      --target "${CONFIG_PATH}" \
+      --version "${VERSION}" \
+      --pprof-port "${PPORT}"\
+      --api-port "${APORT}"
+
+    mkdir "${CONFIG_PATH}"/tmp
+    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}"/tmp init
+    mv "${CONFIG_PATH}"/tmp/key.json "${CONFIG_PATH}"
+    rm -r "${CONFIG_PATH}"/tmp
+    x_replace "s/pprof = 44550/pprof = $PPORT/g" "${CONFIG_PATH}"/pier.toml
+    x_replace "s/localhost:8080/localhost:$APORT/g" "${CONFIG_PATH}"/api
 
     # copy plugins file to pier root
     print_blue "===> Copy ethereum plugin"
@@ -333,12 +353,13 @@ MODE="fabric"
 TYPE="binary"
 VERSION="v1.1.0-rc1"
 CRYPTOPATH="$HOME/crypto-config"
-PORT="44550"
+PPORT="44550"
+APORT="8080"
 
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:v:c:p:" opt; do
+while getopts "h?t:m:r:b:v:c:p:a:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -363,7 +384,10 @@ while getopts "h?t:m:r:b:v:c:p:" opt; do
     CRYPTOPATH=$OPTARG
     ;;
   p)
-    PORT=$OPTARG
+    PPORT=$OPTARG
+    ;;
+  a)
+    APORT=$OPTARG
     ;;
   esac
 done
