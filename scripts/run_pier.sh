@@ -332,6 +332,20 @@ function pier_clean() {
     rm "${CURRENT_PATH}"/pier/pier-$MODE-binary.addr
   fi
 
+  if [[ ! -z `ps | grep ${CURRENT_PATH}/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep"` ]]; then
+    echo "clean the plugin process for $MODE pier"
+    list=`ps aux| grep ${CURRENT_PATH}/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep" | awk '{print $2}'`
+    for pluginPID in $list ; do
+      kill $pluginPID
+      if [ $? -eq 0 ]; then
+        echo "pier-$MODE-plugin pid:$pluginPID exit"
+      else
+        print_red "pier plugin exit fail, try use kill -9 $pluginPID"
+      fi
+    done
+    IFS=$OLD_IFS
+  fi
+
   print_blue "===> Clean $MODE pier in docker"
   if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
     docker rm pier-$MODE
