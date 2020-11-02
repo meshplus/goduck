@@ -75,14 +75,13 @@ function showPierInfo() {
     cat ${CURRENT_PATH}/pier/pier-fabric-docker.addr
   fi
 
-  if [ -d ${PIER_PATH}/.pier_ethereum ]; then
+  if [ -e ${PIER_PATH}/pier-ethereum.pid ]; then
     if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
       print_blue "======> info about piers of ethereum in binary"
       cat ${CURRENT_PATH}/pier/pier-ethereum-binary.addr
     fi
   fi
-
-  if [ -d ${PIER_PATH}/.pier_fabric ]; then
+  if [ -e ${PIER_PATH}/pier-fabric.pid ]; then
     if [ "$(ps aux | grep pier | grep -v grep | grep -v info)" ]; then
       print_blue "======> info about piers of fabric in binary"
       cat ${CURRENT_PATH}/pier/pier-fabric-binary.addr
