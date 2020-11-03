@@ -211,15 +211,43 @@ func deployBitXHub(ctx *cli.Context) error {
 		}
 
 		err = sh.Command("ssh", who,
-			fmt.Sprintf("sleep 1 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} >> ~/.bitxhub/bitxhub.PID", idx+1)).Start()
+			fmt.Sprintf("sleep 1 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} > ~/.bitxhub/bitxhub%d.PID", idx+1, idx+1)).Start()
 		if err != nil {
-			color.Red("====> Start BitXHub node%d fail\n", idx+1)
+			color.Red("Start BitXHub node%d fail\n", idx+1)
 			return err
 		} else {
-			color.Green("====> Start BitXHub node%d end\n", idx+1)
+			color.Blue("Start BitXHub node%d end\n", idx+1)
 		}
 	}
 
+	color.Blue("====> Check\n")
+	fmt.Println("You need to wait more than 5 seconds for each node")
+	for idx, ip := range ips {
+		who := fmt.Sprintf("%s@%s", username, ip)
+
+		out, err := sh.Command("ssh", who, fmt.Sprintf("sleep 5 && cat ~/.bitxhub/bitxhub%d.PID", idx+1)).Output()
+		if err != nil {
+			return err
+		}
+
+		pid := strings.Replace(string(out), "\n", "", -1)
+
+		if pid != "" {
+			out, err = sh.Command("ssh", who, fmt.Sprintf("if [[ -n `ps aux | grep %s | grep -v grep | grep node%d` ]]; then echo successful; else echo fail; fi", pid, idx+1)).Output()
+			if err != nil {
+				return err
+			}
+
+			res := strings.Replace(string(out), "\n", "", -1)
+			if res == "successful" {
+				color.Green("Start BitXHub node%d successful\n", idx+1)
+			} else {
+				color.Red("Start BitXHub node%d fail\n", idx+1)
+			}
+		} else {
+			color.Red("Start BitXHub node%d fail\n", idx+1)
+		}
+	}
 	return nil
 }
 
@@ -285,6 +313,45 @@ func deployPier(ctx *cli.Context) error {
 		return err
 	}
 
+	err = pierCheck(who, chain, pprof)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func pierCheck(who string, chain string, pprof int) error {
+	color.Blue("===> Check pier of %s\n", chain)
+	fmt.Println("You need to wait more than 15 seconds")
+
+	err := sh.Command("ssh", who, fmt.Sprintf("sleep 15 && echo `lsof -i:%d | grep LISTEN` | awk '{print $2}' > ~/.pier_%s/pier.PID", pprof, chain)).Run()
+	if err != nil {
+		return err
+	}
+
+	out, err := sh.Command("ssh", who, fmt.Sprintf("cat ~/.pier_%s/pier.PID", chain)).Output()
+	if err != nil {
+		return err
+	}
+
+	pid := strings.Replace(string(out), "\n", "", -1)
+
+	if pid != "" {
+		out, err = sh.Command("ssh", who, fmt.Sprintf("if [[ -n `ps aux | grep %s | grep -v grep | grep .pier_%s` ]]; then echo successful; else echo fail; fi", pid, chain)).Output()
+		if err != nil {
+			return err
+		}
+		res := strings.Replace(string(out), "\n", "", -1)
+		if res == "successful" {
+			color.Green("Start pier successful\n")
+		} else {
+			color.Red("Start pier fail\n")
+		}
+	} else {
+		color.Red("Start pier fail\n")
+	}
+
 	return nil
 }
 
@@ -293,10 +360,11 @@ func pierStartRemote(who string, chain string) error {
 	err := sh.
 		Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && export CONFIG_PATH=$HOME/.pier_fabric/fabric && nohup $HOME/pier/pier --repo $HOME/.pier_%s start >/dev/null 2>&1 &", chain)).Start()
 	if err != nil {
+		color.Red("Start pier fail\n")
 		return err
 	}
 
-	color.Green("===> Start pier successfully!!!\n")
+	color.Blue("Start pier end\n")
 	return nil
 }
 
