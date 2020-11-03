@@ -382,7 +382,8 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	}
 
 	color.Blue("====> Generate pier configure locally\n")
-	err = InitPierConfig(mode, bitxhub, chain, ip, configPath, validators, peers, port, pprof, apiPort, version)
+	pierPath := ""
+	err = InitPierConfig(mode, bitxhub, chain, ip, configPath, validators, peers, port, pprof, apiPort, version, pierPath)
 	if err != nil {
 		return err
 	}
@@ -410,11 +411,22 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	}
 
 	color.Blue("====> Update key\n")
-	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && mv $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json && rm -r $HOME/.pier_%s/tmp", chain, chain, chain, chain, chain, chain)).Run()
+	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && cp $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json", chain, chain, chain, chain, chain)).Run()
 	if err != nil {
 		return err
 	}
 
+	if mode == types.PierModeDirect {
+		out, err := sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp p2p id && rm -r $HOME/.pier_%s/tmp", chain, chain)).Output()
+		if err != nil {
+			return fmt.Errorf("get pier id: %s", err)
+		}
+		pid := strings.Replace(string(out), "\n", "", -1)
+		err = sh.Command("ssh", who, fmt.Sprintf("sed -i \"s#\"/ip4/0.0.0.0/tcp/%d/p2p/\"#\"/ip4/0.0.0.0/tcp/%d/p2p/%s\"#g\" $HOME/.pier_%s/%s", port, port, pid, chain, repo.PierConfigName)).Run()
+		if err != nil {
+			return err
+		}
+	}
 	color.Blue("====> Copy appchain plugin\n")
 	chainPlugin := ""
 	if chain == "fabric" {
