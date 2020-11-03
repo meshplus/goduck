@@ -251,10 +251,10 @@ function pier_binary_up() {
   nohup "${PIER_PATH}"/pier --repo "${START_PATH}" start >/dev/null 2>&1 &
   PID=$!
 
-  sleep 1
+  sleep 10
   if [ -n "$(ps -p ${PID} -o pid=)" ]; then
     print_green "===> Start pier successfully!!!"
-    echo $! >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
+    echo ${PID} >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
     echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
   else
     print_red "===> Start pier fail"
