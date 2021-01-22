@@ -44,15 +44,31 @@ type Genesis struct {
 	Addresses []string `toml:"addresses" json:"addresses" `
 }
 
-type NetworkConfig struct {
+type NetworkConfig1_0_0 struct {
 	ID    uint64 `toml:"id" json:"id"`
 	N     uint64
-	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
+	Nodes []*NetworkNodes1_0_0 `toml:"nodes" json:"nodes"`
+}
+
+type NetworkConfig struct {
+	ID        uint64          `toml:"id" json:"id"`
+	N         uint64          `toml:"n" json:"n"`
+	New       bool            `toml:"new" json:"new"`
+	LocalAddr string          `toml:"local_addr, omitempty" json:"local_addr"`
+	Nodes     []*NetworkNodes `toml:"nodes" json:"nodes"`
+	Genesis   Genesis         `toml:"genesis, omitempty" json:"genesis"`
+}
+
+type NetworkNodes1_0_0 struct {
+	ID   uint64 `toml:"id" json:"id"`
+	Addr string `toml:"addr" json:"addr"`
 }
 
 type NetworkNodes struct {
-	ID   uint64 `toml:"id" json:"id"`
-	Addr string `toml:"addr" json:"addr"`
+	ID      uint64   `toml:"id" json:"id"`
+	Pid     string   `toml:"pid" json:"pid"`
+	Hosts   []string `toml:"hosts" json:"hosts"`
+	Account string   `toml:"account" json:"account"`
 }
 
 type ReadinNetworkConfig struct {
@@ -578,8 +594,10 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 	}
 
 	node := &NetworkNodes{
-		ID:   uint64(id),
-		Addr: fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip, 4000+ipToId[ip], pid),
+		ID:      uint64(id),
+		Pid:     pid,
+		Hosts:   []string{fmt.Sprintf("/ip4/%s/tcp/%d/p2p/", ip, 4000+ipToId[ip])},
+		Account: addr,
 	}
 
 	return addr, node, nil
@@ -609,7 +627,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 		return fmt.Errorf("marshal genesis: %w", err)
 	}
 
-	count := len(addrs)
+	count := len(nodes)
 
 	for i := 1; i <= count; i++ {
 		nodeRoot := filepath.Join(repoRoot, "node"+strconv.Itoa(i))
@@ -617,14 +635,10 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 			nodeRoot = filepath.Join(repoRoot, "nodeSolo")
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
-			return err
-		}
-
-		if version >= "v1.1.0-rc1" {
+		if version == "v1.1.0-rc1" {
 			var addrs [][]string
 			for _, node := range nodes {
-				addrs = append(addrs, []string{node.Addr})
+				addrs = append(addrs, []string{fmt.Sprintf("%s%s", node.Hosts[0], node.Pid)})
 			}
 			netConfig := ReadinNetworkConfig{Addrs: addrs}
 			netContent, err := toml.Marshal(netConfig)
@@ -635,11 +649,48 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
 				return err
 			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
+				return err
+			}
+
+			continue
+		} else if version < "v1.1.0-rc1" {
+			nodes1_0_0 := make([]*NetworkNodes1_0_0, 0, len(nodes))
+
+			for _, n := range nodes {
+				n1_0_0 := &NetworkNodes1_0_0{
+					ID:   n.ID,
+					Addr: fmt.Sprintf("%s%s", n.Hosts[0], n.Pid),
+				}
+				nodes1_0_0 = append(nodes1_0_0, n1_0_0)
+			}
+
+			netConfig := NetworkConfig1_0_0{
+				ID:    uint64(i),
+				N:     uint64(count),
+				Nodes: nodes1_0_0,
+			}
+
+			netContent, err := toml.Marshal(netConfig)
+			if err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
+				return err
+			}
+
 			continue
 		}
 		netConfig := NetworkConfig{
 			ID:    uint64(i),
 			N:     uint64(count),
+			New:   false,
 			Nodes: nodes,
 		}
 
