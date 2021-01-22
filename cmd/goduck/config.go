@@ -579,6 +579,16 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
+	if b.version >= "v1.4.0" {
+		if err := generatePrivKey(repo.KeyPriv, b.target, crypto2.Secp256k1); err != nil {
+			return "", nil, fmt.Errorf("generate priv key: %w", err)
+		}
+
+		if err := copyFile(repo.GetPrivKeyPath(repo.KeyPriv, certRoot), repo.GetPrivKeyPath(repo.KeyPriv, repoRoot)); err != nil {
+			return "", nil, fmt.Errorf("copy key priv: %w", err)
+		}
+	}
+
 	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
@@ -708,7 +718,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 }
 
 func generateCert(name string, org string, target string, privKey string, caCertPath string, isCA bool) (string, string, error) {
-	if err := generatePrivKey(name, target); err != nil {
+	if err := generatePrivKey(name, target, crypto2.ECDSA_P256); err != nil {
 		return "", "", fmt.Errorf("generate private key: %w", err)
 	}
 
@@ -959,18 +969,30 @@ func issueCert(csrPath, privPath, certPath, target string, isCA bool) error {
 	return pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: x509certEncode})
 }
 
-func generatePrivKey(name, target string) error {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func generatePrivKey(name, target string, opt crypto2.KeyType) error {
+	target, err := filepath.Abs(target)
+	if err != nil {
+		return fmt.Errorf("get absolute key path: %w", err)
+	}
+
+	privKey, err := asym.GenerateKeyPair(opt)
 	if err != nil {
 		return fmt.Errorf("generate key: %w", err)
 	}
 
-	priKeyEncode, err := x509.MarshalECPrivateKey(privKey)
+	priKeyEncode, err := privKey.Bytes()
 	if err != nil {
 		return fmt.Errorf("marshal key: %w", err)
 	}
 
-	f, err := os.Create(repo.GetPrivKeyPath(name, target))
+	if !fileutil.Exist(target) {
+		err := os.MkdirAll(target, 0755)
+		if err != nil {
+			return fmt.Errorf("create folder: %w", err)
+		}
+	}
+	path := filepath.Join(target, fmt.Sprintf("%s.priv", name))
+	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
