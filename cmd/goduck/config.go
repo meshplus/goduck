@@ -24,7 +24,7 @@ import (
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/libp2p/go-libp2p-core/peer"
-	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
+	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/bitxhub/pkg/cert"
@@ -580,7 +580,7 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 	}
 
 	if b.version >= "v1.4.0" {
-		if err := generatePrivKey(repo.KeyPriv, b.target, crypto2.Secp256k1); err != nil {
+		if err := generatePrivKey(repo.KeyPriv, b.target, crypto.Secp256k1); err != nil {
 			return "", nil, fmt.Errorf("generate priv key: %w", err)
 		}
 
@@ -627,7 +627,15 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 
 	files := []string{"bitxhub.toml", "api"}
 
-	return renderConfigFiles(nodeRoot, "bitxhub", files, data)
+	srcPath := "bitxhub"
+
+	if b.version < "v1.4.0" {
+		srcPath = fmt.Sprintf("%s/v1.1.0", srcPath)
+	} else {
+		srcPath = fmt.Sprintf("%s/v1.4.0", srcPath)
+	}
+
+	return renderConfigFiles(nodeRoot, srcPath, files, data)
 }
 
 func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes, version string) error {
@@ -718,7 +726,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 }
 
 func generateCert(name string, org string, target string, privKey string, caCertPath string, isCA bool) (string, string, error) {
-	if err := generatePrivKey(name, target, crypto2.ECDSA_P256); err != nil {
+	if err := generatePrivKey(name, target, crypto.ECDSA_P256); err != nil {
 		return "", "", fmt.Errorf("generate private key: %w", err)
 	}
 
@@ -794,8 +802,8 @@ func existDir(path string) (bool, error) {
 	return s.IsDir(), nil
 }
 
-func generatePierKey(target string) (crypto2.PrivateKey, error) {
-	privKey, err := asym.GenerateKeyPair(crypto2.Secp256k1)
+func generatePierKey(target string) (crypto.PrivateKey, error) {
+	privKey, err := asym.GenerateKeyPair(crypto.Secp256k1)
 	if err != nil {
 		return nil, fmt.Errorf("generate key: %w", err)
 	}
@@ -969,7 +977,7 @@ func issueCert(csrPath, privPath, certPath, target string, isCA bool) error {
 	return pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: x509certEncode})
 }
 
-func generatePrivKey(name, target string, opt crypto2.KeyType) error {
+func generatePrivKey(name, target string, opt crypto.KeyType) error {
 	target, err := filepath.Abs(target)
 	if err != nil {
 		return fmt.Errorf("get absolute key path: %w", err)

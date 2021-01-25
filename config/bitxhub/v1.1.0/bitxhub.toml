@@ -1,0 +1,33 @@
+title = "BitXHub configuration file"
+
+solo = {{.Solo}}
+
+[port]
+  grpc = 6001{{.Id}}
+  gateway = 909{{.Id}}
+  pprof = 5312{{.Id}}
+
+[pprof]
+  enable = true
+
+[gateway]
+    allowed_origins = ["*"]
+
+[log]
+  level = "info"
+  dir = "logs"
+  filename = "bitxhub.log"
+  report_caller = false
+  [log.module]
+    p2p = "info"
+    consensus = "info"
+    executor = "info"
+    router = "info"
+    api = "info"
+    coreapi = "info"
+
+[cert]
+  verify = true
+
+[order]
+  plugin = "plugins/{{.Consensus}}.so"
