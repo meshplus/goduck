@@ -462,6 +462,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	mode := ctx.String("mode")
 	ips := ctx.StringSlice("ips")
 	target := ctx.String("target")
+	tls := ctx.Bool("tls")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -486,7 +487,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	return InitBitXHubConfig(typ, mode, target, num, ips, false, version)
+	return InitBitXHubConfig(typ, mode, target, num, ips, tls, version)
 }
 
 func generatePierConfig(ctx *cli.Context) error {

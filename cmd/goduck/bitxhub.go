@@ -97,6 +97,11 @@ func bitxhubCMD() *cli.Command {
 						Value: ".",
 						Usage: "where to put the generated configuration files",
 					},
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
 					&cli.StringFlag{
 						Name:  "version,v",
 						Value: "v1.1.0-rc1",
