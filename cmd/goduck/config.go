@@ -16,14 +16,15 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/codeskyblue/go-sh"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -111,13 +112,14 @@ type PierConfigGenerator struct {
 	pprofPort    int
 	apiPort      int
 	version      string
+	pierPath     string
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, pprofPort, apiPort int, version string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, pprofPort, apiPort int, version, pierPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
 		appchainType: appchainType,
@@ -130,6 +132,7 @@ func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target stri
 		pprofPort:    pprofPort,
 		apiPort:      apiPort,
 		version:      version,
+		pierPath:     pierPath,
 	}
 }
 
@@ -305,9 +308,19 @@ func (p *PierConfigGenerator) Initialized() (bool, error) {
 }
 
 func (p *PierConfigGenerator) copyConfigFiles() error {
-	privKey, err := generatePierKey(p.target)
-	if err != nil {
-		return fmt.Errorf("generate Pier's private key: %w", err)
+	pid := ""
+	p.pierPath = ""
+
+	// If pierPath equals "", that means this is a call during remote deployment.
+	// Since the PIER binaries used for remote deployment may not be able to run
+	// locally, the step of generatePierKeyAndID is skipped here and it will be
+	// done remotely through the SSH command in deploy.go.
+	if p.pierPath != "" {
+		id, err := generatePierKeyAndID(p.target, p.pierPath)
+		if err != nil {
+			return fmt.Errorf("generate Pier's private key and id: %w", err)
+		}
+		pid = id
 	}
 
 	validators := ""
@@ -322,17 +335,6 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		for _, v := range p.peers {
 			peers += "\"" + v + "\",\n"
 		}
-
-		libp2pPrivKey, err := convertToLibp2pPrivKey(privKey)
-		if err != nil {
-			return fmt.Errorf("convert to libp2p private key: %w", err)
-		}
-
-		pid, err := peer.IDFromPrivateKey(libp2pPrivKey)
-		if err != nil {
-			return fmt.Errorf("get ID from libp2p private key: %w", err)
-		}
-
 		peers += "\"" + fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/p2p/%s", p.port, pid) + "\",\n"
 	}
 
@@ -519,7 +521,16 @@ func generatePierConfig(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, pprofPort, apiPort, version)
+	// generate key.json need pier binary file
+	pierP := fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version)
+	pierPath := filepath.Join(repoRoot, pierP)
+	if !fileutil.Exist(pierPath) {
+		if err := downloadPierBinary(repoRoot, version); err != nil {
+			return fmt.Errorf("download pier binary error:%w", err)
+		}
+	}
+
+	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, pprofPort, apiPort, version, pierPath)
 }
 
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
@@ -527,8 +538,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, pprofPort, apiPort int, version string) error {
-	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, pprofPort, apiPort, version)
+func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, pprofPort, apiPort int, version, pierPath string) error {
+	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, pprofPort, apiPort, version, pierPath)
 	return pcg.InitConfig()
 }
 
@@ -804,18 +815,28 @@ func existDir(path string) (bool, error) {
 	return s.IsDir(), nil
 }
 
-func generatePierKey(target string) (crypto.PrivateKey, error) {
-	privKey, err := asym.GenerateKeyPair(crypto.Secp256k1)
+func generatePierKeyAndID(target, pierPath string) (string, error) {
+	// pier init key.json
+	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/tmp && %s --repo %s/tmp init && cp %s/tmp/%s %s/%s", target, pierPath, target, target, repo.KeyName, target, repo.KeyName)).Run()
 	if err != nil {
-		return nil, fmt.Errorf("generate key: %w", err)
+		return "", fmt.Errorf("pier init key: %s", err)
 	}
 
-	keyPath := filepath.Join(target, repo.KeyName)
-	if err := asym.StorePrivateKey(privKey, keyPath, repo.KeyPassword); err != nil {
-		return nil, fmt.Errorf("persist key: %s", err)
+	// pier p2p id
+	keyPath := fmt.Sprintf("%s/tmp", target)
+	out, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("%s --repo %s p2p id", pierPath, keyPath)).Output()
+	if err != nil {
+		return "", fmt.Errorf("get pier id: %s", err)
+	}
+	pid := strings.Replace(string(out), "\n", "", -1)
+
+	// delete tmp directory
+	err = sh.Command("/bin/bash", "-c", fmt.Sprintf("rm -r %s/tmp", target)).Run()
+	if err != nil {
+		return "", fmt.Errorf("delete tmp directory: %s", err)
 	}
 
-	return privKey, nil
+	return pid, nil
 }
 
 func generateCA(dir string) (string, string, error) {
