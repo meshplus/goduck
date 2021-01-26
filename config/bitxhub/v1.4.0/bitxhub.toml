@@ -25,7 +25,7 @@ solo = {{.Solo}}
   duration = "15s"
 
 [security]
-enable_tls = false
+enable_tls = {{.Tls}}
 pem_file_path = "certs/server.pem"
 server_key_path = "certs/server.key"
 

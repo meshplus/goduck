@@ -95,6 +95,7 @@ type BitXHubConfigGenerator struct {
 	target  string
 	num     int
 	ips     []string
+	tls     bool
 	version string
 }
 
@@ -112,8 +113,8 @@ type PierConfigGenerator struct {
 	version      string
 }
 
-func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, version string) *BitXHubConfigGenerator {
-	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, version: version}
+func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
+	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
 func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, pprofPort, apiPort int, version string) *PierConfigGenerator {
@@ -483,7 +484,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	return InitBitXHubConfig(typ, mode, target, num, ips, version)
+	return InitBitXHubConfig(typ, mode, target, num, ips, false, version)
 }
 
 func generatePierConfig(ctx *cli.Context) error {
@@ -521,8 +522,8 @@ func generatePierConfig(ctx *cli.Context) error {
 	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, pprofPort, apiPort, version)
 }
 
-func InitBitXHubConfig(typ, mode, target string, num int, ips []string, version string) error {
-	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, version)
+func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
+	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, tls, version)
 	return bcg.InitConfig()
 }
 
@@ -623,7 +624,8 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 		Id        int
 		Solo      bool
 		Consensus string
-	}{id, b.mode == "solo", consensus}
+		Tls       bool
+	}{id, b.mode == "solo", consensus, b.tls}
 
 	files := []string{"bitxhub.toml", "api"}
 
