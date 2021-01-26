@@ -26,6 +26,11 @@ func deployCMD() *cli.Command {
 				Name:  "bitxhub",
 				Usage: "Deploy BitXHub to remote server",
 				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
 					&cli.StringFlag{
 						Name:     "ips",
 						Usage:    "servers ip, e.g. 188.0.0.1,188.0.0.2,188.0.0.3,.188.0.0.4",
@@ -126,6 +131,7 @@ func deployBitXHub(ctx *cli.Context) error {
 		return err
 	}
 
+	tls := ctx.Bool("tls")
 	username := ctx.String("username")
 	version := ctx.String("version")
 
@@ -150,7 +156,7 @@ func deployBitXHub(ctx *cli.Context) error {
 
 	ips := strings.Split(ctx.String("ips"), ",")
 
-	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, false, version)
+	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, tls, version)
 
 	if err := generator.InitConfig(); err != nil {
 		return err
