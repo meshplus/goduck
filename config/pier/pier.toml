@@ -1,6 +1,7 @@
 title = "Pier"
 
 [port]
+http = {{.HttpPort}}
 pprof = {{.PprofPort}}
 
 [log]
@@ -10,7 +11,7 @@ filename = "pier.log"
 report_caller = false
 
 [mode]
-type = "{{.Mode}}" # relay or direct
+type = "{{.Mode}}" # relay, direct or union
 [mode.relay]
 addr = "{{.Bitxhub}}"
 quorum = 2
@@ -19,6 +20,15 @@ validators = [
 ]
 [mode.direct]
 peers = [{{.Peers}}]
+
+[mode.union]
+connectors = [{{.Connectors}}]
+providers = {{.Providers}}
+
+[security]
+enable_tls = {{.Tls}}
+tlsca = "certs/ca.pem"
+common_name = "localhost"
 
 [appchain]
 plugin = "{{.PluginFile}}"

@@ -49,7 +49,8 @@ function prepare() {
   if [ "$MODE" == "fabric" ]; then
     cd "${CURRENT_PATH}"
     print_blue "===> Generate fabric pier configure"
-    goduck pier config \
+    # TODO : Change to Dynamic Selection
+    echo "Y"|goduck pier config \
       --mode "relay" \
       --bitxhub "localhost:60011" \
       --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
@@ -58,19 +59,12 @@ function prepare() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "fabric" \
       --appchain-IP "127.0.0.1" \
-      --target "${CONFIG_PATH}" \
-      --version "${VERSION}" \
-      --pprof-port "${PPORT}"\
-      --api-port "${APORT}"
-
-    mkdir "${CONFIG_PATH}"/tmp
-    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}"/tmp init
-    mv "${CONFIG_PATH}"/tmp/key.json "${CONFIG_PATH}"
-    rm -r "${CONFIG_PATH}"/tmp
-
-    x_replace "s/pprof = 44550/pprof = $PPORT/g" "${CONFIG_PATH}"/pier.toml
-    x_replace "s/localhost:8080/localhost:$APORT/g" "${CONFIG_PATH}"/api
-
+      --target ${CONFIG_PATH} \
+      --tls ${TLS} \
+      --http-port ${HTTP} \
+      --pprof-port ${PPROF} \
+      --api-port ${API} \
+      --version ${VERSION}
 
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
@@ -117,16 +111,11 @@ function prepare() {
       --appchain-type "ethereum" \
       --appchain-IP "127.0.0.1" \
       --target "${CONFIG_PATH}" \
-      --version "${VERSION}" \
-      --pprof-port "${PPORT}"\
-      --api-port "${APORT}"
-
-    mkdir "${CONFIG_PATH}"/tmp
-    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}"/tmp init
-    mv "${CONFIG_PATH}"/tmp/key.json "${CONFIG_PATH}"
-    rm -r "${CONFIG_PATH}"/tmp
-    x_replace "s/pprof = 44550/pprof = $PPORT/g" "${CONFIG_PATH}"/pier.toml
-    x_replace "s/localhost:8080/localhost:$APORT/g" "${CONFIG_PATH}"/api
+      --tls "${TLS}" \
+      --http-port "${HTTP}" \
+      --pprof-port "${PPROF}"\
+      --api-port "${API}" \
+      --version "${VERSION}"
 
     # copy plugins file to pier root
     print_blue "===> Copy ethereum plugin"
@@ -373,7 +362,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:r:b:v:c:p:a:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -385,9 +374,6 @@ while getopts "h?t:m:r:b:v:c:p:a:" opt; do
   m)
     MODE=$OPTARG
     ;;
-  r)
-    PIER_ROOT=$OPTARG
-    ;;
   b)
     BITXHUB_ADDR=$OPTARG
     ;;
@@ -397,11 +383,17 @@ while getopts "h?t:m:r:b:v:c:p:a:" opt; do
   c)
     CRYPTOPATH=$OPTARG
     ;;
-  p)
-    PPORT=$OPTARG
+  f)
+    PPROF=$OPTARG
     ;;
   a)
-    APORT=$OPTARG
+    API=$OPTARG
+    ;;
+  l)
+    TLS=$OPTARG
+    ;;
+  p)
+    HTTP=$OPTARG
     ;;
   esac
 done

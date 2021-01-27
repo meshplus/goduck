@@ -47,6 +47,16 @@ var pierCMD = &cli.Command{
 					Usage: "pier version",
 				},
 				&cli.StringFlag{
+					Name:  "tls",
+					Value: "false",
+					Usage: "whether to enable TLS, true or false, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
+					Name:  "http-port",
+					Value: "44544",
+					Usage: "peer's http port, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
 					Name:  "pprof-port",
 					Value: "44550",
 					Usage: "pier pprof port, only useful for binary",
@@ -107,14 +117,23 @@ var pierCMD = &cli.Command{
 					Name:  "validators",
 					Usage: "BitXHub's validators, only useful in relay mode, e.g. --validators \"0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013\" --validators \"0x79a1215469FaB6f9c63c1816b45183AD3624bE34\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\"",
 				},
-				&cli.IntFlag{
+				&cli.StringFlag{
 					Name:  "port",
-					Value: 5001,
+					Value: "5001",
 					Usage: "pier's port, only useful in direct mode",
 				},
 				&cli.StringSliceFlag{
 					Name:  "peers",
-					Usage: "peers' address, only useful in direct mode, e.g. --peers ",
+					Usage: "peers' address, only useful in direct mode, e.g. --peers \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL\"",
+				},
+				&cli.StringSliceFlag{
+					Name:  "connectors",
+					Usage: "address of peers which need to connect, only useful in union mode for v1.4.0+, e.g. --connectors \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL\" --connectors \"/ip4/127.0.0.1/tcp/4002/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5abcD\"",
+				},
+				&cli.StringFlag{
+					Name:  "providers",
+					Value: "1",
+					Usage: "the minimum number of cross-chain gateways that need to be found in a large-scale network, only useful in union mode for v1.4.0+",
 				},
 				&cli.StringFlag{
 					Name:  "appchain-type",
@@ -131,14 +150,24 @@ var pierCMD = &cli.Command{
 					Value: ".",
 					Usage: "where to put the generated configuration files",
 				},
-				&cli.IntFlag{
+				&cli.StringFlag{
+					Name:  "tls",
+					Value: "false",
+					Usage: "whether to enable TLS, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
+					Name:  "http-port",
+					Value: "44544",
+					Usage: "peer's http port, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
 					Name:  "pprof-port",
-					Value: 44550,
+					Value: "44550",
 					Usage: "peer's pprof port",
 				},
-				&cli.IntFlag{
+				&cli.StringFlag{
 					Name:  "api-port",
-					Value: 8080,
+					Value: "8080",
 					Usage: "peer's api port",
 				},
 				&cli.StringFlag{
@@ -157,6 +186,8 @@ func pierStart(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	pierUpType := ctx.String("pier-type")
 	version := ctx.String("version")
+	tls := ctx.String("tls")
+	http := ctx.String("http-port")
 	pport := ctx.String("pprof-port")
 	aport := ctx.String("api-port")
 
@@ -191,7 +222,7 @@ func pierStart(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, pport, aport)
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport)
 }
 
 func pierStop(ctx *cli.Context) error {

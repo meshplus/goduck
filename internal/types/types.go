@@ -7,6 +7,7 @@ const (
 	SoloMode       = "solo"
 	PierModeDirect = "direct"
 	PierModeRelay  = "relay"
+	PierModeUnion  = "union"
 
 	ChainTypeEther  = "ethereum"
 	ChainTypeFabric = "fabric"
