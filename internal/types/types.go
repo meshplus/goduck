@@ -34,4 +34,6 @@ const (
 
 	Ethereum = "ethereum"
 	Fabric   = "fabric"
+
+	FabricConfig = "config.yaml"
 )

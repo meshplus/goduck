@@ -64,6 +64,7 @@ function prepare() {
       --http-port ${HTTP} \
       --pprof-port ${PPROF} \
       --api-port ${API} \
+      --cryptoPath ${CRYPTOPATH} \
       --version ${VERSION}
 
     # copy appchain crypto-config and modify config.yaml
@@ -115,6 +116,7 @@ function prepare() {
       --http-port "${HTTP}" \
       --pprof-port "${PPROF}"\
       --api-port "${API}" \
+      --cryptoPath ${CRYPTOPATH} \
       --version "${VERSION}"
 
     # copy plugins file to pier root

@@ -119,13 +119,14 @@ type PierConfigGenerator struct {
 	apiPort      string
 	version      string
 	pierPath     string
+	cryptoPath   string
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
 		bitxhub:      bitxhub,
@@ -143,6 +144,7 @@ func NewPierConfigGenerator(mode, bitxhub string, validators []string, port stri
 		apiPort:      apiPort,
 		version:      version,
 		pierPath:     pierPath,
+		cryptoPath:   cryptoPath,
 	}
 }
 
@@ -374,7 +376,20 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 
 	dstDir := filepath.Join(p.target, p.appchainType)
 	srcDir := filepath.Join("pier", p.appchainType)
-	if err := renderConfigFiles(dstDir, srcDir, []string{p.appchainType + ".toml"}, p.appchainIP); err != nil {
+
+	files2 := []string{
+		p.appchainType + ".toml",
+	}
+	if p.appchainType == types.Fabric {
+		files2 = append(files2, types.FabricConfig)
+	}
+
+	data2 := struct {
+		AppchainIP string
+		ConfigPath string
+	}{p.appchainIP, p.cryptoPath}
+
+	if err := renderConfigFiles(dstDir, srcDir, files2, data2); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
@@ -444,6 +459,8 @@ func (p *PierConfigGenerator) InitConfig() error {
 			return fmt.Errorf("generate Pier's private key and id: %w", err)
 		}
 		p.id = id
+	} else {
+		p.id = ""
 	}
 
 	if err := p.copyConfigFiles(); err != nil {
@@ -537,6 +554,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	httpPort := ctx.String("http-port")
 	pprofPort := ctx.String("pprof-port")
 	apiPort := ctx.String("api-port")
+	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
@@ -562,7 +580,7 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath)
+	return InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 }
 
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
@@ -570,8 +588,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath string) error {
-	pcg := NewPierConfigGenerator(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath)
+func InitPierConfig(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
+	pcg := NewPierConfigGenerator(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 	return pcg.InitConfig()
 }
 

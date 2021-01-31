@@ -171,6 +171,12 @@ var pierCMD = &cli.Command{
 					Usage: "peer's api port",
 				},
 				&cli.StringFlag{
+					Name:     "cryptoPath",
+					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
+					Value:    "$HOME/.goduck/crypto-config",
+					Required: false,
+				},
+				&cli.StringFlag{
 					Name:  "version",
 					Value: "v1.1.0-rc1",
 					Usage: "pier version",

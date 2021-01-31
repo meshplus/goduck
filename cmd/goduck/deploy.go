@@ -435,7 +435,7 @@ func appchainRegister(who, chain string) error {
 }
 
 func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath string) error {
-	configPath := filepath.Join(repoRoot, "pier_deploy/.")
+	configPath := filepath.Join(repoRoot, "pier_deploy")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
 		return err
@@ -480,7 +480,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Generate pier configure locally\n")
 	pierPath := ""
-	err = InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, chain, ip, target, tls, http, pprof, apiPort, version, pierPath)
+	err = InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, chain, ip, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
 	if err != nil {
 		return err
 	}
@@ -490,11 +490,15 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	if err != nil {
 		return err
 	}
+	err = sh.Command("ssh", who, fmt.Sprintf("if [ -d $HOME/pier/pier_deploy ]; then rm -r $HOME/pier/pier_deploy; fi")).Run()
+	if err != nil {
+		return err
+	}
 	// The files needed for deployment are placed in the ~/pier folder, and the configuration folder for actual deployment is ~/.pier_${chaintype}.
 	err = sh.
 		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
 		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
-		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s/", target, chain)).
+		Command("scp", "-r", configPath, fmt.Sprintf("%spier/pier_deploy", target)).
 		Command("scp", filePath, fmt.Sprintf("%spier/", target)).
 		Run()
 	if err != nil {
@@ -507,14 +511,19 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		return err
 	}
 
-	color.Blue("====> Update key\n")
-	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && cp $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json", chain, chain, chain, chain, chain)).Run()
+	color.Blue("====> Update config\n")
+	err = sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s init", chain)).Run()
+	if err != nil {
+		return err
+	}
+
+	err = sh.Command("ssh", who, fmt.Sprintf("cp -r $HOME/pier/pier_deploy/. $HOME/.pier_%s", chain)).Run()
 	if err != nil {
 		return err
 	}
 
 	if mode == types.PierModeDirect {
-		out, err := sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp p2p id && rm -r $HOME/.pier_%s/tmp", chain, chain)).Output()
+		out, err := sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp p2p id", chain)).Output()
 		if err != nil {
 			return fmt.Errorf("get pier id: %s", err)
 		}
@@ -524,6 +533,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			return err
 		}
 	}
+
 	color.Blue("====> Copy appchain plugin\n")
 	chainPlugin := ""
 	if chain == "fabric" {

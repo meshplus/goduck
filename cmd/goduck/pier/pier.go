@@ -7,8 +7,7 @@ import (
 
 func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api string) error {
 	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
-		"-v", version, "-c", cryptoPath, "-f", pprof,
-		"-a", api, "-l", tls, "-p", http}
+		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http}
 	return utils.ExecuteShell(args, repoRoot)
 }
 
