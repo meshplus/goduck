@@ -28,7 +28,7 @@ function printHelp() {
   echo "  run_pier.sh -h (print this message)"
 }
 
-function downloadBin() {
+function extractBin() {
     cd "${PIER_PATH}"
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
@@ -245,7 +245,7 @@ function pier_docker_up() {
 }
 
 function pier_binary_up() {
-  downloadBin
+  extractBin
 
   generateConfig
 

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/pier"
 	"github.com/meshplus/goduck/internal/download"
@@ -283,6 +284,11 @@ func downloadPierBinary(repoPath string, version string) error {
 				return err
 			}
 
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz -C %s --strip-components 1 && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
+			if err != nil {
+				return fmt.Errorf("extract pier binary: %s", err)
+			}
+
 			if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
 				err := download.Download(root, types.LinuxWasmLibUrl)
 				if err != nil {
@@ -297,6 +303,11 @@ func downloadPierBinary(repoPath string, version string) error {
 			err := download.Download(root, url)
 			if err != nil {
 				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 1 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
+			if err != nil {
+				return fmt.Errorf("extract pier binary: %s", err)
 			}
 		}
 

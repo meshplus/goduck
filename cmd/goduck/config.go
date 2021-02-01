@@ -342,7 +342,7 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		for _, v := range p.peers {
 			peers += "\"" + v + "\",\n"
 		}
-		peers += "\"" + fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", localIP, p.port, p.id) + "\",\n"
+		peers += "\"" + fmt.Sprintf("/ip4/%s/tcp/%s/p2p/%s", localIP, p.port, p.id) + "\",\n"
 	} else if p.mode == types.PierModeUnion {
 		for _, v := range p.connectors {
 			connectors += "\"" + v + "\",\n"
@@ -485,7 +485,14 @@ func (p *PierConfigGenerator) InitConfig() error {
 
 func (p *PierConfigGenerator) ProcessParams() error {
 	if p.mode != types.PierModeDirect && p.mode != types.PierModeRelay {
-		return fmt.Errorf("invalid mode, choose one of direct or relay")
+		if p.version < "v1.4.0" {
+			return fmt.Errorf("invalid mode, choose one of direct or relay")
+		} else {
+			if p.mode != types.PierModeUnion {
+				return fmt.Errorf("invalid mode, choose one of direct, relay or union")
+			}
+		}
+
 	}
 
 	if p.mode == types.PierModeRelay && p.bitxhub == "" {
@@ -498,6 +505,10 @@ func (p *PierConfigGenerator) ProcessParams() error {
 
 	if p.mode == types.PierModeDirect && len(p.peers) == 0 {
 		fmt.Println("You have to add peers' information manually after the configuration files are generated")
+	}
+
+	if p.mode == types.PierModeUnion && len(p.connectors) == 0 {
+		fmt.Println("You have to add connectors' information manually after the configuration files are generated")
 	}
 
 	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
