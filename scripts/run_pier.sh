@@ -105,7 +105,11 @@ function prepare() {
     cd "${CURRENT_PATH}"
     print_blue "===> Generate ethereum pier configure"
     # generate config for ethereum pier
-    goduck pier config \
+     overW='Y'
+    if [ "$OVERWRITE" == "false" ]; then
+        overW='N'
+    fi
+    echo $overW|goduck pier config \
       --mode "relay" \
       --bitxhub "localhost:60011" \
       --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \

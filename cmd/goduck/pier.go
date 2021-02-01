@@ -110,11 +110,6 @@ var pierCMD = &cli.Command{
 					Usage: "configuration mode, one of direct or relay",
 				},
 				&cli.StringFlag{
-					Name:  "type",
-					Value: types.TypeBinary,
-					Usage: "configuration type, one of binary or docker",
-				},
-				&cli.StringFlag{
 					Name:  "bitxhub",
 					Usage: "BitXHub's address, only useful in relay mode",
 				},
