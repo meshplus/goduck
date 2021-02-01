@@ -93,7 +93,8 @@ func deployCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:     "chain",
-						Usage:    "specify appchain type, ethereum or fabric (default: \"ethereum\")",
+						Usage:    "specify appchain type, ethereum or fabric",
+						Value:    "ethereum",
 						Required: false,
 					},
 					&cli.StringFlag{
@@ -131,6 +132,11 @@ func deployCMD() *cli.Command {
 						Name:     "cryptoPath",
 						Usage:    "path of crypto-config on server, only useful for fabric chain",
 						Required: false,
+					},
+					&cli.StringFlag{
+						Name:  "appchainIP",
+						Value: "127.0.0.1",
+						Usage: "the application chain IP that pier connects to",
 					},
 					&cli.StringFlag{
 						Name:     "version,v",
@@ -297,6 +303,7 @@ func deployPier(ctx *cli.Context) error {
 	pprof := ctx.String("pprof-port")
 	apiPort := ctx.String("api-port")
 	cryptoPath := ctx.String("cryptoPath")
+	appchainIP := ctx.String("appchainIP")
 	version := ctx.String("version")
 
 	if chain == "fabric" {
@@ -322,7 +329,7 @@ func deployPier(ctx *cli.Context) error {
 	who := fmt.Sprintf("%s@%s", username, ip)
 	target := fmt.Sprintf("%s:~/", who)
 
-	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, port, peers, connectors, providers, tls, http, pprof, apiPort, cryptoPath)
+	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, port, peers, connectors, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP)
 	if err != nil {
 		return err
 	}
@@ -434,7 +441,7 @@ func appchainRegister(who, chain string) error {
 	return nil
 }
 
-func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath string) error {
+func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP string) error {
 	configPath := filepath.Join(repoRoot, "pier_deploy")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
@@ -480,7 +487,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Generate pier configure locally\n")
 	pierPath := ""
-	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, ip, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
+	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, appchainIP, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
 	if err != nil {
 		return err
 	}

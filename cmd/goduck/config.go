@@ -512,7 +512,7 @@ func (p *PierConfigGenerator) ProcessParams() error {
 	}
 
 	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
-		return fmt.Errorf("invalid appchain type, choose one of ethereum or fabric")
+		return fmt.Errorf("invalid appchain type(%s), choose one of ethereum or fabric", p.appchainType)
 	}
 
 	if err := checkIPs([]string{p.appchainIP}); err != nil {
