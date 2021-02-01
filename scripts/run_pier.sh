@@ -49,8 +49,11 @@ function prepare() {
   if [ "$MODE" == "fabric" ]; then
     cd "${CURRENT_PATH}"
     print_blue "===> Generate fabric pier configure"
-    # TODO : Change to Dynamic Selection
-    echo "Y"|goduck pier config \
+    overW='Y'
+    if [ "$OVERWRITE" == "false" ]; then
+        overW='N'
+    fi
+    echo $overW|goduck pier config \
       --mode "relay" \
       --bitxhub "localhost:60011" \
       --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
@@ -364,7 +367,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:b:v:c:f:a:l:p:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:o:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -397,6 +400,8 @@ while getopts "h?t:m:b:v:c:f:a:l:p:" opt; do
   p)
     HTTP=$OPTARG
     ;;
+  o)
+    OVERWRITE=$OPTARG
   esac
 done
 
