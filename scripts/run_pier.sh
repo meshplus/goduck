@@ -6,6 +6,8 @@ CURRENT_PATH=$(pwd)
 GODUCK_REPO_PATH=~/.goduck
 PIER_CLIENT_FABRIC_VERSION=master
 PIER_CLIENT_ETHEREUM_VERSION=master
+FABRIC_RULE=fabric_rule.wasm
+ETHEREUM_RULE=ethereum_rule.wasm
 SYSTEM=$(uname -s)
 if [ $SYSTEM == "Linux" ]; then
   SYSTEM="linux"
@@ -26,8 +28,8 @@ function printHelp() {
   echo "  run_pier.sh -h (print this message)"
 }
 
-function prepare() {
-  cd "${PIER_PATH}"
+function downloadBin() {
+    cd "${PIER_PATH}"
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
     if [ "${SYSTEM}" == "linux" ]; then
@@ -45,6 +47,12 @@ function prepare() {
     print_red "pier binary is not downloaded, please download pier first"
     exit 1
   fi
+}
+
+function generateConfig() {
+  if [ "${TYPE}" == "docker" ]; then
+    BITXHUB_ADDR="host.docker.internal:60011"
+  fi
 
   if [ "$MODE" == "fabric" ]; then
     cd "${CURRENT_PATH}"
@@ -55,13 +63,14 @@ function prepare() {
     fi
     echo $overW|goduck pier config \
       --mode "relay" \
-      --bitxhub "localhost:60011" \
+      --type $TYPE \
+      --bitxhub ${BITXHUB_ADDR} \
       --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
       --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "fabric" \
-      --appchain-IP "127.0.0.1" \
+      --appchain-IP ${APPCHAINIP} \
       --target ${CONFIG_PATH} \
       --tls ${TLS} \
       --http-port ${HTTP} \
@@ -105,25 +114,25 @@ function prepare() {
     cd "${CURRENT_PATH}"
     print_blue "===> Generate ethereum pier configure"
     # generate config for ethereum pier
-     overW='Y'
+    overW='Y'
     if [ "$OVERWRITE" == "false" ]; then
         overW='N'
     fi
     echo $overW|goduck pier config \
       --mode "relay" \
-      --bitxhub "localhost:60011" \
+      --type $TYPE \
+      --bitxhub ${BITXHUB_ADDR} \
       --validators "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013" \
       --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchain-type "ethereum" \
-      --appchain-IP "127.0.0.1" \
+      --appchain-IP ${APPCHAINIP} \
       --target "${CONFIG_PATH}" \
       --tls "${TLS}" \
       --http-port "${HTTP}" \
       --pprof-port "${PPROF}"\
       --api-port "${API}" \
-      --cryptoPath ${CRYPTOPATH} \
       --version "${VERSION}"
 
     # copy plugins file to pier root
@@ -168,6 +177,8 @@ function rule_deploy() {
 }
 
 function pier_docker_up() {
+  generateConfig
+
   print_blue "===> Start pier of ${MODE}-${VERSION} in ${TYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
 #    if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
@@ -186,10 +197,14 @@ function pier_docker_up() {
       if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-fabric \
         --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+        -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
+        -v $CONFIG_PATH/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
       else
         docker run -d --name pier-fabric \
+        -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
+        -v $CONFIG_PATH/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
       fi
@@ -197,9 +212,16 @@ function pier_docker_up() {
       print_blue "===> Wait for ethereum-node container to start for seconds..."
       sleep 5
       if [ $SYSTEM == "linux" ]; then
-          docker run -d --name pier-ethereum --add-host host.docker.internal:`hostname -I | awk '{print $1}'` meshplus/pier-ethereum:"${VERSION}"
+        docker run -d --name pier-ethereum \
+          --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+          -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
+          -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
+          meshplus/pier-ethereum:"${VERSION}"
       else
-          docker run -d --name pier-ethereum meshplus/pier-ethereum:"${VERSION}"
+          docker run -d --name pier-ethereum \
+          -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
+          -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
+          meshplus/pier-ethereum:"${VERSION}"
       fi
     else
       print_red "Not supported mode"
@@ -223,7 +245,9 @@ function pier_docker_up() {
 }
 
 function pier_binary_up() {
-  prepare
+  downloadBin
+
+  generateConfig
 
   print_blue "===> pier_root: "${CONFIG_PATH}", bitxhub_addr: $BITXHUB_ADDR"
 
@@ -371,7 +395,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:b:v:c:f:a:l:p:o:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:o:i:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -406,6 +430,10 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:" opt; do
     ;;
   o)
     OVERWRITE=$OPTARG
+    ;;
+  i)
+    APPCHAINIP=$OPTARG
+    ;;
   esac
 done
 

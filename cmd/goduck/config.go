@@ -104,6 +104,7 @@ type BitXHubConfigGenerator struct {
 type PierConfigGenerator struct {
 	id           string
 	mode         string
+	startType    string
 	bitxhub      string
 	validators   []string
 	port         string
@@ -126,9 +127,10 @@ func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, 
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
+		startType:    startType,
 		bitxhub:      bitxhub,
 		validators:   validators,
 		port:         port,
@@ -323,6 +325,15 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 	validators := ""
 	peers := ""
 	connectors := ""
+	localIP := "0.0.0.0"
+	if p.startType == "docker" {
+		localIP = "host.docker.internal"
+		p.cryptoPath = fmt.Sprintf("/root/.pier/%s/crypto-config", p.appchainType)
+		if p.appchainIP == "127.0.0.1" {
+			p.appchainIP = localIP
+		}
+	}
+
 	if p.mode == types.PierModeRelay {
 		for _, v := range p.validators {
 			validators += "\"" + v + "\",\n"
@@ -331,7 +342,7 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		for _, v := range p.peers {
 			peers += "\"" + v + "\",\n"
 		}
-		peers += "\"" + fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/p2p/%s", p.port, p.id) + "\",\n"
+		peers += "\"" + fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", localIP, p.port, p.id) + "\",\n"
 	} else if p.mode == types.PierModeUnion {
 		for _, v := range p.connectors {
 			connectors += "\"" + v + "\",\n"
@@ -541,6 +552,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	}
 
 	mode := ctx.String("mode")
+	startType := ctx.String("type")
 	bitxhub := ctx.String("bitxhub")
 	validators := ctx.StringSlice("validators")
 	port := ctx.String("port")
@@ -580,7 +592,7 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 }
 
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
@@ -588,8 +600,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
-	pcg := NewPierConfigGenerator(mode, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
+	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 	return pcg.InitConfig()
 }
 

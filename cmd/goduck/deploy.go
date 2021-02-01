@@ -480,7 +480,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Generate pier configure locally\n")
 	pierPath := ""
-	err = InitPierConfig(mode, bitxhub, validators, port, peers, connectors, providers, chain, ip, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
+	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, ip, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
 	if err != nil {
 		return err
 	}
