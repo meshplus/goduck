@@ -197,12 +197,14 @@ function pier_docker_up() {
       if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-fabric \
         --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+        -v $CONFIG_PATH/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
         -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
         -v $CONFIG_PATH/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
       else
         docker run -d --name pier-fabric \
+        -v $CONFIG_PATH/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
         -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
         -v $CONFIG_PATH/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
@@ -214,11 +216,13 @@ function pier_docker_up() {
       if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-ethereum \
           --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+          -v $CONFIG_PATH/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
           -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
           -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
           meshplus/pier-ethereum:"${VERSION}"
       else
           docker run -d --name pier-ethereum \
+          -v $CONFIG_PATH/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
           -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
           -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
           meshplus/pier-ethereum:"${VERSION}"
