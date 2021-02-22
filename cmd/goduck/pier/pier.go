@@ -5,9 +5,9 @@ import (
 	"github.com/meshplus/goduck/internal/utils"
 )
 
-func StartPier(repoRoot, chainType, cryptoPath, pierUpType string, version string, pport, aport string) error {
+func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP string) error {
 	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
-		"-r", ".pier_" + chainType, "-v", version, "-c", cryptoPath, "-p", pport, "-a", aport}
+		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP}
 	return utils.ExecuteShell(args, repoRoot)
 }
 

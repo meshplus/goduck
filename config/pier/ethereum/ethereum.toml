@@ -1,5 +1,5 @@
 [Ether]
-addr = "ws://{{.}}:8546"
+addr = "ws://{{.AppchainIP}}:8546"
 name = "ether"
 contract_address = "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4"
 abi_path = "broker.abi"

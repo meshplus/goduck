@@ -46,9 +46,14 @@ func bitxhubCMD() *cli.Command {
 						Value: 4,
 						Usage: "node number, only useful in cluster mode, ignored in solo mode",
 					},
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
 					&cli.StringFlag{
 						Name:  "version,v",
-						Value: "v1.1.0-rc1",
+						Value: "v1.4.0",
 						Usage: "BitXHub version",
 					},
 				},
@@ -92,9 +97,14 @@ func bitxhubCMD() *cli.Command {
 						Value: ".",
 						Usage: "where to put the generated configuration files",
 					},
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
 					&cli.StringFlag{
 						Name:  "version,v",
-						Value: "v1.1.0-rc1",
+						Value: "v1.4.0",
 						Usage: "BitXHub version",
 					},
 				},
@@ -122,6 +132,7 @@ func startBitXHub(ctx *cli.Context) error {
 	num := ctx.Int("num")
 	typ := ctx.String("type")
 	mode := ctx.String("mode")
+	tls := ctx.Bool("tls")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -148,7 +159,7 @@ func startBitXHub(ctx *cli.Context) error {
 
 	bxhConfig := filepath.Join(repoPath, "bitxhub")
 	ips := make([]string, 0)
-	err = InitBitXHubConfig(typ, mode, bxhConfig, num, ips, version)
+	err = InitBitXHubConfig(typ, mode, bxhConfig, num, ips, tls, version)
 	if err != nil {
 		return fmt.Errorf("init config error:%w", err)
 	}

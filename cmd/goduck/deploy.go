@@ -26,6 +26,11 @@ func deployCMD() *cli.Command {
 				Name:  "bitxhub",
 				Usage: "Deploy BitXHub to remote server",
 				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
 					&cli.StringFlag{
 						Name:     "ips",
 						Usage:    "servers ip, e.g. 188.0.0.1,188.0.0.2,188.0.0.3,.188.0.0.4",
@@ -53,21 +58,6 @@ func deployCMD() *cli.Command {
 						Value: types.PierModeRelay,
 						Usage: "configuration mode, one of direct or relay",
 					},
-					&cli.IntFlag{
-						Name:  "pprof-port",
-						Value: 44550,
-						Usage: "pier pprof port",
-					},
-					&cli.StringFlag{
-						Name:     "chain",
-						Usage:    "specify appchain type, ethereum or fabric (default: \"ethereum\")",
-						Required: false,
-					},
-					&cli.StringFlag{
-						Name:     "cryptoPath",
-						Usage:    "path of crypto-config on server, only useful for fabric chain",
-						Required: false,
-					},
 					&cli.StringFlag{
 						Name:     "bitxhub",
 						Usage:    "BitXHub's address, only useful in relay mode",
@@ -81,21 +71,30 @@ func deployCMD() *cli.Command {
 						Required: false,
 					},
 					&cli.StringFlag{
-						Name:     "peers",
-						Usage:    "peers' address, only useful in direct mode",
-						Value:    "",
-						Required: false,
-					},
-					&cli.IntFlag{
 						Name:     "port",
-						Value:    5001,
+						Value:    "5001",
 						Usage:    "pier's port, only useful in direct mode",
 						Required: false,
 					},
-					&cli.IntFlag{
-						Name:     "api-port",
-						Value:    8080,
-						Usage:    "peer's api port",
+					&cli.StringFlag{
+						Name:     "peers",
+						Usage:    "peers' address, only useful in direct mode, e.g. --peers \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5FtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL\"",
+						Value:    "",
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:  "connectors",
+						Usage: "address of peers which need to connect, only useful in union mode for v1.4.0+, e.g. --connectors \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL /ip4/127.0.0.1/tcp/4002/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5abcD\"",
+					},
+					&cli.StringFlag{
+						Name:  "providers",
+						Value: "1",
+						Usage: "the minimum number of cross-chain gateways that need to be found in a large-scale network, only useful in union mode for v1.4.0+",
+					},
+					&cli.StringFlag{
+						Name:     "chain",
+						Usage:    "specify appchain type, ethereum or fabric",
+						Value:    "ethereum",
 						Required: false,
 					},
 					&cli.StringFlag{
@@ -107,6 +106,37 @@ func deployCMD() *cli.Command {
 						Name:     "username,u",
 						Usage:    "server username",
 						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "tls",
+						Value: "false",
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
+					},
+					&cli.StringFlag{
+						Name:  "http-port",
+						Value: "44544",
+						Usage: "peer's http port, only useful for v1.4.0+",
+					},
+					&cli.StringFlag{
+						Name:  "pprof-port",
+						Value: "44550",
+						Usage: "pier pprof port",
+					},
+					&cli.StringFlag{
+						Name:     "api-port",
+						Value:    "8080",
+						Usage:    "peer's api port",
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:     "cryptoPath",
+						Usage:    "path of crypto-config on server, only useful for fabric chain",
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:  "appchainIP",
+						Value: "127.0.0.1",
+						Usage: "the application chain IP that pier connects to",
 					},
 					&cli.StringFlag{
 						Name:     "version,v",
@@ -126,6 +156,7 @@ func deployBitXHub(ctx *cli.Context) error {
 		return err
 	}
 
+	tls := ctx.Bool("tls")
 	username := ctx.String("username")
 	version := ctx.String("version")
 
@@ -150,7 +181,7 @@ func deployBitXHub(ctx *cli.Context) error {
 
 	ips := strings.Split(ctx.String("ips"), ",")
 
-	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, version)
+	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, tls, version)
 
 	if err := generator.InitConfig(); err != nil {
 		return err
@@ -258,23 +289,28 @@ func deployPier(ctx *cli.Context) error {
 	}
 
 	mode := ctx.String("mode")
-	pprof := ctx.Int("pprof-port")
+	bitxhub := ctx.String("bitxhub")
+	validators := strings.Fields(ctx.String("validators"))
+	port := ctx.String("port")
+	peers := strings.Fields(ctx.String("peers"))
+	connectors := strings.Fields(ctx.String("connectors"))
+	providers := ctx.String("providers")
 	chain := ctx.String("chain")
+	ip := ctx.String("ip")
+	username := ctx.String("username")
+	tls := ctx.String("tls")
+	http := ctx.String("http-port")
+	pprof := ctx.String("pprof-port")
+	apiPort := ctx.String("api-port")
 	cryptoPath := ctx.String("cryptoPath")
+	appchainIP := ctx.String("appchainIP")
+	version := ctx.String("version")
+
 	if chain == "fabric" {
 		if cryptoPath == "" {
 			return fmt.Errorf("start fabric pier need crypto-config path")
 		}
 	}
-
-	bitxhub := ctx.String("bitxhub")
-	validators := strings.Fields(ctx.String("validators"))
-	peers := strings.Fields(ctx.String("peers"))
-	port := ctx.Int("port")
-	apiPort := ctx.Int("api-port")
-	ip := ctx.String("ip")
-	username := ctx.String("username")
-	version := ctx.String("version")
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
@@ -293,7 +329,7 @@ func deployPier(ctx *cli.Context) error {
 	who := fmt.Sprintf("%s@%s", username, ip)
 	target := fmt.Sprintf("%s:~/", who)
 
-	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, peers, port, apiPort, pprof, cryptoPath)
+	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, port, peers, connectors, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP)
 	if err != nil {
 		return err
 	}
@@ -321,11 +357,11 @@ func deployPier(ctx *cli.Context) error {
 	return nil
 }
 
-func pierCheck(who string, chain string, pprof int) error {
+func pierCheck(who string, chain string, pprof string) error {
 	color.Blue("===> Check pier of %s\n", chain)
 	fmt.Println("You need to wait more than 15 seconds")
 
-	err := sh.Command("ssh", who, fmt.Sprintf("sleep 15 && echo `lsof -i:%d | grep LISTEN` | awk '{print $2}' > ~/.pier_%s/pier.PID", pprof, chain)).Run()
+	err := sh.Command("ssh", who, fmt.Sprintf("sleep 15 && echo `lsof -i:%s | grep LISTEN` | awk '{print $2}' > ~/.pier_%s/pier.PID", pprof, chain)).Run()
 	if err != nil {
 		return err
 	}
@@ -405,8 +441,8 @@ func appchainRegister(who, chain string) error {
 	return nil
 }
 
-func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators, peers []string, port, apiPort, pprof int, cryptoPath string) error {
-	configPath := filepath.Join(repoRoot, "pier_deploy/.")
+func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP string) error {
+	configPath := filepath.Join(repoRoot, "pier_deploy")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
 		return err
@@ -451,7 +487,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Generate pier configure locally\n")
 	pierPath := ""
-	err = InitPierConfig(mode, bitxhub, chain, ip, configPath, validators, peers, port, pprof, apiPort, version, pierPath)
+	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, appchainIP, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
 	if err != nil {
 		return err
 	}
@@ -461,11 +497,15 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 	if err != nil {
 		return err
 	}
+	err = sh.Command("ssh", who, fmt.Sprintf("if [ -d $HOME/pier/pier_deploy ]; then rm -r $HOME/pier/pier_deploy; fi")).Run()
+	if err != nil {
+		return err
+	}
 	// The files needed for deployment are placed in the ~/pier folder, and the configuration folder for actual deployment is ~/.pier_${chaintype}.
 	err = sh.
 		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
 		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
-		Command("scp", "-r", configPath, fmt.Sprintf("%s.pier_%s/", target, chain)).
+		Command("scp", "-r", configPath, fmt.Sprintf("%spier/pier_deploy", target)).
 		Command("scp", filePath, fmt.Sprintf("%spier/", target)).
 		Run()
 	if err != nil {
@@ -478,14 +518,19 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		return err
 	}
 
-	color.Blue("====> Update key\n")
-	err = sh.Command("ssh", who, fmt.Sprintf("if [ ! -d $HOME/.pier_%s/tmp ]; then mkdir $HOME/.pier_%s/tmp; fi && export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp init && cp $HOME/.pier_%s/tmp/key.json $HOME/.pier_%s/key.json", chain, chain, chain, chain, chain)).Run()
+	color.Blue("====> Update config\n")
+	err = sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s init", chain)).Run()
+	if err != nil {
+		return err
+	}
+
+	err = sh.Command("ssh", who, fmt.Sprintf("cp -r $HOME/pier/pier_deploy/. $HOME/.pier_%s", chain)).Run()
 	if err != nil {
 		return err
 	}
 
 	if mode == types.PierModeDirect {
-		out, err := sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp p2p id && rm -r $HOME/.pier_%s/tmp", chain, chain)).Output()
+		out, err := sh.Command("ssh", who, fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s/tmp p2p id", chain)).Output()
 		if err != nil {
 			return fmt.Errorf("get pier id: %s", err)
 		}
@@ -495,6 +540,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			return err
 		}
 	}
+
 	color.Blue("====> Copy appchain plugin\n")
 	chainPlugin := ""
 	if chain == "fabric" {

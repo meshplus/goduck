@@ -9,6 +9,12 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 BITXHUB_PATH=${CURRENT_PATH}/bitxhub
 PIER_PATH=${CURRENT_PATH}/pier
+SYSTEM=$(uname -s)
+if [ $SYSTEM == "Linux" ]; then
+  SYSTEM="linux"
+elif [ $SYSTEM == "Darwin" ]; then
+  SYSTEM="darwin"
+fi
 
 function print_blue() {
   printf "${BLUE}%s${NC}\n" "$1"
@@ -28,11 +34,21 @@ function printHelp() {
 }
 
 function showBxhInfo() {
+  bitxhubKeyName="key.priv"
+  if [ -e ${BITXHUB_PATH}/bitxhub.version ]; then
+    version=`awk 'NR==1{print}' ${BITXHUB_PATH}/bitxhub.version`
+    if [[ $version == "v1.0.0" || $version == "v1.0.0-rc1" || $version == "v1.1.0-rc1" ]]; then
+      bitxhubKeyName="node.priv"
+    fi
+
+    binPath=${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_$version
+  fi
+
   if [ -e ${BITXHUB_PATH}/bitxhub.pid ]; then
     if [ -d ${BITXHUB_PATH}/nodeSolo ]; then
       if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
         print_blue "======> Show address of solo bitxhub node started in binary"
-        bitxhub key address --path ${BITXHUB_PATH}/nodeSolo/certs/node.priv
+        $binPath/bitxhub key address --path ${BITXHUB_PATH}/nodeSolo/certs/$bitxhubKeyName
       fi
     fi
 
@@ -41,7 +57,7 @@ function showBxhInfo() {
       if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
         print_blue "======> Show address of each bitxhub node started in binary"
         for n in $nodes ; do
-          bitxhub key address --path ${BITXHUB_PATH}/$n/certs/node.priv
+          $binPath/bitxhub key address --path ${BITXHUB_PATH}/$n/certs/$bitxhubKeyName
         done
       fi
     fi
@@ -49,7 +65,7 @@ function showBxhInfo() {
 
   if [ "$(docker ps -q -f name=bitxhub_solo)" ]; then
     print_blue "======> address of solo bitxhub node started in docker"
-    docker exec bitxhub_solo bitxhub key address --path /root/.bitxhub/certs/node.priv
+    docker exec bitxhub_solo bitxhub key address --path /root/.bitxhub/certs/$bitxhubKeyName
   fi
 
   if [ "$(docker ps -q -f name=bitxhub_node)" ]; then
@@ -58,7 +74,7 @@ function showBxhInfo() {
     i=0
     for container_id in $cids; do
       echo "node ${i} address:"
-      docker exec $container_id bitxhub key address --path /root/.bitxhub/certs/node.priv
+      docker exec $container_id bitxhub key address --path /root/.bitxhub/certs/$bitxhubKeyName
       i=$((i+1))
     done
   fi

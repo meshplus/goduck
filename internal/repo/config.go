@@ -26,10 +26,14 @@ const (
 	AgencyName = "agency"
 	// key name
 	KeyName = "key.json"
+	// NodeKeyName
+	NodeKeyName = "node.priv"
 	// Pier config name
 	PierConfigName = "pier.toml"
 	// KeyPassword
 	KeyPassword = "bitxhub"
+	// private key name
+	KeyPriv = "key"
 )
 
 func PathRoot() (string, error) {

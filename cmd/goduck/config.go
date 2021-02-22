@@ -23,8 +23,11 @@ import (
 	"time"
 
 	"github.com/codeskyblue/go-sh"
+	"github.com/fatih/color"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
+	"github.com/meshplus/bitxhub-kit/crypto"
+	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/bitxhub/pkg/cert"
 	"github.com/meshplus/goduck/internal/repo"
@@ -43,15 +46,31 @@ type Genesis struct {
 	Addresses []string `toml:"addresses" json:"addresses" `
 }
 
-type NetworkConfig struct {
+type NetworkConfig1_0_0 struct {
 	ID    uint64 `toml:"id" json:"id"`
 	N     uint64
-	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
+	Nodes []*NetworkNodes1_0_0 `toml:"nodes" json:"nodes"`
+}
+
+type NetworkConfig struct {
+	ID        uint64          `toml:"id" json:"id"`
+	N         uint64          `toml:"n" json:"n"`
+	New       bool            `toml:"new" json:"new"`
+	LocalAddr string          `toml:"local_addr, omitempty" json:"local_addr"`
+	Nodes     []*NetworkNodes `toml:"nodes" json:"nodes"`
+	Genesis   Genesis         `toml:"genesis, omitempty" json:"genesis"`
+}
+
+type NetworkNodes1_0_0 struct {
+	ID   uint64 `toml:"id" json:"id"`
+	Addr string `toml:"addr" json:"addr"`
 }
 
 type NetworkNodes struct {
-	ID   uint64 `toml:"id" json:"id"`
-	Addr string `toml:"addr" json:"addr"`
+	ID      uint64   `toml:"id" json:"id"`
+	Pid     string   `toml:"pid" json:"pid"`
+	Hosts   []string `toml:"hosts" json:"hosts"`
+	Account string   `toml:"account" json:"account"`
 }
 
 type ReadinNetworkConfig struct {
@@ -78,42 +97,56 @@ type BitXHubConfigGenerator struct {
 	target  string
 	num     int
 	ips     []string
+	tls     bool
 	version string
 }
 
 type PierConfigGenerator struct {
+	id           string
 	mode         string
+	startType    string
+	bitxhub      string
+	validators   []string
+	port         string
+	peers        []string
+	connectors   []string
+	providers    string
 	appchainType string
 	appchainIP   string
-	bitxhub      string
 	target       string
-	validators   []string
-	peers        []string
-	port         int
-	pprofPort    int
-	apiPort      int
+	tls          string
+	httpPort     string
+	pprofPort    string
+	apiPort      string
 	version      string
 	pierPath     string
+	cryptoPath   string
 }
 
-func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, version string) *BitXHubConfigGenerator {
-	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, version: version}
+func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
+	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target string, validators, peers []string, port, pprofPort, apiPort int, version, pierPath string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:         mode,
+		startType:    startType,
+		bitxhub:      bitxhub,
+		validators:   validators,
+		port:         port,
+		peers:        peers,
+		connectors:   connectors,
+		providers:    providers,
 		appchainType: appchainType,
 		appchainIP:   appchainIP,
-		bitxhub:      bitxhub,
 		target:       target,
-		validators:   validators,
-		peers:        peers,
-		port:         port,
+		tls:          tls,
+		httpPort:     httpPort,
 		pprofPort:    pprofPort,
 		apiPort:      apiPort,
 		version:      version,
 		pierPath:     pierPath,
+		cryptoPath:   cryptoPath,
 	}
 }
 
@@ -289,34 +322,33 @@ func (p *PierConfigGenerator) Initialized() (bool, error) {
 }
 
 func (p *PierConfigGenerator) copyConfigFiles() error {
-	pid := ""
-	p.pierPath = ""
-
-	// If pierPath equals "", that means this is a call during remote deployment.
-	// Since the PIER binaries used for remote deployment may not be able to run
-	// locally, the step of generatePierKeyAndID is skipped here and it will be
-	// done remotely through the SSH command in deploy.go.
-	if p.pierPath != "" {
-		id, err := generatePierKeyAndID(p.target, p.pierPath)
-		if err != nil {
-			return fmt.Errorf("generate Pier's private key and id: %w", err)
+	validators := ""
+	peers := ""
+	connectors := ""
+	localIP := "0.0.0.0"
+	if p.startType == "docker" {
+		localIP = "host.docker.internal"
+		p.cryptoPath = fmt.Sprintf("/root/.pier/%s/crypto-config", p.appchainType)
+		if p.appchainIP == "127.0.0.1" {
+			p.appchainIP = localIP
 		}
-		pid = id
 	}
 
-	validators := ""
-	bitxhub := ""
-	peers := ""
 	if p.mode == types.PierModeRelay {
-		bitxhub = p.bitxhub
 		for _, v := range p.validators {
 			validators += "\"" + v + "\",\n"
 		}
-	} else {
+	} else if p.mode == types.PierModeDirect {
 		for _, v := range p.peers {
 			peers += "\"" + v + "\",\n"
 		}
-		peers += "\"" + fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/p2p/%s", p.port, pid) + "\",\n"
+		peers += "\"" + fmt.Sprintf("/ip4/%s/tcp/%s/p2p/%s", localIP, p.port, p.id) + "\",\n"
+	} else if p.mode == types.PierModeUnion {
+		for _, v := range p.connectors {
+			connectors += "\"" + v + "\",\n"
+		}
+	} else {
+		return fmt.Errorf("pier does not support the mode")
 	}
 
 	pluginConfig := p.appchainType
@@ -335,11 +367,15 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		Bitxhub      string
 		Validators   string
 		Peers        string
+		Connectors   string
+		Providers    string
+		Tls          string
+		HttpPort     string
+		PprofPort    string
 		PluginFile   string
 		PluginConfig string
-		PprofPort    int
-		ApiPort      int
-	}{p.mode, bitxhub, validators, peers, pluginFile, pluginConfig, p.pprofPort, p.apiPort}
+		ApiPort      string
+	}{p.mode, p.bitxhub, validators, peers, connectors, p.providers, p.tls, p.httpPort, p.pprofPort, pluginFile, pluginConfig, p.apiPort}
 
 	files := []string{
 		filepath.Join("pier", "api"),
@@ -351,7 +387,20 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 
 	dstDir := filepath.Join(p.target, p.appchainType)
 	srcDir := filepath.Join("pier", p.appchainType)
-	if err := renderConfigFiles(dstDir, srcDir, []string{p.appchainType + ".toml"}, p.appchainIP); err != nil {
+
+	files2 := []string{
+		p.appchainType + ".toml",
+	}
+	if p.appchainType == types.Fabric {
+		files2 = append(files2, types.FabricConfig)
+	}
+
+	data2 := struct {
+		AppchainIP string
+		ConfigPath string
+	}{p.appchainIP, p.cryptoPath}
+
+	if err := renderConfigFiles(dstDir, srcDir, files2, data2); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
@@ -382,12 +431,19 @@ func (p *PierConfigGenerator) InitConfig() error {
 	} else if ok {
 		fmt.Println("Pier configuration file already exists")
 		fmt.Println("reinitializing would overwrite your configuration, Y/N?")
-		input := bufio.NewScanner(os.Stdin)
-		input.Scan()
 
-		if input.Text() != "Y" && input.Text() != "y" {
+		inputReader := bufio.NewReader(os.Stdin)
+		input, err := inputReader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
+		}
+
+		if input[0] != 'Y' && input[0] != 'y' {
+			color.Blue("[N] The selection is 'No', so it will work with the existing configuration files.\n")
 			return nil
 		}
+
+		color.Blue("[Y] The selection is 'Yes', so the configuration files will be overridden.\n")
 
 		if err := p.CleanOldConfig(); err != nil {
 			return fmt.Errorf("clean old configuration: %w", err)
@@ -398,6 +454,24 @@ func (p *PierConfigGenerator) InitConfig() error {
 		if err := os.MkdirAll(p.target, 0755); err != nil {
 			return err
 		}
+	}
+
+	// If pierPath equals "", that means this is a call during remote deployment.
+	// Since the PIER binaries used for remote deployment may not be able to run
+	// locally, the step of generatePierKeyAndID is skipped here and it will be
+	// done remotely through the SSH command in deploy.go.
+	if p.pierPath != "" {
+		keys := []string{repo.KeyName}
+		if p.version >= "v1.4.0" {
+			keys = append(keys, repo.NodeKeyName)
+		}
+		id, err := generatePierKeyAndID(p.target, p.pierPath, keys)
+		if err != nil {
+			return fmt.Errorf("generate Pier's private key and id: %w", err)
+		}
+		p.id = id
+	} else {
+		p.id = ""
 	}
 
 	if err := p.copyConfigFiles(); err != nil {
@@ -411,7 +485,14 @@ func (p *PierConfigGenerator) InitConfig() error {
 
 func (p *PierConfigGenerator) ProcessParams() error {
 	if p.mode != types.PierModeDirect && p.mode != types.PierModeRelay {
-		return fmt.Errorf("invalid mode, choose one of direct or relay")
+		if p.version < "v1.4.0" {
+			return fmt.Errorf("invalid mode, choose one of direct or relay")
+		} else {
+			if p.mode != types.PierModeUnion {
+				return fmt.Errorf("invalid mode, choose one of direct, relay or union")
+			}
+		}
+
 	}
 
 	if p.mode == types.PierModeRelay && p.bitxhub == "" {
@@ -426,8 +507,12 @@ func (p *PierConfigGenerator) ProcessParams() error {
 		fmt.Println("You have to add peers' information manually after the configuration files are generated")
 	}
 
+	if p.mode == types.PierModeUnion && len(p.connectors) == 0 {
+		fmt.Println("You have to add connectors' information manually after the configuration files are generated")
+	}
+
 	if p.appchainType != types.ChainTypeEther && p.appchainType != types.ChainTypeFabric {
-		return fmt.Errorf("invalid appchain type, choose one of ethereum or fabric")
+		return fmt.Errorf("invalid appchain type(%s), choose one of ethereum or fabric", p.appchainType)
 	}
 
 	if err := checkIPs([]string{p.appchainIP}); err != nil {
@@ -443,6 +528,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	mode := ctx.String("mode")
 	ips := ctx.StringSlice("ips")
 	target := ctx.String("target")
+	tls := ctx.Bool("tls")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -467,7 +553,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	return InitBitXHubConfig(typ, mode, target, num, ips, version)
+	return InitBitXHubConfig(typ, mode, target, num, ips, tls, version)
 }
 
 func generatePierConfig(ctx *cli.Context) error {
@@ -477,15 +563,21 @@ func generatePierConfig(ctx *cli.Context) error {
 	}
 
 	mode := ctx.String("mode")
+	startType := ctx.String("type")
 	bitxhub := ctx.String("bitxhub")
 	validators := ctx.StringSlice("validators")
+	port := ctx.String("port")
 	peers := ctx.StringSlice("peers")
+	connectors := ctx.StringSlice("connectors")
+	providers := ctx.String("providers")
 	appchainType := ctx.String("appchain-type")
 	appchainIP := ctx.String("appchain-IP")
 	target := ctx.String("target")
-	port := ctx.Int("port")
-	pprofPort := ctx.Int("pprof-port")
-	apiPort := ctx.Int("api-port")
+	tls := ctx.String("tls")
+	httpPort := ctx.String("http-port")
+	pprofPort := ctx.String("pprof-port")
+	apiPort := ctx.String("api-port")
+	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
@@ -511,16 +603,16 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, bitxhub, appchainType, appchainIP, target, validators, peers, port, pprofPort, apiPort, version, pierPath)
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 }
 
-func InitBitXHubConfig(typ, mode, target string, num int, ips []string, version string) error {
-	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, version)
+func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
+	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, tls, version)
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, bitxhub, appchainType, appchainIP, target string, validators, peers []string, port, pprofPort, apiPort int, version, pierPath string) error {
-	pcg := NewPierConfigGenerator(mode, appchainType, appchainIP, bitxhub, target, validators, peers, port, pprofPort, apiPort, version, pierPath)
+func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
+	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 	return pcg.InitConfig()
 }
 
@@ -572,6 +664,16 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
+	if b.version >= "v1.4.0" {
+		if err := generatePrivKey(repo.KeyPriv, b.target, crypto.Secp256k1); err != nil {
+			return "", nil, fmt.Errorf("generate priv key: %w", err)
+		}
+
+		if err := copyFile(repo.GetPrivKeyPath(repo.KeyPriv, certRoot), repo.GetPrivKeyPath(repo.KeyPriv, repoRoot)); err != nil {
+			return "", nil, fmt.Errorf("copy key priv: %w", err)
+		}
+	}
+
 	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
@@ -587,8 +689,10 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 	}
 
 	node := &NetworkNodes{
-		ID:   uint64(id),
-		Addr: fmt.Sprintf("/ip4/%s/tcp/%d/p2p/%s", ip, 4000+ipToId[ip], pid),
+		ID:      uint64(id),
+		Pid:     pid,
+		Hosts:   []string{fmt.Sprintf("/ip4/%s/tcp/%d/p2p/", ip, 4000+ipToId[ip])},
+		Account: addr,
 	}
 
 	return addr, node, nil
@@ -604,11 +708,20 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 		Id        int
 		Solo      bool
 		Consensus string
-	}{id, b.mode == "solo", consensus}
+		Tls       bool
+	}{id, b.mode == "solo", consensus, b.tls}
 
 	files := []string{"bitxhub.toml", "api"}
 
-	return renderConfigFiles(nodeRoot, "bitxhub", files, data)
+	srcPath := "bitxhub"
+
+	if b.version < "v1.4.0" {
+		srcPath = fmt.Sprintf("%s/v1.1.0", srcPath)
+	} else {
+		srcPath = fmt.Sprintf("%s/v1.4.0", srcPath)
+	}
+
+	return renderConfigFiles(nodeRoot, srcPath, files, data)
 }
 
 func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes, version string) error {
@@ -618,7 +731,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 		return fmt.Errorf("marshal genesis: %w", err)
 	}
 
-	count := len(addrs)
+	count := len(nodes)
 
 	for i := 1; i <= count; i++ {
 		nodeRoot := filepath.Join(repoRoot, "node"+strconv.Itoa(i))
@@ -626,14 +739,10 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 			nodeRoot = filepath.Join(repoRoot, "nodeSolo")
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
-			return err
-		}
-
-		if version >= "v1.1.0-rc1" {
+		if version == "v1.1.0-rc1" {
 			var addrs [][]string
 			for _, node := range nodes {
-				addrs = append(addrs, []string{node.Addr})
+				addrs = append(addrs, []string{fmt.Sprintf("%s%s", node.Hosts[0], node.Pid)})
 			}
 			netConfig := ReadinNetworkConfig{Addrs: addrs}
 			netContent, err := toml.Marshal(netConfig)
@@ -644,11 +753,48 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
 				return err
 			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
+				return err
+			}
+
+			continue
+		} else if version < "v1.1.0-rc1" {
+			nodes1_0_0 := make([]*NetworkNodes1_0_0, 0, len(nodes))
+
+			for _, n := range nodes {
+				n1_0_0 := &NetworkNodes1_0_0{
+					ID:   n.ID,
+					Addr: fmt.Sprintf("%s%s", n.Hosts[0], n.Pid),
+				}
+				nodes1_0_0 = append(nodes1_0_0, n1_0_0)
+			}
+
+			netConfig := NetworkConfig1_0_0{
+				ID:    uint64(i),
+				N:     uint64(count),
+				Nodes: nodes1_0_0,
+			}
+
+			netContent, err := toml.Marshal(netConfig)
+			if err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
+				return err
+			}
+
+			if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.GenesisConfigName), content, 0644); err != nil {
+				return err
+			}
+
 			continue
 		}
 		netConfig := NetworkConfig{
 			ID:    uint64(i),
 			N:     uint64(count),
+			New:   false,
 			Nodes: nodes,
 		}
 
@@ -666,7 +812,7 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 }
 
 func generateCert(name string, org string, target string, privKey string, caCertPath string, isCA bool) (string, string, error) {
-	if err := generatePrivKey(name, target); err != nil {
+	if err := generatePrivKey(name, target, crypto.ECDSA_P256); err != nil {
 		return "", "", fmt.Errorf("generate private key: %w", err)
 	}
 
@@ -742,11 +888,19 @@ func existDir(path string) (bool, error) {
 	return s.IsDir(), nil
 }
 
-func generatePierKeyAndID(target, pierPath string) (string, error) {
-	// pier init key.json
-	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/tmp && %s --repo %s/tmp init && cp %s/tmp/%s %s/%s", target, pierPath, target, target, repo.KeyName, target, repo.KeyName)).Run()
+func generatePierKeyAndID(target, pierPath string, keys []string) (string, error) {
+	// pier init key
+	// version >= v1.4.0 : key.json, node.priv
+	// version < v1.4.0- : key.json
+	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/tmp && %s --repo %s/tmp init", target, pierPath, target)).Run()
 	if err != nil {
 		return "", fmt.Errorf("pier init key: %s", err)
+	}
+	for _, k := range keys {
+		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cp %s/tmp/%s %s/%s", target, k, target, k)).Run()
+		if err != nil {
+			return "", fmt.Errorf("copy pier %s: %s", k, err)
+		}
 	}
 
 	// pier p2p id
@@ -927,18 +1081,30 @@ func issueCert(csrPath, privPath, certPath, target string, isCA bool) error {
 	return pem.Encode(f, &pem.Block{Type: "CERTIFICATE", Bytes: x509certEncode})
 }
 
-func generatePrivKey(name, target string) error {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func generatePrivKey(name, target string, opt crypto.KeyType) error {
+	target, err := filepath.Abs(target)
+	if err != nil {
+		return fmt.Errorf("get absolute key path: %w", err)
+	}
+
+	privKey, err := asym.GenerateKeyPair(opt)
 	if err != nil {
 		return fmt.Errorf("generate key: %w", err)
 	}
 
-	priKeyEncode, err := x509.MarshalECPrivateKey(privKey)
+	priKeyEncode, err := privKey.Bytes()
 	if err != nil {
 		return fmt.Errorf("marshal key: %w", err)
 	}
 
-	f, err := os.Create(repo.GetPrivKeyPath(name, target))
+	if !fileutil.Exist(target) {
+		err := os.MkdirAll(target, 0755)
+		if err != nil {
+			return fmt.Errorf("create folder: %w", err)
+		}
+	}
+	path := filepath.Join(target, fmt.Sprintf("%s.priv", name))
+	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
