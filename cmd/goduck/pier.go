@@ -44,7 +44,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:  "version,v",
-					Value: "v1.4.0",
+					Value: "v1.5.0",
 					Usage: "pier version",
 				},
 				&cli.StringFlag{
@@ -189,7 +189,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:  "version",
-					Value: "v1.4.0",
+					Value: "v1.5.0",
 					Usage: "pier version",
 				},
 			},
