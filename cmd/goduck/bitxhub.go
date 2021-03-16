@@ -53,7 +53,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "version,v",
-						Value: "v1.4.0",
+						Value: "v1.5.0",
 						Usage: "BitXHub version",
 					},
 				},
@@ -104,7 +104,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "version,v",
-						Value: "v1.4.0",
+						Value: "v1.5.0",
 						Usage: "BitXHub version",
 					},
 				},
