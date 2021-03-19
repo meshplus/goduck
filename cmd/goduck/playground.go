@@ -22,7 +22,7 @@ func playgroundCMD() *cli.Command {
 				Usage: "Start a demo interchain system",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:     "version",
+						Aliases:  []string{"version", "v"},
 						Usage:    "version of the demo interchain system",
 						Value:    "v1.6.0",
 						Required: false,

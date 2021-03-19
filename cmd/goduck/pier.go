@@ -22,6 +22,65 @@ var pierCMD = &cli.Command{
 	Usage: "Operation about pier",
 	Subcommands: []*cli.Command{
 		{
+			Name:  "register",
+			Usage: "Register pier to BitXHub",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "chain",
+					Usage:    "specify appchain type, ethereum(default) or fabric",
+					Required: false,
+					Value:    types.Ethereum,
+				},
+				&cli.StringFlag{
+					Name:     "cryptoPath",
+					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
+					Required: false,
+				},
+				&cli.StringFlag{
+					Name:     "pierType",
+					Usage:    "specify pier up type, docker(default) or binary",
+					Required: false,
+					Value:    types.TypeDocker,
+				},
+				&cli.StringFlag{
+					Aliases: []string{"version", "v"},
+					Value:   "v1.6.0",
+					Usage:   "pier version",
+				},
+				&cli.StringFlag{
+					Name:  "tls",
+					Value: "false",
+					Usage: "whether to enable TLS, true or false, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
+					Name:  "httpPort",
+					Value: "44544",
+					Usage: "peer's http port, only useful for v1.4.0+",
+				},
+				&cli.StringFlag{
+					Name:  "pprofPort",
+					Value: "44550",
+					Usage: "pier pprof port, only useful for binary",
+				},
+				&cli.StringFlag{
+					Name:  "apiPort",
+					Value: "8080",
+					Usage: "pier api port, only useful for binary",
+				},
+				&cli.StringFlag{
+					Name:  "overwrite",
+					Value: "true",
+					Usage: "whether to overwrite the configuration if the pier configuration file exists locally",
+				},
+				&cli.StringFlag{
+					Name:  "appchainIP",
+					Value: "127.0.0.1",
+					Usage: "the application chain IP that pier connects to",
+				},
+			},
+			Action: pierRegister,
+		},
+		{
 			Name:  "start",
 			Usage: "Start pier with its appchain up",
 			Flags: []cli.Flag{
@@ -37,15 +96,15 @@ var pierCMD = &cli.Command{
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:     "pier-type",
+					Name:     "pierType",
 					Usage:    "specify pier up type, docker(default) or binary",
 					Required: false,
 					Value:    types.TypeDocker,
 				},
 				&cli.StringFlag{
-					Name:  "version,v",
-					Value: "v1.6.0",
-					Usage: "pier version",
+					Aliases: []string{"version", "v"},
+					Value:   "v1.6.0",
+					Usage:   "pier version",
 				},
 				&cli.StringFlag{
 					Name:  "tls",
@@ -53,17 +112,17 @@ var pierCMD = &cli.Command{
 					Usage: "whether to enable TLS, true or false, only useful for v1.4.0+",
 				},
 				&cli.StringFlag{
-					Name:  "http-port",
+					Name:  "httpPort",
 					Value: "44544",
 					Usage: "peer's http port, only useful for v1.4.0+",
 				},
 				&cli.StringFlag{
-					Name:  "pprof-port",
+					Name:  "pprofPort",
 					Value: "44550",
 					Usage: "pier pprof port, only useful for binary",
 				},
 				&cli.StringFlag{
-					Name:  "api-port",
+					Name:  "apiPort",
 					Value: "8080",
 					Usage: "pier api port, only useful for binary",
 				},
@@ -147,12 +206,12 @@ var pierCMD = &cli.Command{
 					Usage: "the minimum number of cross-chain gateways that need to be found in a large-scale network, only useful in union mode for v1.4.0+",
 				},
 				&cli.StringFlag{
-					Name:  "appchain-type",
+					Name:  "appchainType",
 					Value: "ethereum",
 					Usage: "appchain type, one of ethereum or fabric",
 				},
 				&cli.StringFlag{
-					Name:  "appchain-IP",
+					Name:  "appchainIP",
 					Value: "127.0.0.1",
 					Usage: "appchain IP address",
 				},
@@ -167,17 +226,17 @@ var pierCMD = &cli.Command{
 					Usage: "whether to enable TLS, only useful for v1.4.0+",
 				},
 				&cli.StringFlag{
-					Name:  "http-port",
+					Name:  "httpPort",
 					Value: "44544",
 					Usage: "peer's http port, only useful for v1.4.0+",
 				},
 				&cli.StringFlag{
-					Name:  "pprof-port",
+					Name:  "pprofPort",
 					Value: "44550",
 					Usage: "peer's pprof port",
 				},
 				&cli.StringFlag{
-					Name:  "api-port",
+					Name:  "apiPort",
 					Value: "8080",
 					Usage: "peer's api port",
 				},
@@ -188,9 +247,9 @@ var pierCMD = &cli.Command{
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:  "version",
-					Value: "v1.6.0",
-					Usage: "pier version",
+					Aliases: []string{"version", "v"},
+					Value:   "v1.6.0",
+					Usage:   "pier version",
 				},
 			},
 			Action: generatePierConfig,
@@ -198,15 +257,15 @@ var pierCMD = &cli.Command{
 	},
 }
 
-func pierStart(ctx *cli.Context) error {
+func pierRegister(ctx *cli.Context) error {
 	chainType := ctx.String("chain")
 	cryptoPath := ctx.String("cryptoPath")
-	pierUpType := ctx.String("pier-type")
+	pierUpType := ctx.String("pierType")
 	version := ctx.String("version")
 	tls := ctx.String("tls")
-	http := ctx.String("http-port")
-	pport := ctx.String("pprof-port")
-	aport := ctx.String("api-port")
+	http := ctx.String("httpPort")
+	pport := ctx.String("pprofPort")
+	aport := ctx.String("apiPort")
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 
@@ -239,6 +298,44 @@ func pierStart(ctx *cli.Context) error {
 				return fmt.Errorf("download pier binary error:%w", err)
 			}
 		}
+	}
+
+	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP)
+}
+
+func pierStart(ctx *cli.Context) error {
+	chainType := ctx.String("chain")
+	cryptoPath := ctx.String("cryptoPath")
+	pierUpType := ctx.String("pierType")
+	version := ctx.String("version")
+	tls := ctx.String("tls")
+	http := ctx.String("httpPort")
+	pport := ctx.String("pprofPort")
+	aport := ctx.String("apiPort")
+	overwrite := ctx.String("overwrite")
+	appchainIP := ctx.String("appchainIP")
+
+	if chainType == "fabric" && cryptoPath == "" {
+		return fmt.Errorf("start fabric pier need crypto-config path")
+	}
+
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Pier) {
+		return fmt.Errorf("unsupport pier verison")
 	}
 
 	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP)

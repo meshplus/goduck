@@ -18,7 +18,8 @@ fi
 function printHelp() {
   print_blue "Usage:  "
   echo "  run_pier.sh <OPT>"
-  echo "    <OPT> - one of 'up', 'down', 'restart'"
+  echo "    <OPT> - one of 'register', 'up', 'down', 'restart'"
+  echo "      - 'register' - register pier to bitxhub"
   echo "      - 'up' - bring up a new pier"
   echo "      - 'down' - clear a new pier"
   echo "    -t <mode> - pier type (default \"fabric\")"
@@ -69,13 +70,13 @@ function generateConfig() {
       --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
-      --appchain-type "fabric" \
-      --appchain-IP ${APPCHAINIP} \
+      --appchainType "fabric" \
+      --appchainIP ${APPCHAINIP} \
       --target ${CONFIG_PATH} \
       --tls ${TLS} \
-      --http-port ${HTTP} \
-      --pprof-port ${PPROF} \
-      --api-port ${API} \
+      --httpPort ${HTTP} \
+      --pprofPort ${PPROF} \
+      --apiPort ${API} \
       --cryptoPath ${CRYPTOPATH} \
       --version ${VERSION}
 
@@ -126,13 +127,13 @@ function generateConfig() {
       --validators "0x79a1215469FaB6f9c63c1816b45183AD3624bE34" \
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
-      --appchain-type "ethereum" \
-      --appchain-IP ${APPCHAINIP} \
+      --appchainType "ethereum" \
+      --appchainIP ${APPCHAINIP} \
       --target "${CONFIG_PATH}" \
       --tls "${TLS}" \
-      --http-port "${HTTP}" \
-      --pprof-port "${PPROF}"\
-      --api-port "${API}" \
+      --httpPort "${HTTP}" \
+      --pprofPort "${PPROF}"\
+      --apiPort "${API}" \
       --version "${VERSION}"
 
     # copy plugins file to pier root
@@ -249,25 +250,15 @@ function pier_docker_up() {
 }
 
 function pier_binary_up() {
-  extractBin
-
-  generateConfig
-
-  print_blue "===> pier_root: "${CONFIG_PATH}", bitxhub_addr: $BITXHUB_ADDR"
-
   cd "${CONFIG_PATH}"
 
   if [ "$MODE" == "fabric" ]; then
-    print_blue "===> Register pier(fabric) to bitxhub"
-    appchain_register chainA fabric chainA-description 1.4.3 fabric/fabric.validators
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy fabric
     export START_PATH="${CONFIG_PATH}" && export CONFIG_PATH="${CONFIG_PATH}"/fabric
   fi
 
   if [ "$MODE" == "ethereum" ]; then
-    print_blue "===> Register pier(ethereum) to bitxhub"
-    appchain_register chainB ether chainB-description 1.9.13 ethereum/ether.validators
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy ethereum
     export START_PATH="${CONFIG_PATH}"
@@ -284,6 +275,42 @@ function pier_binary_up() {
     echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
   else
     print_red "===> Start pier fail"
+  fi
+}
+
+function pier_binary_register() {
+  extractBin
+
+  generateConfig
+
+  print_blue "===> pier_root: "${CONFIG_PATH}", bitxhub_addr: $BITXHUB_ADDR"
+
+  cd "${CONFIG_PATH}"
+
+  if [ "$MODE" == "fabric" ]; then
+    print_blue "===> Register pier(fabric) to bitxhub"
+    appchain_register chainA fabric chainA-description 1.4.3 fabric/fabric.validators
+  fi
+
+  if [ "$MODE" == "ethereum" ]; then
+    print_blue "===> Register pier(ethereum) to bitxhub"
+    appchain_register chainB ether chainB-description 1.9.13 ethereum/ether.validators
+  fi
+
+  if [[ "${VERSION}" < "v1.6.0" ]]; then
+    print_blue "Please use the 'goduck start' command to start the PIER"
+  else
+    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck start' command to start the PIER"
+  fi
+}
+
+function pier_register() {
+  if [ "${TYPE}" == "docker" ]; then
+    print_blue "===> For docker type, versions below v1.6.0 can be registered directly in the START command, version v1.6.0 and above do not support separate PIER registration currently."
+  elif [ "${TYPE}" == "binary" ]; then
+    pier_binary_register
+  else
+    echo "Not supported up type "${TYPE}" for pier"
   fi
 }
 
@@ -444,7 +471,9 @@ done
 CONFIG_PATH="${CURRENT_PATH}"/pier/.pier_${MODE}
 PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
 
-if [ "$OPT" == "up" ]; then
+if [ "$OPT" == "register" ]; then
+  pier_register
+elif [ "$OPT" == "up" ]; then
   pier_up
 elif [ "$OPT" == "down" ]; then
   pier_down

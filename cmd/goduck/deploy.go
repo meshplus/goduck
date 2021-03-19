@@ -37,12 +37,12 @@ func deployCMD() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "username,u",
+						Aliases:  []string{"username", "u"},
 						Usage:    "server username",
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "version,v",
+						Aliases:  []string{"version", "v"},
 						Usage:    "BitXHub version",
 						Required: true,
 					},
@@ -103,7 +103,7 @@ func deployCMD() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "username,u",
+						Aliases:  []string{"username", "u"},
 						Usage:    "server username",
 						Required: true,
 					},
@@ -113,17 +113,17 @@ func deployCMD() *cli.Command {
 						Usage: "whether to enable TLS, only useful for v1.4.0+",
 					},
 					&cli.StringFlag{
-						Name:  "http-port",
+						Name:  "httpPort",
 						Value: "44544",
 						Usage: "peer's http port, only useful for v1.4.0+",
 					},
 					&cli.StringFlag{
-						Name:  "pprof-port",
+						Name:  "pprofPort",
 						Value: "44550",
 						Usage: "pier pprof port",
 					},
 					&cli.StringFlag{
-						Name:     "api-port",
+						Name:     "apiPort",
 						Value:    "8080",
 						Usage:    "peer's api port",
 						Required: false,
@@ -139,7 +139,7 @@ func deployCMD() *cli.Command {
 						Usage: "the application chain IP that pier connects to",
 					},
 					&cli.StringFlag{
-						Name:     "version,v",
+						Aliases:  []string{"version", "v"},
 						Usage:    "pier version",
 						Required: true,
 					},
@@ -299,9 +299,9 @@ func deployPier(ctx *cli.Context) error {
 	ip := ctx.String("ip")
 	username := ctx.String("username")
 	tls := ctx.String("tls")
-	http := ctx.String("http-port")
-	pprof := ctx.String("pprof-port")
-	apiPort := ctx.String("api-port")
+	http := ctx.String("httpPort")
+	pprof := ctx.String("pprofPort")
+	apiPort := ctx.String("apiPort")
 	cryptoPath := ctx.String("cryptoPath")
 	appchainIP := ctx.String("appchainIP")
 	version := ctx.String("version")
