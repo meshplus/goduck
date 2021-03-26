@@ -103,10 +103,10 @@ function generateConfig() {
     fi
     cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
 
-    cd "${CONFIG_PATH}"
-    if [ ! -f fabric_rule.wasm ]; then
-      print_blue "===> Downloading fabric_rule.wasm"
-      wget https://github.com/meshplus/bitxhub/blob/master/scripts/quick_start/fabric_rule.wasm
+    cd "${CONFIG_PATH}"/fabric
+    if [ ! -f validating.wasm ]; then
+      print_blue "===> Downloading validating.wasm"
+      wget https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm
     fi
   fi
 
@@ -150,11 +150,10 @@ function generateConfig() {
     fi
     cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
 
-    cd "${CONFIG_PATH}"
-    if [ ! -f ethereum_rule.wasm ]; then
-      print_blue "===> Downloading ethereum_rule.wasm"
-      wget https://github.com/meshplus/pier-client-ethereum/blob/master/config/validating.wasm
-      mv validating.wasm ethereum_rule.wasm
+    cd "${CONFIG_PATH}"/ethereum
+    if [ ! -f validating.wasm ]; then
+      print_blue "===> Downloading validating.wasm"
+      wget https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm
     fi
   fi
 
@@ -173,7 +172,7 @@ function appchain_register() {
 }
 
 function rule_deploy() {
-  "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" rule deploy --path "${CONFIG_PATH}"/$1_rule.wasm
+  "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" rule deploy --path "${CONFIG_PATH}"/$1/validating.wasm
 }
 
 function pier_docker_up() {
