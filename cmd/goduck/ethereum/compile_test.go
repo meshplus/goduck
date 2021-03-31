@@ -8,7 +8,7 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
-	compileResult, err := compileSolidityCode("solidity/transfer.sol")
+	compileResult, err := compileSolidityCode("solidity/broker.sol")
 	require.Nil(t, err)
 
 	data, err := json.Marshal(compileResult)
