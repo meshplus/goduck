@@ -87,7 +87,7 @@ function bitxhub_binary_solo() {
   nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
   NODEPATH="${CONFIG_PATH}"/nodeSolo
-  sleep 2
+  sleep 3
   bitxhub_binary_check
   if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
@@ -95,6 +95,8 @@ function bitxhub_binary_solo() {
     echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   else
     print_red "===> Start bitxhub solo fail"
+    echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   fi
 }
 
@@ -120,7 +122,7 @@ function bitxhub_docker_solo() {
   fi
 
   CONTAINER=bitxhub_solo
-  sleep 2
+  sleep 3
   bitxhub_docker_check
   if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
@@ -129,6 +131,9 @@ function bitxhub_docker_solo() {
     echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   else
     print_red "===> Start bitxhub solo fail"
+    echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    CID=`docker container ls | grep bitxhub_solo`
+    echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   fi
 }
 
@@ -151,7 +156,7 @@ function bitxhub_binary_cluster() {
   for ((i = 1; i < N + 1; i = i + 1)); do
     NODEPATH="${CONFIG_PATH}"/node${i}
     PID=${PIDS[${i}]}
-    sleep 2
+    sleep 3
     bitxhub_binary_check
     if [ ${checkRet} == "1" ]; then
       print_green "===> Start bitxhub node${i} successful"
@@ -159,6 +164,8 @@ function bitxhub_binary_cluster() {
       echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
     else
       print_red "===> Start bitxhub node${i} fail"
+      echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+      echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
     fi
   done
 }
@@ -184,6 +191,9 @@ function bitxhub_docker_cluster() {
       echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
     else
       print_red "===> Start bitxhub node${i} fail"
+      echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+      CID=`docker container ls | grep bitxhub_node$i`
+      echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
     fi
   done
 }

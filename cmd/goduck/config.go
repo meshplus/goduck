@@ -16,7 +16,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -27,14 +26,15 @@ import (
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/meshplus/bitxhub-kit/crypto"
+	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/bitxhub/pkg/cert"
+	libp2pcert "github.com/meshplus/go-libp2p-cert"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/pelletier/go-toml"
 	"github.com/spf13/viper"
-	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -91,6 +91,16 @@ type ConfigGenerator interface {
 	ProcessParams() error
 }
 
+type Genesis struct {
+	Admins   []*Admin          `json:"admins" toml:"admins"`
+	Strategy map[string]string `json:"strategy" toml:"strategy"`
+}
+
+type Admin struct {
+	Address string `json:"address" toml:"address"`
+	Weight  uint64 `json:"weight" toml:"weight"`
+}
+
 type BitXHubConfigGenerator struct {
 	typ     string
 	mode    string
@@ -123,16 +133,6 @@ type PierConfigGenerator struct {
 	cryptoPath   string
 }
 
-type Genesis struct {
-	Admins   []*Admin          `json:"admins" toml:"admins"`
-	Strategy map[string]string `json:"strategy" toml:"strategy"`
-}
-
-type Admin struct {
-	Address string `json:"address" toml:"address"`
-	Weight  uint64 `json:"weight" toml:"weight"`
-}
-
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
@@ -160,6 +160,8 @@ func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string
 	}
 }
 
+// BitXHubConfigGenerator ===========================================================================
+// Initialized determines whether any BitXHub profiles already exists under the target path.
 func (b *BitXHubConfigGenerator) Initialized() (bool, error) {
 	if fileutil.Exist(repo.GetCAPrivKeyPath(b.target)) ||
 		fileutil.Exist(repo.GetCACertPath(b.target)) ||
@@ -218,6 +220,7 @@ func (b *BitXHubConfigGenerator) CleanOldConfig() error {
 	return nil
 }
 
+// the main method, init config
 func (b *BitXHubConfigGenerator) InitConfig() error {
 	if err := b.ProcessParams(); err != nil {
 		return err
@@ -248,11 +251,13 @@ func (b *BitXHubConfigGenerator) InitConfig() error {
 		}
 	}
 
+	// generate ca for bitxhub, return path of ca.priv and ca.cert
 	caPrivKey, caCertPath, err := generateCA(b.target)
 	if err != nil {
 		return fmt.Errorf("generate CA: %w", err)
 	}
 
+	// generate cert for bitxhub base ca.priv and ca.cert, return path of agency.priv and agency.cert
 	agencyPrivKey, agencyCertPath, err := generateCert(repo.AgencyName, strings.ToUpper(repo.AgencyName), b.target,
 		caPrivKey, caCertPath, true)
 	if err != nil {
@@ -274,6 +279,7 @@ func (b *BitXHubConfigGenerator) InitConfig() error {
 	return nil
 }
 
+// ProcessParams check parameter correctness
 func (b *BitXHubConfigGenerator) ProcessParams() error {
 	if b.mode == types.SoloMode {
 		b.num = 1
@@ -323,6 +329,7 @@ func (b *BitXHubConfigGenerator) ProcessParams() error {
 	return nil
 }
 
+// PierConfigGenerator ===========================================================================
 func (p *PierConfigGenerator) Initialized() (bool, error) {
 	if fileutil.Exist(filepath.Join(p.target, repo.PierConfigName)) {
 		return true, nil
@@ -532,90 +539,6 @@ func (p *PierConfigGenerator) ProcessParams() error {
 	return nil
 }
 
-func generateBitXHubConfig(ctx *cli.Context) error {
-	num := ctx.Int("num")
-	typ := ctx.String("type")
-	mode := ctx.String("mode")
-	ips := ctx.StringSlice("ips")
-	target := ctx.String("target")
-	tls := ctx.Bool("tls")
-	version := ctx.String("version")
-
-	repoPath, err := repo.PathRoot()
-	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
-	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
-		return fmt.Errorf("please `goduck init` first")
-	}
-
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
-	if err != nil {
-		return err
-	}
-
-	var release *Release
-	if err := json.Unmarshal(data, &release); err != nil {
-		return err
-	}
-
-	if !AdjustVersion(version, release.Bitxhub) {
-		return fmt.Errorf("unsupport BitXHub verison")
-	}
-
-	return InitBitXHubConfig(typ, mode, target, num, ips, tls, version)
-}
-
-func generatePierConfig(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	mode := ctx.String("mode")
-	startType := ctx.String("type")
-	bitxhub := ctx.String("bitxhub")
-	validators := ctx.StringSlice("validators")
-	port := ctx.String("port")
-	peers := ctx.StringSlice("peers")
-	connectors := ctx.StringSlice("connectors")
-	providers := ctx.String("providers")
-	appchainType := ctx.String("appchainType")
-	appchainIP := ctx.String("appchainIP")
-	target := ctx.String("target")
-	tls := ctx.String("tls")
-	httpPort := ctx.String("httpPort")
-	pprofPort := ctx.String("pprofPort")
-	apiPort := ctx.String("apiPort")
-	cryptoPath := ctx.String("cryptoPath")
-	version := ctx.String("version")
-
-	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
-	if err != nil {
-		return err
-	}
-
-	var release *Release
-	if err := json.Unmarshal(data, &release); err != nil {
-		return err
-	}
-
-	if !AdjustVersion(version, release.Bitxhub) {
-		return fmt.Errorf("unsupport pier verison")
-	}
-
-	// generate key.json need pier binary file
-	pierP := fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version)
-	pierPath := filepath.Join(repoRoot, pierP)
-	if !fileutil.Exist(pierPath) {
-		if err := downloadPierBinary(repoRoot, version); err != nil {
-			return fmt.Errorf("download pier binary error:%w", err)
-		}
-	}
-
-	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
-}
-
 func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool, version string) error {
 	bcg := NewBitXHubConfigGenerator(typ, mode, target, num, ips, tls, version)
 	return bcg.InitConfig()
@@ -659,44 +582,69 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 	}
 	certRoot := filepath.Join(nodeRoot, "certs")
 
-	// generate certs
-	// generate ca/agency/node.cert
+	// generate certs ==================================================
 	if err := os.MkdirAll(certRoot, 0755); err != nil {
 		return "", nil, err
 	}
 
+	// generate node.priv and node.cert
 	if _, _, err := generateCert(name, org, certRoot, agencyPrivKey, agencyCertPath, false); err != nil {
 		return "", nil, fmt.Errorf("generate node cert: %w", err)
 	}
 
+	// copy ca.cert
 	if err := copyFile(repo.GetCACertPath(certRoot), repo.GetCACertPath(repoRoot)); err != nil {
 		return "", nil, fmt.Errorf("copy ca cert: %w", err)
 	}
 
+	// copy agency.cert
 	if err := copyFile(repo.GetCertPath("agency", certRoot), agencyCertPath); err != nil {
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
-	// generate key.pri
+	// generate key.pri ===============================================
+	cryptoOpt := crypto.Secp256k1
+	if b.version < "v1.4.0" {
+		cryptoOpt = crypto.ECDSA_P521
+	}
 	if b.version >= "v1.4.0" {
-		if err := generatePrivKey(repo.KeyPriv, b.target, crypto.Secp256k1); err != nil {
+		if err := generatePrivKey(repo.KeyPriv, certRoot, crypto.Secp256k1); err != nil {
 			return "", nil, fmt.Errorf("generate priv key: %w", err)
-		}
-
-		if err := copyFile(repo.GetPrivKeyPath(repo.KeyPriv, certRoot), repo.GetPrivKeyPath(repo.KeyPriv, repoRoot)); err != nil {
-			return "", nil, fmt.Errorf("copy key priv: %w", err)
 		}
 		addrKeyName = "key"
 	}
 
-	// generate bitxhub.toml, order.toml, api...
+	// generate key.json ==============================================
+	keyData, err := ioutil.ReadFile(filepath.Join(certRoot, fmt.Sprintf("%s.priv", addrKeyName)))
+	if err != nil {
+		return "", nil, err
+	}
+
+	privKeyStandard, err := libp2pcert.ParsePrivateKey(keyData, crypto2.KeyType(cryptoOpt))
+	if err != nil {
+		return "", nil, err
+	}
+
+	keyPath := filepath.Join(nodeRoot, repo.KeyName)
+
+	privKey, err := asym.PrivateKeyFromStdKey(privKeyStandard.K)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if err := asym.StorePrivateKey(privKey, keyPath, "bitxhub"); err != nil {
+		return "", nil, err
+	}
+
+	// generate bitxhub.toml, order.toml, api... ======================
 	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
 
+	// get return info ================================================
 	// get address from key.pri >= 1.4.0
 	// get address from node.pri < 1.4.0
-	addr, err := getAddressFromPrivateKey(repo.GetPrivKeyPath(addrKeyName, certRoot))
+	addr, err := getAddressFromPrivateKey(repo.GetPrivKeyPath(addrKeyName, certRoot), crypto.KeyType(cryptoOpt))
 	if err != nil {
 		return "", nil, fmt.Errorf("get address from private key: %w", err)
 	}
@@ -745,6 +693,7 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 	return renderConfigFiles(nodeRoot, srcPath, files, data)
 }
 
+// write network and genesis info for BitXHub
 func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes, version string) error {
 	genesis := Genesis1_1_0{Addresses: addrs}
 	content, err := json.MarshalIndent(genesis, "", " ")
@@ -973,6 +922,7 @@ func generatePierKeyAndID(target, pierPath string, keys []string) (string, error
 	return pid, nil
 }
 
+// generate ca for bitxhub, return path of ca.priv and ca.cert
 func generateCA(dir string) (string, string, error) {
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -984,6 +934,7 @@ func generateCA(dir string) (string, string, error) {
 		return "", "", err
 	}
 
+	// create ca.priv
 	f, err := os.Create(repo.GetCAPrivKeyPath(dir))
 	if err != nil {
 		return "", "", err
@@ -1005,6 +956,7 @@ func generateCA(dir string) (string, string, error) {
 		return "", "", err
 	}
 
+	// create ca.cert
 	f, err = os.Create(repo.GetCACertPath(dir))
 	if err != nil {
 		return "", "", err

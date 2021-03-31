@@ -15,6 +15,7 @@ import (
 	"github.com/meshplus/bitxhub-kit/crypto/asym/ecdsa"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/bitxhub/pkg/cert"
+	libp2pcert "github.com/meshplus/go-libp2p-cert"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/urfave/cli/v2"
 )
@@ -258,7 +259,7 @@ func getPidFromPrivateKey(privPath string) (string, error) {
 func getAddress(ctx *cli.Context) error {
 	privPath := ctx.String("path")
 
-	addr, err := getAddressFromPrivateKey(privPath)
+	addr, err := getAddressFromPrivateKey(privPath, crypto.Secp256k1)
 	if err != nil {
 		return fmt.Errorf("get address from private key: %s", err)
 	}
@@ -268,13 +269,13 @@ func getAddress(ctx *cli.Context) error {
 	return nil
 }
 
-func getAddressFromPrivateKey(privPath string) (string, error) {
+func getAddressFromPrivateKey(privPath string, opt crypto2.KeyType) (string, error) {
 	data, err := ioutil.ReadFile(privPath)
 	if err != nil {
 		return "", fmt.Errorf("read private key: %w", err)
 	}
 
-	privKey, err := cert.ParsePrivateKey(data, crypto2.Secp256k1)
+	privKey, err := libp2pcert.ParsePrivateKey(data, opt) //crypto2.Secp256k1
 	if err != nil {
 		return "", err
 	}

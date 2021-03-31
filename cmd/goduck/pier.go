@@ -418,3 +418,53 @@ func downloadPierBinary(repoPath string, version string) error {
 
 	return nil
 }
+
+func generatePierConfig(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRoot()
+	if err != nil {
+		return err
+	}
+
+	mode := ctx.String("mode")
+	startType := ctx.String("type")
+	bitxhub := ctx.String("bitxhub")
+	validators := ctx.StringSlice("validators")
+	port := ctx.String("port")
+	peers := ctx.StringSlice("peers")
+	connectors := ctx.StringSlice("connectors")
+	providers := ctx.String("providers")
+	appchainType := ctx.String("appchainType")
+	appchainIP := ctx.String("appchainIP")
+	target := ctx.String("target")
+	tls := ctx.String("tls")
+	httpPort := ctx.String("httpPort")
+	pprofPort := ctx.String("pprofPort")
+	apiPort := ctx.String("apiPort")
+	cryptoPath := ctx.String("cryptoPath")
+	version := ctx.String("version")
+
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Bitxhub) {
+		return fmt.Errorf("unsupport pier verison")
+	}
+
+	// generate key.json need pier binary file
+	pierP := fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version)
+	pierPath := filepath.Join(repoRoot, pierP)
+	if !fileutil.Exist(pierPath) {
+		if err := downloadPierBinary(repoRoot, version); err != nil {
+			return fmt.Errorf("download pier binary error:%w", err)
+		}
+	}
+
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+}
