@@ -15,6 +15,11 @@ contract Transfer {
 
     function setBroker(address newBroker) public {
         BrokerAddr = newBroker;
+        broker = Broker(newBroker);
+    }
+
+    function getBroker() public view returns(address) {
+        return BrokerAddr;
     }
 
     // 资产类的业务合约
