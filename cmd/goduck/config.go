@@ -33,6 +33,7 @@ import (
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/pelletier/go-toml"
+	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 )
 
@@ -42,7 +43,8 @@ var (
 	_        ConfigGenerator = (*PierConfigGenerator)(nil)
 )
 
-type Genesis struct {
+// version <= v1.1.0-rc1
+type Genesis1_1_0 struct {
 	Addresses []string `toml:"addresses" json:"addresses" `
 }
 
@@ -53,12 +55,10 @@ type NetworkConfig1_0_0 struct {
 }
 
 type NetworkConfig struct {
-	ID        uint64          `toml:"id" json:"id"`
-	N         uint64          `toml:"n" json:"n"`
-	New       bool            `toml:"new" json:"new"`
-	LocalAddr string          `toml:"local_addr, omitempty" json:"local_addr"`
-	Nodes     []*NetworkNodes `toml:"nodes" json:"nodes"`
-	Genesis   Genesis         `toml:"genesis, omitempty" json:"genesis"`
+	ID    uint64          `toml:"id" json:"id"`
+	N     uint64          `toml:"n" json:"n"`
+	New   bool            `toml:"new" json:"new"`
+	Nodes []*NetworkNodes `toml:"nodes" json:"nodes"`
 }
 
 type NetworkNodes1_0_0 struct {
@@ -121,6 +121,16 @@ type PierConfigGenerator struct {
 	version      string
 	pierPath     string
 	cryptoPath   string
+}
+
+type Genesis struct {
+	Admins   []*Admin          `json:"admins" toml:"admins"`
+	Strategy map[string]string `json:"strategy" toml:"strategy"`
+}
+
+type Admin struct {
+	Address string `json:"address" toml:"address"`
+	Weight  uint64 `json:"weight" toml:"weight"`
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
@@ -570,13 +580,13 @@ func generatePierConfig(ctx *cli.Context) error {
 	peers := ctx.StringSlice("peers")
 	connectors := ctx.StringSlice("connectors")
 	providers := ctx.String("providers")
-	appchainType := ctx.String("appchain-type")
-	appchainIP := ctx.String("appchain-IP")
+	appchainType := ctx.String("appchainType")
+	appchainIP := ctx.String("appchainIP")
 	target := ctx.String("target")
 	tls := ctx.String("tls")
-	httpPort := ctx.String("http-port")
-	pprofPort := ctx.String("pprof-port")
-	apiPort := ctx.String("api-port")
+	httpPort := ctx.String("httpPort")
+	pprofPort := ctx.String("pprofPort")
+	apiPort := ctx.String("apiPort")
 	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 
@@ -640,6 +650,7 @@ func (b *BitXHubConfigGenerator) generateNodesConfig(repoRoot, mode, agencyPrivK
 
 func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKey, agencyCertPath, ip string, id int, ipToId map[string]int) (string, *NetworkNodes, error) {
 	name := "node"
+	addrKeyName := name
 	org := "Node" + strconv.Itoa(id)
 	nodeRoot := filepath.Join(repoRoot, name+strconv.Itoa(id))
 	if mode == types.SoloMode {
@@ -648,6 +659,8 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 	}
 	certRoot := filepath.Join(nodeRoot, "certs")
 
+	// generate certs
+	// generate ca/agency/node.cert
 	if err := os.MkdirAll(certRoot, 0755); err != nil {
 		return "", nil, err
 	}
@@ -664,6 +677,7 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, fmt.Errorf("copy agency cert: %w", err)
 	}
 
+	// generate key.pri
 	if b.version >= "v1.4.0" {
 		if err := generatePrivKey(repo.KeyPriv, b.target, crypto.Secp256k1); err != nil {
 			return "", nil, fmt.Errorf("generate priv key: %w", err)
@@ -672,17 +686,22 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		if err := copyFile(repo.GetPrivKeyPath(repo.KeyPriv, certRoot), repo.GetPrivKeyPath(repo.KeyPriv, repoRoot)); err != nil {
 			return "", nil, fmt.Errorf("copy key priv: %w", err)
 		}
+		addrKeyName = "key"
 	}
 
+	// generate bitxhub.toml, order.toml, api...
 	if err := b.copyConfigFiles(nodeRoot, ipToId[ip]); err != nil {
 		return "", nil, fmt.Errorf("initialize configuration for node %d: %w", id, err)
 	}
 
-	addr, err := getAddressFromPrivateKey(repo.GetPrivKeyPath(name, certRoot))
+	// get address from key.pri >= 1.4.0
+	// get address from node.pri < 1.4.0
+	addr, err := getAddressFromPrivateKey(repo.GetPrivKeyPath(addrKeyName, certRoot))
 	if err != nil {
 		return "", nil, fmt.Errorf("get address from private key: %w", err)
 	}
 
+	// get pid from node.pri
 	pid, err := getPidFromPrivateKey(repo.GetPrivKeyPath(name, certRoot))
 	if err != nil {
 		return "", nil, fmt.Errorf("get pid from private key: %w", err)
@@ -717,15 +736,17 @@ func (b *BitXHubConfigGenerator) copyConfigFiles(nodeRoot string, id int) error 
 
 	if b.version < "v1.4.0" {
 		srcPath = fmt.Sprintf("%s/v1.1.0", srcPath)
-	} else {
+	} else if b.version < "v1.6.0" {
 		srcPath = fmt.Sprintf("%s/v1.4.0", srcPath)
+	} else {
+		srcPath = fmt.Sprintf("%s/v1.6.0", srcPath)
 	}
 
 	return renderConfigFiles(nodeRoot, srcPath, files, data)
 }
 
 func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*NetworkNodes, version string) error {
-	genesis := Genesis{Addresses: addrs}
+	genesis := Genesis1_1_0{Addresses: addrs}
 	content, err := json.MarshalIndent(genesis, "", " ")
 	if err != nil {
 		return fmt.Errorf("marshal genesis: %w", err)
@@ -791,6 +812,8 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 
 			continue
 		}
+
+		// network.toml >= v1.4.0
 		netConfig := NetworkConfig{
 			ID:    uint64(i),
 			N:     uint64(count),
@@ -805,6 +828,36 @@ func writeNetworkAndGenesis(repoRoot, mode string, addrs []string, nodes []*Netw
 
 		if err := ioutil.WriteFile(filepath.Join(nodeRoot, repo.NetworkConfigName), netContent, 0644); err != nil {
 			return err
+		}
+
+		// bitxhub.toml
+		if version < "v1.6.0" { // v1.4.0 v1.5.0
+			genesis1 := &Genesis1_1_0{}
+			for _, addr := range addrs {
+				genesis1.Addresses = append(genesis1.Addresses, addr)
+			}
+
+			if err = ModifyConfig(nodeRoot, "genesis", genesis1); err != nil {
+				return fmt.Errorf("modify bitxhub.toml error: %w", err)
+			}
+		} else { // >= v1.6.0
+			genesis2 := &Genesis{
+				Strategy: map[string]string{
+					"AppchainMgr": "SimpleMajority",
+					"RuleMgr":     "SimpleMajority",
+					"NodeMgr":     "SimpleMajority",
+					"ServiceMgr":  "SimpleMajority"},
+			}
+			for _, addr := range addrs {
+				genesis2.Admins = append(genesis2.Admins, &Admin{
+					Address: addr,
+					Weight:  uint64(1),
+				})
+			}
+
+			if err = ModifyConfig(nodeRoot, "genesis", genesis2); err != nil {
+				return fmt.Errorf("modify bitxhub.toml error: %w", err)
+			}
 		}
 	}
 
@@ -1192,6 +1245,31 @@ func renderConfigFile(dstDir string, srcFiles []string, data interface{}) error 
 		if err := t.Execute(f, data); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func ModifyConfig(repoRoot string, modifyKey string, modifyValue interface{}) error {
+	data, _ := json.Marshal(&modifyValue)
+	m := make(map[string]interface{})
+	if err := json.Unmarshal(data, &m); err != nil {
+		return fmt.Errorf("convert struct to map error: %w", err)
+	}
+
+	viper.SetConfigFile(filepath.Join(repoRoot, repo.BitXHubConfigName))
+	viper.SetConfigType("toml")
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("BITXHUB")
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvKeyReplacer(replacer)
+	if err := viper.ReadInConfig(); err != nil {
+		return err
+	}
+
+	viper.Set(modifyKey, m)
+	if err := viper.WriteConfigAs(filepath.Join(repoRoot, repo.BitXHubConfigName)); err != nil {
+		return err
 	}
 
 	return nil

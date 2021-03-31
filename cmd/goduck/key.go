@@ -59,8 +59,8 @@ func Secp256k1() *cli.Command {
 				Usage: "Convert new key file from private key",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:  "save,s",
-						Usage: "Save key into repo",
+						Aliases: []string{"save", "s"},
+						Usage:   "Save key into repo",
 					},
 					&cli.StringFlag{
 						Name:     "priv",

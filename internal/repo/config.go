@@ -16,6 +16,8 @@ const (
 	envDir = "GODUCK_PATH"
 	// Network config name
 	NetworkConfigName = "network.toml"
+	// BitXHub config name
+	BitXHubConfigName = "bitxhub.toml"
 	// Genesis config name
 	GenesisConfigName = "genesis.json"
 	// CA cert name
@@ -34,6 +36,8 @@ const (
 	KeyPassword = "bitxhub"
 	// private key name
 	KeyPriv = "key"
+	// proposal strategy: simple majority
+	SimpleMajority = "SimpleMajority"
 )
 
 func PathRoot() (string, error) {
