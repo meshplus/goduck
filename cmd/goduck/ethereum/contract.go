@@ -166,7 +166,6 @@ func deploy(ctx *cli.Context) error {
 
 		fmt.Printf("\n======= %s =======\n", compileResult.Types[i])
 		fmt.Printf("Deployed contract address is %s\n", addr.Hex())
-		fmt.Printf("Contract JSON ABI\n%s\n", compileResult.Abi[i])
 	}
 
 	return nil
