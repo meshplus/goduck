@@ -51,6 +51,30 @@ function binary_prepare() {
   fi
 }
 
+function bitxhub_binary_check() {
+  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
+    if [ -n "$(tail -n 50 ${NODEPATH}/logs/bitxhub.log | grep "Order is ready")" ]; then
+      checkRet=1
+    else
+      checkRet=0
+    fi;
+  else
+    checkRet=0
+  fi
+}
+
+function bitxhub_docker_check() {
+  if [ "$(docker container ls | grep -c ${CONTAINER})" -ge 1 ]; then
+    if [ -n "$(docker logs --tail 50 ${CONTAINER} | grep "Order is ready")" ]; then
+      checkRet=1
+    else
+      checkRet=0
+    fi;
+  else
+    checkRet=0
+  fi
+}
+
 function bitxhub_binary_solo() {
   binary_prepare
 
@@ -62,11 +86,13 @@ function bitxhub_binary_solo() {
   print_blue "Start bitxhub solo by binary"
   nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
-  sleep 1
-  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
+  NODEPATH="${CONFIG_PATH}"/nodeSolo
+  sleep 2
+  bitxhub_binary_check
+  if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
     echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
-    echo $! >>"${CONFIG_PATH}"/bitxhub.pid
+    echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   else
     print_red "===> Start bitxhub solo fail"
   fi
@@ -93,8 +119,10 @@ function bitxhub_docker_solo() {
       meshplus/bitxhub-solo:$VERSION
   fi
 
-  sleep 1
-  if [ "$(docker container ls | grep -c bitxhub_solo)" -ge 1 ]; then
+  CONTAINER=bitxhub_solo
+  sleep 2
+  bitxhub_docker_check
+  if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
     echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     CID=`docker container ls | grep bitxhub_solo`
@@ -106,9 +134,10 @@ function bitxhub_docker_solo() {
 
 function bitxhub_binary_cluster() {
   binary_prepare
-
+  declare -a PIDS
   cd "${CONFIG_PATH}"
   print_blue "Start bitxhub cluster"
+
   for ((i = 1; i < N + 1; i = i + 1)); do
     if [ ! -d node${i}/plugins ]; then
       mkdir node${i}/plugins
@@ -116,16 +145,21 @@ function bitxhub_binary_cluster() {
     fi
     echo "Start bitxhub node${i}"
     nohup "${BXH_PATH}"/bitxhub --repo="${CONFIG_PATH}"/node${i} start >/dev/null 2>&1 &
-    PID=$!
-    sleep 1
-    if [ -n "$(ps -p ${PID} -o pid=)" ]; then
-      print_green "===> Start bitxhub solo node successful"
-      echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
-      echo $! >>"${CONFIG_PATH}"/bitxhub.pid
-    else
-      print_red "===> Start bitxhub solo node fail"
-    fi
+    PIDS[${i}]=$!
+  done
 
+  for ((i = 1; i < N + 1; i = i + 1)); do
+    NODEPATH="${CONFIG_PATH}"/node${i}
+    PID=${PIDS[${i}]}
+    sleep 2
+    bitxhub_binary_check
+    if [ ${checkRet} == "1" ]; then
+      print_green "===> Start bitxhub node${i} successful"
+      echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+      echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
+    else
+      print_red "===> Start bitxhub node${i} fail"
+    fi
   done
 }
 
@@ -139,16 +173,19 @@ function bitxhub_docker_cluster() {
   docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
 
   sleep 1
-  if [ "$(docker container ls | grep -c bitxhub:$VERSION)" -ge 4 ]; then
-    print_green "===> Start bitxhub cluster successful"
-    echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
-    for i in {1..4}; do
+  for ((i = 1; i < N + 1; i = i + 1)); do
+    CONTAINER=bitxhub_node${i}
+    sleep 2
+    bitxhub_docker_check
+    if [ ${checkRet} == "1" ]; then
+      print_green "===> Start bitxhub node${i} successful"
+      echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
       CID=`docker container ls | grep bitxhub_node$i`
       echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
-    done
-  else
-    print_red "===> Start bitxhub cluster fail"
-  fi
+    else
+      print_red "===> Start bitxhub node${i} fail"
+    fi
+  done
 }
 
 function bitxhub_down() {
