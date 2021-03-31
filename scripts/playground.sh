@@ -96,6 +96,7 @@ function bitxhub_binary_solo() {
   else
     print_red "===> Start bitxhub solo fail"
   fi
+  print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
 function bitxhub_docker_solo() {
@@ -130,6 +131,7 @@ function bitxhub_docker_solo() {
   else
     print_red "===> Start bitxhub solo fail"
   fi
+  print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
 function bitxhub_binary_cluster() {
@@ -151,7 +153,7 @@ function bitxhub_binary_cluster() {
   for ((i = 1; i < N + 1; i = i + 1)); do
     NODEPATH="${CONFIG_PATH}"/node${i}
     PID=${PIDS[${i}]}
-    sleep 2
+    sleep 3
     bitxhub_binary_check
     if [ ${checkRet} == "1" ]; then
       print_green "===> Start bitxhub node${i} successful"
@@ -161,6 +163,7 @@ function bitxhub_binary_cluster() {
       print_red "===> Start bitxhub node${i} fail"
     fi
   done
+  print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
 function bitxhub_docker_cluster() {
@@ -175,7 +178,7 @@ function bitxhub_docker_cluster() {
   sleep 1
   for ((i = 1; i < N + 1; i = i + 1)); do
     CONTAINER=bitxhub_node${i}
-    sleep 2
+    sleep 3
     bitxhub_docker_check
     if [ ${checkRet} == "1" ]; then
       print_green "===> Start bitxhub node${i} successful"
@@ -186,6 +189,7 @@ function bitxhub_docker_cluster() {
       print_red "===> Start bitxhub node${i} fail"
     fi
   done
+  print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
 function bitxhub_down() {
