@@ -29,6 +29,7 @@ require (
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/shirou/gopsutil v2.20.5+incompatible
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
+	github.com/stretchr/testify v1.4.0
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
