@@ -87,7 +87,7 @@ function bitxhub_binary_solo() {
   nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
   NODEPATH="${CONFIG_PATH}"/nodeSolo
-  sleep 2
+  sleep 3
   bitxhub_binary_check
   if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
@@ -95,6 +95,8 @@ function bitxhub_binary_solo() {
     echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   else
     print_red "===> Start bitxhub solo fail"
+    echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   fi
   print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
@@ -121,7 +123,7 @@ function bitxhub_docker_solo() {
   fi
 
   CONTAINER=bitxhub_solo
-  sleep 2
+  sleep 3
   bitxhub_docker_check
   if [ ${checkRet} == "1" ]; then
     print_green "===> Start bitxhub solo successful"
@@ -130,6 +132,9 @@ function bitxhub_docker_solo() {
     echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   else
     print_red "===> Start bitxhub solo fail"
+    echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    CID=`docker container ls | grep bitxhub_solo`
+    echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   fi
   print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
@@ -161,6 +166,8 @@ function bitxhub_binary_cluster() {
       echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
     else
       print_red "===> Start bitxhub node${i} fail"
+      echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+      echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
     fi
   done
   print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
@@ -187,6 +194,9 @@ function bitxhub_docker_cluster() {
       echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
     else
       print_red "===> Start bitxhub node${i} fail"
+      echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+      CID=`docker container ls | grep bitxhub_node$i`
+      echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
     fi
   done
   print_blue "The above result check information may not be correct, you can use the \"goduck status list\" command to check the status of the startup BitXHub node."
