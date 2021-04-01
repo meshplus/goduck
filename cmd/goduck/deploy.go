@@ -326,16 +326,6 @@ func deployPier(ctx *cli.Context) error {
 		default:
 			return fmt.Errorf("unsupported appchain type")
 		}
-	} else {
-		switch chain {
-		case types.ChainTypeFabric:
-			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
-		case types.ChainTypeEther:
-			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
-			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
 	}
 
 	if chain == "fabric" {
