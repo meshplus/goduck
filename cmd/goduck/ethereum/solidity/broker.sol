@@ -87,35 +87,6 @@ contract Broker {
         return invokeInterchain(destChainID, msg.sender, destAddr, "interchainGet", key, "interchainSet");
     }
 
-    function InterchainAssetExchangeInvoke(
-        address destChainID,
-        string memory destAddr,
-        string memory args,
-        uint64 typ)
-    public  returns (bool) {
-        string memory method;
-        string memory callback;
-        if (typ == 0) {
-            method = "interchainAssetExchangeInit";
-            callback = "";
-        } else if (typ == 1) {
-            method = "interchainAssetExchangeRedeem";
-            callback = "interchainAssetExchangeConfirm";
-        } else if (typ == 2) {
-            method = "interchainAssetExchangeRefund";
-            callback = "interchainAssetExchangeConfirm";
-        }
-        bool resp = invokeInterchain(destChainID, msg.sender, destAddr, method, args, callback);
-        if (resp == true) {
-            if (outCounter[destChainID] > inCounter[destChainID]){
-                callbackCounter[destChainID] = outCounter[destChainID] - 1;
-            } else {
-                callbackCounter[destChainID] = inCounter[destChainID] - 1;
-            }
-        }
-        return true;
-    }
-
     function invokeInterchain(
         address destChainID,
         address sourceAddr,
@@ -197,122 +168,9 @@ contract Broker {
         }
 
         Transfer exchanger = Transfer(destAddr);
-        bool ret = exchanger.interchainRollback(sender, amount);
-        emit LogInterchainStatus(ret);
-        return ret;
-    }
-
-    function interchainAssetExchangeInit(
-        address sourceChainID,
-        uint64 index,
-        address destAddr,
-        string memory srcAddr,
-        string memory assetExchangeId,
-        string memory senderOnSrcChain,
-        string memory receiverOnSrcChain,
-        uint64 assetOnSrcChain,
-        string memory senderOnDstChain,
-        string memory receiverOnDstChain,
-        uint64 assetOnDstChain)
-    public returns (bool) {
-        if (inCounter[sourceChainID] + 1 != index) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        markInCounter(sourceChainID);
-        if (whiteList[destAddr] != 1) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        AssetExchange exchanger = AssetExchange(destAddr);
-        bool status = exchanger.interchainAssetExchangeInit(
-            sourceChainID,
-            srcAddr,
-            assetExchangeId,
-            senderOnSrcChain,
-            receiverOnSrcChain,
-            assetOnSrcChain,
-            senderOnDstChain,
-            receiverOnDstChain,
-            assetOnDstChain);
+        bool status = exchanger.interchainRollback(sender, amount);
         emit LogInterchainStatus(status);
         return status;
-    }
-
-    function interchainAssetExchangeRedeem(
-        address sourceChainID,
-        uint64 index,
-        address destAddr,
-        string memory assetExchangeId,
-        string memory signatures)
-    public returns (bool) {
-        return interchainAssetExchangeFinish(sourceChainID, index, destAddr, assetExchangeId, "1", signatures);
-    }
-
-    function interchainAssetExchangeRefund(
-        address sourceChainID,
-        uint64 index,
-        address destAddr,
-        string memory assetExchangeId,
-        string memory signatures)
-    public returns (bool) {
-        return interchainAssetExchangeFinish(sourceChainID, index, destAddr, assetExchangeId, "2", signatures);
-    }
-
-    function interchainAssetExchangeFinish(
-        address sourceChainID,
-        uint64 index,
-        address destAddr,
-        string memory assetExchangeId,
-        string memory status,
-        string memory signatures)
-    private returns (bool) {
-        if (inCounter[sourceChainID] + 1 != index) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        markInCounter(sourceChainID);
-        if (whiteList[destAddr] != 1) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        AssetExchange exchanger = AssetExchange(destAddr);
-        bool ret = exchanger.interchainAssetExchangeFinish(
-            assetExchangeId,
-            status,
-            signatures);
-        emit LogInterchainStatus(ret);
-        return ret;
-    }
-
-    function interchainAssetExchangeConfirm(
-        address sourceChainID,
-        uint64 index,
-        address destAddr,
-        string memory assetExchangeId,
-        string memory signatures)
-    public returns (bool) {
-        if (callbackCounter[sourceChainID] + 1 != index) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        markCallbackCounter(sourceChainID, index);
-        if (whiteList[destAddr] != 1) {
-            emit LogInterchainStatus(false);
-            return false;
-        }
-
-        AssetExchange exchanger = AssetExchange(destAddr);
-        bool ret = exchanger.interchainAssetExchangeConfirm(
-            assetExchangeId,
-            signatures);
-        emit LogInterchainStatus(ret);
-        return ret;
     }
 
     // 帮助记录Meta信息的辅助函数
@@ -367,6 +225,21 @@ contract Broker {
         }
 
         return (callbackChains, indices);
+    }
+
+    // some string utils
+    function toString(uint _base) internal pure returns (string memory) {
+        bytes memory _tmp = new bytes(32);
+        uint i;
+        for (i = 0; _base > 0; i++) {
+            _tmp[i] = byte(uint8((_base % 10) + 48));
+            _base /= 10;
+        }
+        bytes memory _real = new bytes(i--);
+        for (uint j = 0; j < _real.length; j++) {
+            _real[j] = _tmp[i--];
+        }
+        return string(_real);
     }
 
     function split(string memory _base, string memory _delimiter) internal pure returns (string[] memory splitArr) {
@@ -431,25 +304,7 @@ abstract contract Transfer {
 }
 
 abstract contract DataSwapper {
-    function interchainGet(string memory key)  virtual public view returns (bool, string memory);
+    function interchainGet(string memory key) virtual public view returns (bool, string memory);
 
     function interchainSet(string memory key, string memory value) virtual public;
-}
-
-abstract contract AssetExchange {
-    function interchainAssetExchangeInit(
-        address srcChainID,
-        string memory srcAddr,
-        string memory assetExchangeId,
-        string memory senderOnSrcChain,
-        string memory receiverOnSrcChain,
-        uint64 assetOnSrcChain,
-        string memory senderOnDstChain,
-        string memory receiverOnDstChain,
-        uint64 assetOnDstChain) virtual public returns (bool);
-
-    function interchainAssetExchangeFinish(string memory assetExchangeId, string memory status, string memory signatures) virtual public returns (bool);
-
-    function interchainAssetExchangeConfirm(string memory assetExchangeId, string memory signatures) virtual public returns (bool);
-
 }
