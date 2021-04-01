@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -308,16 +307,6 @@ func pierRegister(ctx *cli.Context) error {
 		default:
 			return fmt.Errorf("unsupported appchain type")
 		}
-	} else {
-		switch chainType {
-		case types.ChainTypeFabric:
-			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
-		case types.ChainTypeEther:
-			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
-			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
 	}
 
 	if chainType == "fabric" && cryptoPath == "" {
@@ -374,16 +363,6 @@ func pierStart(ctx *cli.Context) error {
 			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
 		case types.ChainTypeEther:
 			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
-	} else {
-		switch chainType {
-		case types.ChainTypeFabric:
-			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
-		case types.ChainTypeEther:
-			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
-			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
 		default:
 			return fmt.Errorf("unsupported appchain type")
 		}
@@ -525,16 +504,6 @@ func generatePierConfig(ctx *cli.Context) error {
 			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
 		case types.ChainTypeEther:
 			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
-	} else {
-		switch appchainType {
-		case types.ChainTypeFabric:
-			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
-		case types.ChainTypeEther:
-			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
-			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
 		default:
 			return fmt.Errorf("unsupported appchain type")
 		}
