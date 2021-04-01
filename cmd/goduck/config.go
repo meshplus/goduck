@@ -329,6 +329,10 @@ func (b *BitXHubConfigGenerator) ProcessParams() error {
 		}
 	}
 
+	if b.mode == types.ClusterMode && b.num < 3 {
+		return fmt.Errorf("there are at least 3 nodes in cluster mode")
+	}
+
 	return nil
 }
 
