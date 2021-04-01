@@ -72,6 +72,8 @@ function generateConfig() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchainType "fabric" \
       --appchainIP ${APPCHAINIP} \
+      --appchainAddr ${APPCHAINADDR} \
+      --contractAddr ${APPCHAINCONTRACTADDR} \
       --target ${CONFIG_PATH} \
       --tls ${TLS} \
       --httpPort ${HTTP} \
@@ -129,6 +131,8 @@ function generateConfig() {
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchainType "ethereum" \
       --appchainIP ${APPCHAINIP} \
+      --appchainAddr ${APPCHAINADDR} \
+      --contractAddr ${APPCHAINCONTRACTADDR} \
       --target "${CONFIG_PATH}" \
       --tls "${TLS}" \
       --httpPort "${HTTP}" \
@@ -425,7 +429,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:b:v:c:f:a:l:p:o:i:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:n:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -463,6 +467,12 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:i:" opt; do
     ;;
   i)
     APPCHAINIP=$OPTARG
+    ;;
+  d)
+    APPCHAINADDR=$OPTARG
+    ;;
+  n)
+    APPCHAINCONTRACTADDR=$OPTARG
     ;;
   esac
 done

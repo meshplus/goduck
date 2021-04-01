@@ -155,10 +155,10 @@ function bitxhub_binary_cluster() {
     PIDS[${i}]=$!
   done
 
+  sleep 4
   for ((i = 1; i < N + 1; i = i + 1)); do
     NODEPATH="${CONFIG_PATH}"/node${i}
     PID=${PIDS[${i}]}
-    sleep 3
     bitxhub_binary_check
     if [ ${checkRet} == "1" ]; then
       print_green "===> Start bitxhub node${i} successful"
@@ -182,10 +182,9 @@ function bitxhub_docker_cluster() {
   x_replace "s/bitxhub:latest/bitxhub:$VERSION/g" "${CURRENT_PATH}"/docker/docker-compose.yml
   docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
 
-  sleep 1
+  sleep 4
   for ((i = 1; i < N + 1; i = i + 1)); do
     CONTAINER=bitxhub_node${i}
-    sleep 3
     bitxhub_docker_check
     if [ ${checkRet} == "1" ]; then
       print_green "===> Start bitxhub node${i} successful"

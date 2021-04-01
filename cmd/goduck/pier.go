@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -77,6 +78,15 @@ var pierCMD = &cli.Command{
 					Value: "127.0.0.1",
 					Usage: "the application chain IP that pier connects to",
 				},
+				&cli.StringFlag{
+					Name:  "appchainAddr",
+					Usage: "the application chain addr that pier connects to. The appchainIP parameter is invalid after specifying this option. e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+				},
+				&cli.StringFlag{
+					Name:  "contractAddr",
+					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
+					Usage: "address of the contract on the appChain. Only works on Ethereum",
+				},
 			},
 			Action: pierRegister,
 		},
@@ -135,6 +145,15 @@ var pierCMD = &cli.Command{
 					Name:  "appchainIP",
 					Value: "127.0.0.1",
 					Usage: "the application chain IP that pier connects to",
+				},
+				&cli.StringFlag{
+					Name:  "appchainAddr",
+					Usage: "the application chain addr that pier connects to, the appchainIP parameter is invalid after specifying this option, e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+				},
+				&cli.StringFlag{
+					Name:  "contractAddr",
+					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
+					Usage: "address of the contract on the appChain. Only works on Ethereum",
 				},
 			},
 			Action: pierStart,
@@ -216,6 +235,15 @@ var pierCMD = &cli.Command{
 					Usage: "appchain IP address",
 				},
 				&cli.StringFlag{
+					Name:  "appchainAddr",
+					Usage: "the application chain addr that pier connects to, the appchainIP parameter is invalid after specifying this option, e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+				},
+				&cli.StringFlag{
+					Name:  "contractAddr",
+					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
+					Usage: "address of the contract on the appChain. Only works on Ethereum",
+				},
+				&cli.StringFlag{
 					Name:  "target",
 					Value: ".",
 					Usage: "where to put the generated configuration files",
@@ -268,6 +296,29 @@ func pierRegister(ctx *cli.Context) error {
 	aport := ctx.String("apiPort")
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
+	appchainAddr := ctx.String("appchainAddr")
+	appchainContractAddr := ctx.String("contractAddr")
+
+	if appchainAddr == "" {
+		switch chainType {
+		case types.ChainTypeFabric:
+			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
+		case types.ChainTypeEther:
+			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	} else {
+		switch chainType {
+		case types.ChainTypeFabric:
+			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
+		case types.ChainTypeEther:
+			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
+			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	}
 
 	if chainType == "fabric" && cryptoPath == "" {
 		return fmt.Errorf("start fabric pier need crypto-config path")
@@ -300,7 +351,7 @@ func pierRegister(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP)
+	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr)
 }
 
 func pierStart(ctx *cli.Context) error {
@@ -314,6 +365,29 @@ func pierStart(ctx *cli.Context) error {
 	aport := ctx.String("apiPort")
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
+	appchainAddr := ctx.String("appchainAddr")
+	appchainContractAddr := ctx.String("contractAddr")
+
+	if appchainAddr == "" {
+		switch chainType {
+		case types.ChainTypeFabric:
+			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
+		case types.ChainTypeEther:
+			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	} else {
+		switch chainType {
+		case types.ChainTypeFabric:
+			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
+		case types.ChainTypeEther:
+			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
+			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	}
 
 	if chainType == "fabric" && cryptoPath == "" {
 		return fmt.Errorf("start fabric pier need crypto-config path")
@@ -338,7 +412,7 @@ func pierStart(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP)
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -442,6 +516,29 @@ func generatePierConfig(ctx *cli.Context) error {
 	apiPort := ctx.String("apiPort")
 	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
+	appchainAddr := ctx.String("appchainAddr")
+	appchainContractAddr := ctx.String("contractAddr")
+
+	if appchainAddr == "" {
+		switch appchainType {
+		case types.ChainTypeFabric:
+			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
+		case types.ChainTypeEther:
+			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	} else {
+		switch appchainType {
+		case types.ChainTypeFabric:
+			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
+		case types.ChainTypeEther:
+			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
+			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	}
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
@@ -466,5 +563,5 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 }

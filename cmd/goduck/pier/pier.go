@@ -5,15 +5,15 @@ import (
 	"github.com/meshplus/goduck/internal/utils"
 )
 
-func RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP string) error {
+func RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainContractAddr string) error {
 	args := []string{types.PierScript, "register", "-m", chainType, "-t", pierUpType,
-		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP}
+		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP, "-d", appchainAddr, "-n", appchainContractAddr}
 	return utils.ExecuteShell(args, repoRoot)
 }
 
-func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP string) error {
+func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainContractAddr string) error {
 	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
-		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP}
+		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP, "-d", appchainAddr, "-n", appchainContractAddr}
 	return utils.ExecuteShell(args, repoRoot)
 }
 
