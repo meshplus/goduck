@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/meshplus/goduck/cmd/goduck/ethereum"
+	"github.com/meshplus/goduck/cmd/goduck/ethereum/ethereum"
 	"github.com/urfave/cli/v2"
 )
 
