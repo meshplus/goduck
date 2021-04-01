@@ -34,10 +34,10 @@ function extractBin() {
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
     if [ "${SYSTEM}" == "linux" ]; then
-      tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
+      tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 2
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
     elif [ "${SYSTEM}" == "darwin" ]; then
-      tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
+      tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 2
       install_name_tool -change @rpath/libwasmer.dylib "${PIER_PATH}"/libwasmer.dylib "${PIER_PATH}"/pier
     else
       print_red "Pier does not support the current operating system"
