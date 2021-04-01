@@ -26,7 +26,6 @@ import (
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/meshplus/bitxhub-kit/crypto"
-	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/bitxhub/pkg/cert"
@@ -112,51 +111,55 @@ type BitXHubConfigGenerator struct {
 }
 
 type PierConfigGenerator struct {
-	id           string
-	mode         string
-	startType    string
-	bitxhub      string
-	validators   []string
-	port         string
-	peers        []string
-	connectors   []string
-	providers    string
-	appchainType string
-	appchainIP   string
-	target       string
-	tls          string
-	httpPort     string
-	pprofPort    string
-	apiPort      string
-	version      string
-	pierPath     string
-	cryptoPath   string
+	id                   string
+	mode                 string
+	startType            string
+	bitxhub              string
+	validators           []string
+	port                 string
+	peers                []string
+	connectors           []string
+	providers            string
+	appchainType         string
+	appchainIP           string
+	appchainAddr         string
+	appchainContractAddr string
+	target               string
+	tls                  string
+	httpPort             string
+	pprofPort            string
+	apiPort              string
+	version              string
+	pierPath             string
+	cryptoPath           string
 }
 
 func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, ips []string, tls bool, version string) *BitXHubConfigGenerator {
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
-		mode:         mode,
-		startType:    startType,
-		bitxhub:      bitxhub,
-		validators:   validators,
-		port:         port,
-		peers:        peers,
-		connectors:   connectors,
-		providers:    providers,
-		appchainType: appchainType,
-		appchainIP:   appchainIP,
-		target:       target,
-		tls:          tls,
-		httpPort:     httpPort,
-		pprofPort:    pprofPort,
-		apiPort:      apiPort,
-		version:      version,
-		pierPath:     pierPath,
-		cryptoPath:   cryptoPath,
+		mode:                 mode,
+		startType:            startType,
+		bitxhub:              bitxhub,
+		validators:           validators,
+		port:                 port,
+		peers:                peers,
+		connectors:           connectors,
+		providers:            providers,
+		appchainType:         appchainType,
+		appchainIP:           appchainIP,
+		appchainAddr:         appchainAddr,
+		appchainContractAddr: appchainContractAddr,
+		target:               target,
+		tls:                  tls,
+		httpPort:             httpPort,
+		pprofPort:            pprofPort,
+		apiPort:              apiPort,
+		version:              version,
+		pierPath:             pierPath,
+		cryptoPath:           cryptoPath,
 	}
 }
 
@@ -413,9 +416,10 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 	}
 
 	data2 := struct {
-		AppchainIP string
-		ConfigPath string
-	}{p.appchainIP, p.cryptoPath}
+		AppchainAddr         string
+		AppchainContractAddr string
+		ConfigPath           string
+	}{p.appchainAddr, p.appchainContractAddr, p.cryptoPath}
 
 	if err := renderConfigFiles(dstDir, srcDir, files2, data2); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
@@ -544,8 +548,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
-	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
+	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 	return pcg.InitConfig()
 }
 
@@ -620,7 +624,7 @@ func (b *BitXHubConfigGenerator) generateNodeConfig(repoRoot, mode, agencyPrivKe
 		return "", nil, err
 	}
 
-	privKeyStandard, err := libp2pcert.ParsePrivateKey(keyData, crypto2.KeyType(cryptoOpt))
+	privKeyStandard, err := libp2pcert.ParsePrivateKey(keyData, crypto.KeyType(cryptoOpt))
 	if err != nil {
 		return "", nil, err
 	}

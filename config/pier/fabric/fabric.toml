@@ -1,4 +1,4 @@
-addr = "{{.AppchainIP}}:7053"
+addr = "{{.AppchainAddr}}"
 event_filter = "interchain-event-name"
 username = "Admin"
 ccid = "broker"

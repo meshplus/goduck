@@ -139,6 +139,15 @@ func deployCMD() *cli.Command {
 						Usage: "the application chain IP that pier connects to",
 					},
 					&cli.StringFlag{
+						Name:  "appchainAddr",
+						Usage: "the application chain addr that pier connects to. The appchainIP parameter is invalid after specifying this option. e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+					},
+					&cli.StringFlag{
+						Name:  "contractAddr",
+						Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
+						Usage: "address of the contract on the appChain. Only works on Ethereum",
+					},
+					&cli.StringFlag{
 						Aliases:  []string{"version", "v"},
 						Usage:    "pier version",
 						Required: true,
@@ -304,7 +313,30 @@ func deployPier(ctx *cli.Context) error {
 	apiPort := ctx.String("apiPort")
 	cryptoPath := ctx.String("cryptoPath")
 	appchainIP := ctx.String("appchainIP")
+	appchainAddr := ctx.String("appchainAddr")
+	appchainContractAddr := ctx.String("contractAddr")
 	version := ctx.String("version")
+
+	if appchainAddr == "" {
+		switch chain {
+		case types.ChainTypeFabric:
+			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
+		case types.ChainTypeEther:
+			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	} else {
+		switch chain {
+		case types.ChainTypeFabric:
+			appchainIP = appchainAddr[:strings.Index(appchainAddr, ":")]
+		case types.ChainTypeEther:
+			tmpAddr := appchainAddr[strings.Index(appchainAddr, ":")+1:]
+			appchainIP = tmpAddr[2:strings.Index(tmpAddr, ":")]
+		default:
+			return fmt.Errorf("unsupported appchain type")
+		}
+	}
 
 	if chain == "fabric" {
 		if cryptoPath == "" {
@@ -329,7 +361,7 @@ func deployPier(ctx *cli.Context) error {
 	who := fmt.Sprintf("%s@%s", username, ip)
 	target := fmt.Sprintf("%s:~/", who)
 
-	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, port, peers, connectors, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP)
+	err = pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip, validators, port, peers, connectors, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP, appchainAddr, appchainContractAddr)
 	if err != nil {
 		return err
 	}
@@ -441,7 +473,7 @@ func appchainRegister(who, chain string) error {
 	return nil
 }
 
-func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP string) error {
+func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string, validators []string, port string, peers, connectors []string, providers, tls, http, pprof, apiPort, cryptoPath, appchainIP, appchainAddr, appchainContractAddr string) error {
 	configPath := filepath.Join(repoRoot, "pier_deploy")
 	err := os.MkdirAll(configPath, os.ModePerm)
 	if err != nil {
@@ -487,7 +519,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Generate pier configure locally\n")
 	pierPath := ""
-	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, appchainIP, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
+	err = InitPierConfig(mode, "binary", bitxhub, validators, port, peers, connectors, providers, chain, appchainIP, appchainAddr, appchainContractAddr, configPath, tls, http, pprof, apiPort, version, pierPath, cryptoPath)
 	if err != nil {
 		return err
 	}
