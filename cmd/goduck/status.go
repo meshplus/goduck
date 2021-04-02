@@ -151,8 +151,12 @@ func binaryStatus(port string) ([]string, error) {
 }
 
 func dockerStatus(port string) ([]string, error) {
+	tmpOut, _ := sh.Command("/bin/bash", "-c", "docker ps -a -q").Output()
+	if string(tmpOut) == "" {
+		return nil, nil
+	}
 	// docker inspect -f "{{.Id}} {{.HostConfig.PortBindings}} {{.Name}} " $(docker ps -q) | grep HostPort:6001
-	cidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("docker inspect -f \"{{.Id}} {{.HostConfig.PortBindings}} {{.Name}} \" $(docker ps -q) | grep HostPort:%s | awk '{print $1}'", port)).Output()
+	cidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("docker inspect -f \"{{.Id}} {{.HostConfig.PortBindings}} {{.Name}} \" $(docker ps -a -q) | grep HostPort:%s | awk '{print $1}'", port)).Output()
 	if err != nil {
 		return nil, fmt.Errorf("get cid error: %w", err)
 	}

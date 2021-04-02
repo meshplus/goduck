@@ -11,9 +11,9 @@ func RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, htt
 	return utils.ExecuteShell(args, repoRoot)
 }
 
-func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainContractAddr string) error {
+func StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainContractAddr, pierRepo string) error {
 	args := []string{types.PierScript, "up", "-m", chainType, "-t", pierUpType,
-		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP, "-d", appchainAddr, "-n", appchainContractAddr}
+		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http, "-o", overwrite, "-i", appchainIP, "-d", appchainAddr, "-n", appchainContractAddr, "-r", pierRepo}
 	return utils.ExecuteShell(args, repoRoot)
 }
 

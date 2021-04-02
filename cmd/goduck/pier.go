@@ -154,6 +154,10 @@ var pierCMD = &cli.Command{
 					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
 					Usage: "address of the contract on the appChain. Only works on Ethereum",
 				},
+				&cli.StringFlag{
+					Name:  "pierRepo",
+					Usage: "the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+				},
 			},
 			Action: pierStart,
 		},
@@ -356,6 +360,7 @@ func pierStart(ctx *cli.Context) error {
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
 	appchainContractAddr := ctx.String("contractAddr")
+	pierRepo := ctx.String("pierRepo")
 
 	if appchainAddr == "" {
 		switch chainType {
@@ -391,7 +396,15 @@ func pierStart(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr)
+	if pierRepo == "" {
+		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	}
+
+	if pierUpType == types.TypeBinary && !fileutil.Exist(pierRepo) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	}
+
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr, pierRepo)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -434,7 +447,7 @@ func downloadPierBinary(repoPath string, version string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz -C %s --strip-components 2 && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz -C %s --strip-components 1 && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
 			if err != nil {
 				return fmt.Errorf("extract pier binary: %s", err)
 			}
@@ -455,7 +468,7 @@ func downloadPierBinary(repoPath string, version string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 2 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 1 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
 			if err != nil {
 				return fmt.Errorf("extract pier binary: %s", err)
 			}

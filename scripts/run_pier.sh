@@ -34,10 +34,10 @@ function extractBin() {
   # download pier binary package and extract
   if [ ! -a "${PIER_PATH}"/pier ]; then
     if [ "${SYSTEM}" == "linux" ]; then
-      tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 2
+      tar xf pier_linux-amd64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
     elif [ "${SYSTEM}" == "darwin" ]; then
-      tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 2
+      tar xf pier_darwin_x86_64_$VERSION.tar.gz -C ${PIER_PATH} --strip-components 1
       install_name_tool -change @rpath/libwasmer.dylib "${PIER_PATH}"/libwasmer.dylib "${PIER_PATH}"/pier
     else
       print_red "Pier does not support the current operating system"
@@ -177,7 +177,7 @@ function appchain_register() {
 }
 
 function rule_deploy() {
-  "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" rule deploy --path "${CONFIG_PATH}"/$1/validating.wasm
+  "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
 }
 
 function pier_docker_up() {
@@ -253,29 +253,29 @@ function pier_docker_up() {
 }
 
 function pier_binary_up() {
-  cd "${CONFIG_PATH}"
+  cd "${PIERREPO}"
 
   if [ "$MODE" == "fabric" ]; then
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy fabric
-    export START_PATH="${CONFIG_PATH}" && export CONFIG_PATH="${CONFIG_PATH}"/fabric
+#    export START_PATH="${CONFIG_PATH}" && export CONFIG_PATH="${CONFIG_PATH}"/fabric
   fi
 
   if [ "$MODE" == "ethereum" ]; then
     print_blue "===> Deploy rule in bitxhub"
     rule_deploy ethereum
-    export START_PATH="${CONFIG_PATH}"
+#    export START_PATH="${CONFIG_PATH}"
   fi
 
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
-  nohup "${PIER_PATH}"/pier --repo "${START_PATH}" start >/dev/null 2>&1 &
+  nohup "${PIER_PATH}"/pier --repo "${PIERREPO}" start >/dev/null 2>&1 &
   PID=$!
 
   sleep 10
   if [ -n "$(ps -p ${PID} -o pid=)" ]; then
     print_green "===> Start pier successfully!!!"
     echo ${PID} >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
-    echo `"${PIER_PATH}"/pier --repo "${START_PATH}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
+    echo `"${PIER_PATH}"/pier --repo "${PIERREPO}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
   else
     print_red "===> Start pier fail"
   fi
@@ -301,9 +301,9 @@ function pier_binary_register() {
   fi
 
   if [[ "${VERSION}" < "v1.6.0" ]]; then
-    print_blue "Please use the 'goduck start' command to start the PIER"
+    print_blue "Please use the 'goduck pier start' command to start the PIER"
   else
-    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck start' command to start the PIER"
+    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier start' command to start the PIER"
   fi
 }
 
@@ -429,7 +429,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:n:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:n:r:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -473,6 +473,9 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:n:" opt; do
     ;;
   n)
     APPCHAINCONTRACTADDR=$OPTARG
+    ;;
+  r)
+    PIERREPO=$OPTARG
     ;;
   esac
 done
