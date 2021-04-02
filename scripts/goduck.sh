@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 RED='\033[0;31m'
@@ -34,5 +36,5 @@ if ! type goduck >/dev/null 2>&1; then
     exit 0
   fi
   chmod +x goduck
-  mv goduck /usr/local/bin/
+  sudo mv goduck /usr/local/bin/
 fi
