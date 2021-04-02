@@ -27,6 +27,11 @@ func playgroundCMD() *cli.Command {
 				Usage:  "Clean up the demo interchain system",
 				Action: dockerDown,
 			},
+			{
+				Name:   "transfer",
+				Usage:  "Conduct cross-chain transactions",
+				Action: transfer,
+			},
 		},
 	}
 }
