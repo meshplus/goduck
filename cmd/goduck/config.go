@@ -423,7 +423,8 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		AppchainAddr         string
 		AppchainContractAddr string
 		ConfigPath           string
-	}{p.appchainAddr, p.appchainContractAddr, p.cryptoPath}
+		AppchainIP           string
+	}{p.appchainAddr, p.appchainContractAddr, p.cryptoPath, p.appchainIP}
 
 	if err := renderConfigFiles(dstDir, srcDir, files2, data2); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
