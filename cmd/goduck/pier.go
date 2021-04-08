@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -75,11 +76,15 @@ var pierCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:  "appchainIP",
 					Value: "127.0.0.1",
-					Usage: "the application chain IP that pier connects to",
+					Usage: "IP of appchain which pier connects to",
 				},
 				&cli.StringFlag{
 					Name:  "appchainAddr",
-					Usage: "the application chain addr that pier connects to. The appchainIP parameter is invalid after specifying this option. e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\" ",
+				},
+				&cli.StringFlag{
+					Name:  "appchainPorts",
+					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"",
 				},
 				&cli.StringFlag{
 					Name:  "contractAddr",
@@ -143,11 +148,15 @@ var pierCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:  "appchainIP",
 					Value: "127.0.0.1",
-					Usage: "the application chain IP that pier connects to",
+					Usage: "IP of appchain which pier connects to",
 				},
 				&cli.StringFlag{
 					Name:  "appchainAddr",
-					Usage: "the application chain addr that pier connects to, the appchainIP parameter is invalid after specifying this option, e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\" ",
+				},
+				&cli.StringFlag{
+					Name:  "appchainPorts",
+					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"",
 				},
 				&cli.StringFlag{
 					Name:  "contractAddr",
@@ -235,11 +244,15 @@ var pierCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:  "appchainIP",
 					Value: "127.0.0.1",
-					Usage: "appchain IP address",
+					Usage: "IP of appchain which pier connects to",
 				},
 				&cli.StringFlag{
 					Name:  "appchainAddr",
-					Usage: "the application chain addr that pier connects to, the appchainIP parameter is invalid after specifying this option, e.g. ethereum ws://127.0.0.1:8546, fabric 127.0.0.1:7053",
+					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\"",
+				},
+				&cli.StringFlag{
+					Name:  "appchainPorts",
+					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"(The first one is port of orderer. The remaining, in turn, are the first node's urlSubstitutionExp port and eventUrlSubstitutionExp port, and the second node's urlSubstitutionExp port and eventUrlSubstitutionExp port...)",
 				},
 				&cli.StringFlag{
 					Name:  "contractAddr",
@@ -300,22 +313,14 @@ func pierRegister(ctx *cli.Context) error {
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
+	appchainPorts := ctx.String("appchainPorts")
 	appchainContractAddr := ctx.String("contractAddr")
 
-	if appchainAddr == "" {
-		switch chainType {
-		case types.ChainTypeFabric:
-			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
-		case types.ChainTypeEther:
-			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
+	appPorts, appchainAddr, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
+	if err != nil {
+		return err
 	}
-
-	if chainType == "fabric" && cryptoPath == "" {
-		return fmt.Errorf("start fabric pier need crypto-config path")
-	}
+	appchainPorts = strings.Join(appPorts, ",")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -344,7 +349,7 @@ func pierRegister(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr)
+	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr)
 }
 
 func pierStart(ctx *cli.Context) error {
@@ -359,23 +364,15 @@ func pierStart(ctx *cli.Context) error {
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
+	appchainPorts := ctx.String("appchainPorts")
 	appchainContractAddr := ctx.String("contractAddr")
 	pierRepo := ctx.String("pierRepo")
 
-	if appchainAddr == "" {
-		switch chainType {
-		case types.ChainTypeFabric:
-			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
-		case types.ChainTypeEther:
-			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
+	appPorts, appchainAddr, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
+	if err != nil {
+		return err
 	}
-
-	if chainType == "fabric" && cryptoPath == "" {
-		return fmt.Errorf("start fabric pier need crypto-config path")
-	}
+	appchainPorts = strings.Join(appPorts, ",")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -404,7 +401,7 @@ func pierStart(ctx *cli.Context) error {
 		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
 	}
 
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainContractAddr, pierRepo)
+	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -509,17 +506,12 @@ func generatePierConfig(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 	appchainAddr := ctx.String("appchainAddr")
+	appchainPorts := ctx.String("appchainPorts")
 	appchainContractAddr := ctx.String("contractAddr")
 
-	if appchainAddr == "" {
-		switch appchainType {
-		case types.ChainTypeFabric:
-			appchainAddr = fmt.Sprintf("%s:7053", appchainIP)
-		case types.ChainTypeEther:
-			appchainAddr = fmt.Sprintf("ws://%s:8546", appchainIP)
-		default:
-			return fmt.Errorf("unsupported appchain type")
-		}
+	appPorts, appchainAddr, err := getAppchainParams(appchainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
+	if err != nil {
+		return err
 	}
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
@@ -545,5 +537,85 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appPorts, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+}
+
+func getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath string) ([]string, string, error) {
+	var appPorts []string
+	switch chainType {
+	case types.ChainTypeFabric:
+		if appchainPorts == "" {
+			appPorts = append(appPorts, "7050", "7051", "7053", "8051", "8053", "9051", "9053", "10051", "10053")
+		} else {
+			appPorts = strings.Split(appchainPorts, ",")
+			if len(appPorts) != 9 {
+				return nil, "", fmt.Errorf("The specified number of application chain ports is incorrect. Fabric needs to specify 9 ports.")
+			}
+			if err := checkPorts(appPorts); err != nil {
+				return nil, "", fmt.Errorf("The port cannot be repeated: %w", err)
+			}
+		}
+
+		if appchainAddr == "" {
+			appchainAddr = fmt.Sprintf("%s:%s", appchainIP, appPorts[2])
+		} else {
+			if appchainPorts != "" {
+				if !strings.Contains(appchainAddr, appPorts[2]) && !strings.Contains(appchainAddr, appPorts[4]) && !strings.Contains(appchainAddr, appPorts[6]) && !strings.Contains(appchainAddr, appPorts[8]) {
+					return nil, "", fmt.Errorf("AppchainAddr and appchainPorts are inconsistent. Please check the input parameters.\n 1. The port in appchainAddr should be the eventUrlSubstitutionExp port of a fabric node; \n 2. The order in which ports are specified is：the first one is port of orderer, the remaining, in turn, are the first node's urlSubstitutionExp port and eventUrlSubstitutionExp port, and the second node's urlSubstitutionExp port and eventUrlSubstitutionExp port...")
+				}
+			} else {
+				return nil, "", fmt.Errorf("Please specify other ports for the Fabric chain.")
+			}
+
+			if appchainIP != "" {
+				if !strings.Contains(appchainAddr, appchainIP) {
+					return nil, "", fmt.Errorf("AppchainAddr and appchainIP are inconsistent. Please check the input parameters.")
+				}
+			}
+		}
+
+		if cryptoPath == "" {
+			return nil, "", fmt.Errorf("Start fabric pier need crypto-config path.")
+		}
+	case types.ChainTypeEther:
+		if appchainPorts == "" {
+			appPorts = append(appPorts, "8546")
+		} else {
+			appPorts = strings.Split(appchainPorts, ",")
+			if len(appPorts) != 1 {
+				return nil, "", fmt.Errorf("The specified number of application chain ports is incorrect. Ethereum needs to specify 1 port.")
+			}
+		}
+
+		if appchainAddr == "" {
+			appchainAddr = fmt.Sprintf("ws://%s:%s", appchainIP, appPorts[0])
+		} else {
+			if appchainPorts != "" {
+				if !strings.Contains(appchainAddr, appPorts[0]) {
+					return nil, "", fmt.Errorf("AppchainAddr and appchainPorts are inconsistent. Please check the input parameters.")
+				}
+			}
+			if appchainIP != "" {
+				if !strings.Contains(appchainAddr, appchainIP) {
+					return nil, "", fmt.Errorf("AppchainAddr and appchainIP are inconsistent. Please check the input parameters.")
+				}
+			}
+		}
+	default:
+		return nil, "", fmt.Errorf("unsupported appchain type")
+	}
+
+	return appPorts, appchainAddr, nil
+}
+
+func checkPorts(ports []string) error {
+	portM := make(map[string]int, 0)
+	for i, p := range ports {
+		_, ok := portM[p]
+		if ok {
+			return fmt.Errorf("%s", p)
+		}
+		portM[p] = i
+	}
+	return nil
 }

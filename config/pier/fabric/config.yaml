@@ -125,7 +125,7 @@ organizations:
 #
 orderers:
   orderer.example.com:
-    url: grpcs://{{.AppchainIP}}:7050
+    url: grpcs://{{.AppchainIP}}:{{.Port1}}
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -152,8 +152,8 @@ orderers:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://{{.AppchainIP}}:7051
-    eventUrl: grpcs://{{.AppchainIP}}:7053
+    url: grpcs://{{.AppchainIP}}:{{.Port2}}
+    eventUrl: grpcs://{{.AppchainIP}}:{{.Port3}}
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
@@ -172,8 +172,8 @@ peers:
 
   peer1.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://{{.AppchainIP}}:8051
-    eventUrl: grpcs://{{.AppchainIP}}:8053
+    url: grpcs://{{.AppchainIP}}:{{.Port4}}
+    eventUrl: grpcs://{{.AppchainIP}}:{{.Port5}}
     grpcOptions:
       ssl-target-name-override: peer1.org1.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
@@ -192,8 +192,8 @@ peers:
 
   peer0.org2.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://{{.AppchainIP}}:9051
-    eventUrl: grpcs://{{.AppchainIP}}:9053
+    url: grpcs://{{.AppchainIP}}:{{.Port6}}
+    eventUrl: grpcs://{{.AppchainIP}}:{{.Port7}}
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
@@ -212,8 +212,8 @@ peers:
 
   peer1.org2.example.com:
     # this URL is used to send endorsement and query requests
-    url: grpcs://{{.AppchainIP}}:10051
-    eventUrl: grpcs://{{.AppchainIP}}:10053
+    url: grpcs://{{.AppchainIP}}:{{.Port8}}
+    eventUrl: grpcs://{{.AppchainIP}}:{{.Port9}}
     grpcOptions:
       ssl-target-name-override: peer1.org2.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
@@ -270,27 +270,27 @@ peers:
 entityMatchers:
   peer:
   - pattern: (\w*)peer0.org1.example.com:(\w*)
-    urlSubstitutionExp: grpcs://{{.AppchainIP}}:7051
-    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:7053
+    urlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port2}}
+    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port3}}
     sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
     mappedHost: peer0.org1.example.com
 
 
   - pattern: (\w*)peer1.org1.example.com:(\w*)
-    urlSubstitutionExp: grpcs://{{.AppchainIP}}:8051
-    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:8053
+    urlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port4}}
+    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port5}}
     sslTargetOverrideUrlSubstitutionExp: peer1.org1.example.com
     mappedHost: peer1.org1.example.com
 
   - pattern: (\w*)peer0.org2.example.com:(\w*)
-    urlSubstitutionExp: grpcs://{{.AppchainIP}}:9051
-    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:9053
+    urlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port6}}
+    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port7}}
     sslTargetOverrideUrlSubstitutionExp: peer0.org2.example.com
     mappedHost: peer0.org2.example.com
 
   - pattern: (\w*)peer1.org2.example.com:(\w*)
-    urlSubstitutionExp: grpcs://{{.AppchainIP}}:10051
-    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:10053
+    urlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port8}}
+    eventUrlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port9}}
     sslTargetOverrideUrlSubstitutionExp: peer1.org2.example.com
     mappedHost: peer1.org2.example.com
 
@@ -323,6 +323,6 @@ entityMatchers:
   #entityMatchers:
   orderer:
   - pattern: (\w*)orderer.example.com(\w*)
-    urlSubstitutionExp: grpcs://{{.AppchainIP}}:7050
+    urlSubstitutionExp: grpcs://{{.AppchainIP}}:{{.Port1}}
     sslTargetOverrideUrlSubstitutionExp: orderer.example.com
     mappedHost: orderer.example.com
