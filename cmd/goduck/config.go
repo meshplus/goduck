@@ -123,6 +123,7 @@ type PierConfigGenerator struct {
 	appchainType         string
 	appchainIP           string
 	appchainAddr         string
+	appPorts             []string
 	appchainContractAddr string
 	target               string
 	tls                  string
@@ -138,7 +139,7 @@ func NewBitXHubConfigGenerator(typ string, mode string, target string, num int, 
 	return &BitXHubConfigGenerator{typ: typ, mode: mode, target: target, num: num, ips: ips, tls: tls, version: version}
 }
 
-func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
+func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr string, appPorts []string, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) *PierConfigGenerator {
 	return &PierConfigGenerator{
 		mode:                 mode,
 		startType:            startType,
@@ -151,6 +152,7 @@ func NewPierConfigGenerator(mode, startType, bitxhub string, validators []string
 		appchainType:         appchainType,
 		appchainIP:           appchainIP,
 		appchainAddr:         appchainAddr,
+		appPorts:             appPorts,
 		appchainContractAddr: appchainContractAddr,
 		target:               target,
 		tls:                  tls,
@@ -415,16 +417,87 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 	files2 := []string{
 		p.appchainType + ".toml",
 	}
-	if p.appchainType == types.Fabric {
-		files2 = append(files2, types.FabricConfig)
-	}
-
-	data2 := struct {
+	var data2 struct {
 		AppchainAddr         string
 		AppchainContractAddr string
 		ConfigPath           string
 		AppchainIP           string
-	}{p.appchainAddr, p.appchainContractAddr, p.cryptoPath, p.appchainIP}
+		Port1                string
+		Port2                string
+		Port3                string
+		Port4                string
+		Port5                string
+		Port6                string
+		Port7                string
+		Port8                string
+		Port9                string
+	}
+
+	if p.appchainType == types.ChainTypeFabric {
+		files2 = append(files2, types.FabricConfig)
+
+		if len(p.appPorts) != 9 {
+			return fmt.Errorf("the number of appPorts is not 9: %d", len(p.appPorts))
+		}
+		data2 = struct {
+			AppchainAddr         string
+			AppchainContractAddr string
+			ConfigPath           string
+			AppchainIP           string
+			Port1                string
+			Port2                string
+			Port3                string
+			Port4                string
+			Port5                string
+			Port6                string
+			Port7                string
+			Port8                string
+			Port9                string
+		}{p.appchainAddr,
+			p.appchainContractAddr,
+			p.cryptoPath,
+			p.appchainIP,
+			p.appPorts[0],
+			p.appPorts[1],
+			p.appPorts[2],
+			p.appPorts[3],
+			p.appPorts[4],
+			p.appPorts[5],
+			p.appPorts[6],
+			p.appPorts[7],
+			p.appPorts[8]}
+	} else if p.appchainType == types.ChainTypeEther {
+		if len(p.appPorts) != 1 {
+			return fmt.Errorf("the number of appPorts is not 1: %d", len(p.appPorts))
+		}
+		data2 = struct {
+			AppchainAddr         string
+			AppchainContractAddr string
+			ConfigPath           string
+			AppchainIP           string
+			Port1                string
+			Port2                string
+			Port3                string
+			Port4                string
+			Port5                string
+			Port6                string
+			Port7                string
+			Port8                string
+			Port9                string
+		}{p.appchainAddr,
+			p.appchainContractAddr,
+			p.cryptoPath,
+			p.appchainIP,
+			p.appPorts[0],
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			""}
+	}
 
 	if err := renderConfigFiles(dstDir, srcDir, files2, data2); err != nil {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
@@ -553,8 +626,8 @@ func InitBitXHubConfig(typ, mode, target string, num int, ips []string, tls bool
 	return bcg.InitConfig()
 }
 
-func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
-	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+func InitPierConfig(mode, startType, bitxhub string, validators []string, port string, peers, connectors []string, providers, appchainType, appchainIP, appchainAddr string, appPorts []string, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath string) error {
+	pcg := NewPierConfigGenerator(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appPorts, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
 	return pcg.InitConfig()
 }
 
