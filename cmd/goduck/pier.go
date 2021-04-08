@@ -194,7 +194,7 @@ var pierCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:  "mode",
 					Value: types.PierModeDirect,
-					Usage: "configuration mode, one of direct or relay",
+					Usage: "configuration mode, one of direct, relay or union",
 				},
 				&cli.StringFlag{
 					Name:  "type",
