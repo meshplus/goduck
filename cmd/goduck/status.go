@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func binaryStatus(port string) ([]string, error) {
 	}
 
 	if string(pidOut) != "" {
-		params, err := getProcessParam(string(pidOut[:len(pidOut)-1]))
+		params, err := getProcessParam(string(pidOut[:len(pidOut)-1]), "")
 		if err != nil {
 			return nil, fmt.Errorf("get process param error: %w", err)
 		}
@@ -188,6 +189,10 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 	}
 	defer fi.Close()
 
+	filenameWithSuffix := path.Base(pidPath)
+	fileSuffix := path.Ext(filenameWithSuffix)
+	processName := strings.TrimSuffix(filenameWithSuffix, fileSuffix)
+
 	br := bufio.NewReader(fi)
 	i := 1
 	for {
@@ -195,7 +200,7 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 		if c == io.EOF {
 			break
 		}
-		params, err := getProcessParam(string(a))
+		params, err := getProcessParam(string(a), fmt.Sprintf("%s_%d", processName, i))
 		if err != nil {
 			return table, err
 		}
@@ -206,42 +211,54 @@ func existProcess(pidPath string, table [][]string) ([][]string, error) {
 
 }
 
-func getProcessParam(pidStr string) ([]string, error) {
+func getProcessParam(pidStr, pName string) ([]string, error) {
 	pid, err := strconv.Atoi(string(pidStr))
 	if err != nil {
 		return nil, err
 	}
 
+	var status, name, timeFormat, args string
 	exist, err := gops.PidExists(int32(pid))
-
-	status := "term"
-	if err == nil && exist {
+	if err != nil {
+		// the process is killed by the outside
+		return nil, fmt.Errorf("pid exist: %w", err)
+	} else if exist {
 		status = "running"
-	}
+		process, err := gops.NewProcess(int32(pid))
+		if err != nil {
+			return nil, err
+		}
 
-	process, err := gops.NewProcess(int32(pid))
-	if err != nil {
-		return nil, err
-	}
+		createTime, err := process.CreateTime()
+		if err != nil {
+			return nil, err
+		}
 
-	createTime, err := process.CreateTime()
-	if err != nil {
-		return nil, err
-	}
+		tm := time.Unix(0, createTime*int64(time.Millisecond))
+		timeFormat = tm.Format(time.RFC3339)
 
-	tm := time.Unix(0, createTime*int64(time.Millisecond))
-	timeFormat := tm.Format(time.RFC3339)
+		name, _ = process.Name()
 
-	name, _ := process.Name()
+		if pName == "" {
+			pName = name
+		}
 
-	slice, _ := process.CmdlineSlice()
-	args := strings.Join(slice, " ")
-	if len(strings.Join(slice, " ")) > 1000 {
-		args = args[:1000] + "..."
+		slice, _ := process.CmdlineSlice()
+		args = strings.Join(slice, " ")
+		if len(strings.Join(slice, " ")) > 1000 {
+			args = args[:1000] + "..."
+		}
+	} else {
+		status = "exited"
+		if strings.Contains(pName, "bitxhub") {
+			name = "bitxhub"
+		} else if strings.Contains(pName, "pier") {
+			name = "pier"
+		}
 	}
 
 	return []string{
-		name,
+		pName,
 		name,
 		modes[0],
 		pidStr,
