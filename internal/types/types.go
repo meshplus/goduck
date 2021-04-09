@@ -20,6 +20,7 @@ const (
 	QuickStartScript = "quick_start.sh"
 	InfoScript       = "info.sh"
 	Prometheus       = "prometheus.sh"
+	TlsCerts         = "certs"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
@@ -31,9 +32,6 @@ const (
 
 	FabricRuleUrl   = "https://github.com/meshplus/bitxhub/blob/master/scripts/quick_start/fabric_rule.wasm"
 	EthereumRuleUrl = "https://github.com/meshplus/pier-client-ethereum/blob/master/config/validating.wasm"
-
-	Ethereum = "ethereum"
-	Fabric   = "fabric"
 
 	FabricConfig = "config.yaml"
 )
