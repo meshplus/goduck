@@ -313,7 +313,7 @@ func pierRegister(ctx *cli.Context) error {
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 
 	appPorts, appchainAddr, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
@@ -364,7 +364,7 @@ func pierStart(ctx *cli.Context) error {
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 	pierRepo := ctx.String("pierRepo")
 
@@ -506,7 +506,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 
 	appPorts, appchainAddr, err := getAppchainParams(appchainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)

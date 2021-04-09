@@ -179,7 +179,11 @@ function appchain_register() {
 }
 
 function rule_deploy() {
-  "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
+  if [ "${SYSTEM}" == "linux" ]; then
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH} && "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
+  elif [ "${SYSTEM}" == "darwin" ]; then
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
+  fi
 }
 
 function pier_docker_up() {

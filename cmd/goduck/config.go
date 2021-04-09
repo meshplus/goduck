@@ -503,10 +503,8 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
-	if p.tls == "true" {
-		if err := renderConfigFiles(filepath.Join(p.target, p.appchainType, types.TlsCerts), filepath.Join("pier", types.TlsCerts), nil, nil); err != nil {
-			return fmt.Errorf("initialize Pier tls configuration files: %w", err)
-		}
+	if err := renderConfigFiles(filepath.Join(p.target, p.appchainType, types.TlsCerts), filepath.Join("pier", types.TlsCerts), nil, nil); err != nil {
+		return fmt.Errorf("initialize Pier tls configuration files: %w", err)
 	}
 
 	return nil
@@ -982,19 +980,20 @@ func generatePierKeyAndID(target, pierPath string, keys []string) (string, error
 	// pier init key
 	// version >= v1.4.0 : key.json, node.priv
 	// version < v1.4.0- : key.json
-	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/tmp && %s --repo %s/tmp init", target, pierPath, target)).Run()
+	tmpPath := fmt.Sprintf("%s_%d", types.TmpPath, time.Now().Unix())
+	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/%s && %s --repo %s/%s init", target, tmpPath, pierPath, target, tmpPath)).Run()
 	if err != nil {
 		return "", fmt.Errorf("pier init key: %s", err)
 	}
 	for _, k := range keys {
-		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cp %s/tmp/%s %s/%s", target, k, target, k)).Run()
+		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cp %s/%s/%s %s/%s", target, tmpPath, k, target, k)).Run()
 		if err != nil {
 			return "", fmt.Errorf("copy pier %s: %s", k, err)
 		}
 	}
 
 	// pier p2p id
-	keyPath := fmt.Sprintf("%s/tmp", target)
+	keyPath := fmt.Sprintf("%s/%s", target, tmpPath)
 	out, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("%s --repo %s p2p id", pierPath, keyPath)).Output()
 	if err != nil {
 		return "", fmt.Errorf("get pier id: %s", err)
@@ -1002,7 +1001,7 @@ func generatePierKeyAndID(target, pierPath string, keys []string) (string, error
 	pid := strings.Replace(string(out), "\n", "", -1)
 
 	// delete tmp directory
-	err = sh.Command("/bin/bash", "-c", fmt.Sprintf("rm -r %s/tmp", target)).Run()
+	err = sh.Command("/bin/bash", "-c", fmt.Sprintf("rm -r %s/%s", target, tmpPath)).Run()
 	if err != nil {
 		return "", fmt.Errorf("delete tmp directory: %s", err)
 	}
