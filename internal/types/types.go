@@ -21,6 +21,7 @@ const (
 	InfoScript       = "info.sh"
 	Prometheus       = "prometheus.sh"
 	TlsCerts         = "certs"
+	TmpPath          = "tmp"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"

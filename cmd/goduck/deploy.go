@@ -318,7 +318,7 @@ func deployPier(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 	version := ctx.String("version")
 
