@@ -503,6 +503,12 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
+	if p.tls == "true" {
+		if err := renderConfigFiles(filepath.Join(p.target, p.appchainType, types.TlsCerts), filepath.Join("pier", types.TlsCerts), nil, nil); err != nil {
+			return fmt.Errorf("initialize Pier tls configuration files: %w", err)
+		}
+	}
+
 	return nil
 }
 
