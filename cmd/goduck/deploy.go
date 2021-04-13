@@ -135,8 +135,7 @@ func deployCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:  "appchainIP",
-						Value: "127.0.0.1",
-						Usage: "IP of appchain which pier connects to",
+						Usage: "IP of appchain which pier connects to (default: \"127.0.0.1\")",
 					},
 					&cli.StringFlag{
 						Name:  "appchainAddr",
@@ -322,7 +321,7 @@ func deployPier(ctx *cli.Context) error {
 	appchainContractAddr := ctx.String("contractAddr")
 	version := ctx.String("version")
 
-	appPorts, appchainAddr, err := getAppchainParams(chain, appchainIP, appchainPorts, appchainAddr, cryptoPath)
+	appPorts, appchainAddr, appchainIP, err := getAppchainParams(chain, appchainIP, appchainPorts, appchainAddr, cryptoPath)
 	if err != nil {
 		return err
 	}
