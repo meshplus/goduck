@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: MIT
 pragma solidity >=0.5.6;
 
 contract Transfer {
     mapping(string => uint64) accountM; // map for accounts
     // change the address of Broker accordingly
-    // address BrokerAddr = 0x9E0901D698E854F6CFE9e478C38d20A01908768a;
-    address BrokerAddr = 0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4;
+    address BrokerAddr = 0x97135d4d2578dd2347FF5382db77553bE50bff3f;
     Broker broker = Broker(BrokerAddr);
 
     // AccessControl
@@ -23,24 +21,26 @@ contract Transfer {
         return BrokerAddr;
     }
 
-    // 资产类的业务合约
+    // contract for asset
     function transfer(address destChainID, string memory destAddr, string memory sender, string memory receiver, string memory amount) public {
         uint64 am = uint64(parseInt(amount));
+        require(accountM[sender] >= am);
         accountM[sender] -= am;
 
-        // 拼接参数
+        // stitch parameters
         string memory args = concat(toSlice(sender), toSlice(","));
         args = concat(toSlice(args), toSlice(receiver));
         args = concat(toSlice(args), toSlice(","));
         args = concat(toSlice(args), toSlice(amount));
 
-        bool ok = broker.InterchainTransferInvoke(destChainID, destAddr, args);
-        require(ok);
+        string memory argsRb = concat(toSlice(sender), toSlice(","));
+        argsRb = concat(toSlice(argsRb), toSlice(amount));
+
+        broker.emitInterchainEvent(destChainID, destAddr, "interchainCharge,,interchainRollback", args, "", argsRb);
     }
 
-    function interchainRollback(string memory sender, uint64 val) public onlyBroker returns(bool){
+    function interchainRollback(string memory sender, uint64 val) public onlyBroker {
         accountM[sender] += val;
-        return true;
     }
 
     function interchainCharge(string memory sender, string memory receiver, uint64 val) public onlyBroker returns(bool) {
@@ -48,7 +48,7 @@ contract Transfer {
         return true;
     }
 
-    function getBalance(string memory id) public view returns(uint64) {
+    function getBalance(string memory id) public returns(uint64) {
         return accountM[id];
     }
 
@@ -56,7 +56,7 @@ contract Transfer {
         accountM[id] = amount;
     }
 
-    function parseInt(string memory self) internal pure returns (uint _ret) {
+    function parseInt(string memory self) public pure returns (uint _ret) {
         bytes memory _bytesValue = bytes(self);
         uint j = 1;
         for(uint i = _bytesValue.length-1; i >= 0 && i < _bytesValue.length; i--) {
@@ -109,5 +109,11 @@ contract Transfer {
 }
 
 abstract contract Broker {
-    function InterchainTransferInvoke(address destChainID, string memory destAddr, string memory args) virtual public returns (bool);
+    function emitInterchainEvent(
+        address destChainID,
+        string memory destAddr,
+        string memory funcs,
+        string memory args,
+        string memory argsCb,
+        string memory argsRb) virtual public;
 }
