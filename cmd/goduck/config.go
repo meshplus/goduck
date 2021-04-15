@@ -358,6 +358,9 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		if p.appchainIP == "127.0.0.1" {
 			p.appchainIP = localIP
 		}
+		if strings.Contains(p.appchainAddr, "127.0.0.1") {
+			p.appchainAddr = strings.Replace(p.appchainAddr, "127.0.0.1", localIP, -1)
+		}
 	}
 
 	if p.mode == types.PierModeRelay {
@@ -503,7 +506,7 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		return fmt.Errorf("initialize Pier plugin configuration files: %w", err)
 	}
 
-	if err := renderConfigFiles(filepath.Join(p.target, p.appchainType, types.TlsCerts), filepath.Join("pier", types.TlsCerts), nil, nil); err != nil {
+	if err := renderConfigFiles(filepath.Join(p.target, types.TlsCerts), filepath.Join("pier", types.TlsCerts), nil, nil); err != nil {
 		return fmt.Errorf("initialize Pier tls configuration files: %w", err)
 	}
 
@@ -981,7 +984,8 @@ func generatePierKeyAndID(target, pierPath string, keys []string) (string, error
 	// version >= v1.4.0 : key.json, node.priv
 	// version < v1.4.0- : key.json
 	tmpPath := fmt.Sprintf("%s_%d", types.TmpPath, time.Now().Unix())
-	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/%s && %s --repo %s/%s init", target, tmpPath, pierPath, target, tmpPath)).Run()
+	libPath := filepath.Dir(pierPath)
+	err := sh.Command("/bin/bash", "-c", fmt.Sprintf("mkdir %s/%s && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s && %s --repo %s/%s init", target, tmpPath, libPath, pierPath, target, tmpPath)).Run()
 	if err != nil {
 		return "", fmt.Errorf("pier init key: %s", err)
 	}
@@ -994,7 +998,7 @@ func generatePierKeyAndID(target, pierPath string, keys []string) (string, error
 
 	// pier p2p id
 	keyPath := fmt.Sprintf("%s/%s", target, tmpPath)
-	out, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("%s --repo %s p2p id", pierPath, keyPath)).Output()
+	out, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s && %s --repo %s p2p id", libPath, pierPath, keyPath)).Output()
 	if err != nil {
 		return "", fmt.Errorf("get pier id: %s", err)
 	}
