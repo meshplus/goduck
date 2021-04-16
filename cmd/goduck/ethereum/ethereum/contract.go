@@ -108,7 +108,7 @@ func deploy(ctx *cli.Context) error {
 	case "rinkeby":
 		etherAddr = rinkeby
 	default:
-		return fmt.Errorf("unsupport ethereum network")
+		etherAddr = host
 	}
 
 	if key == "" {
@@ -117,7 +117,7 @@ func deploy(ctx *cli.Context) error {
 
 	etherCli, privateKey, err := helperEthKey(etherAddr, key)
 	if err != nil {
-		return err
+		return fmt.Errorf("helperEthKey error: %v", err)
 	}
 
 	var compileResult *CompileResult
@@ -190,7 +190,7 @@ func invoke(ctx *cli.Context) error {
 	case "rinkeby":
 		etherAddr = rinkeby
 	default:
-		return fmt.Errorf("unsupport ethereum network")
+		etherAddr = host
 	}
 	if ctx.NArg() < 2 {
 		return fmt.Errorf("invoke contract must include address and function")
@@ -210,7 +210,7 @@ func invoke(ctx *cli.Context) error {
 
 	etherCli, privateKey, err := helperEthKey(etherAddr, key)
 	if err != nil {
-		return err
+		return fmt.Errorf("helperEthKey error: %v", err)
 	}
 
 	var abiStr string
