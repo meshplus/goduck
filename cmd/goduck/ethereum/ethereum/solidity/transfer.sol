@@ -108,12 +108,12 @@ contract Transfer {
     }
 }
 
-abstract contract Broker {
+ contract Broker {
     function emitInterchainEvent(
         address destChainID,
         string memory destAddr,
         string memory funcs,
         string memory args,
         string memory argsCb,
-        string memory argsRb) virtual public;
+        string memory argsRb)  public;
 }
