@@ -33,6 +33,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v2.20.5+incompatible
 	github.com/spf13/viper v1.6.1
+	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.2.0
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
 	gopkg.in/cheggaaa/pb.v2 v2.0.7 // indirect
