@@ -90,6 +90,10 @@ var pierCMD = &cli.Command{
 					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
 					Usage: "address of the contract on the appChain. Only works on Ethereum",
 				},
+				&cli.StringFlag{
+					Name:  "pierRepo",
+					Usage: "the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+				},
 			},
 			Action: pierRegister,
 		},
@@ -310,8 +314,10 @@ func pierRegister(ctx *cli.Context) error {
 	overwrite := ctx.String("overwrite")
 	appchainIP := ctx.String("appchainIP")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
+	appchainPortsTmp := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
+	pierRepo := ctx.String("pierRepo")
 
 	appPorts, appchainAddr, appchainIP, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
 	if err != nil {
@@ -338,6 +344,10 @@ func pierRegister(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
+	if pierRepo == "" {
+		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	}
+
 	if pierUpType == types.TypeBinary {
 		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
 			if err := downloadPierBinary(repoRoot, version); err != nil {
@@ -346,7 +356,7 @@ func pierRegister(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr)
+	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo)
 }
 
 func pierStart(ctx *cli.Context) error {
@@ -503,7 +513,8 @@ func generatePierConfig(ctx *cli.Context) error {
 	cryptoPath := ctx.String("cryptoPath")
 	version := ctx.String("version")
 	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
+	appchainPortsTmp := ctx.String("appchainPorts")
+	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 
 	appPorts, appchainAddr, appchainIP, err := getAppchainParams(appchainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
@@ -580,35 +591,49 @@ func getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, crypt
 			return nil, "", "", fmt.Errorf("Start fabric pier need crypto-config path.")
 		}
 	case types.ChainTypeEther:
-		if appchainPorts == "" {
-			appPorts = append(appPorts, "8546")
-		} else {
-			appPorts = strings.Split(appchainPorts, ",")
-			if len(appPorts) != 1 {
-				return nil, "", "", fmt.Errorf("The specified number of application chain ports is incorrect. Ethereum needs to specify 1 port.")
-			}
-		}
-
 		if appchainAddr == "" {
 			if appchainIP == "" {
 				appchainIP = "127.0.0.1"
 			}
+
+			if appchainPorts == "" {
+				appPorts = append(appPorts, "8546")
+			} else {
+				appPorts = strings.Split(appchainPorts, ",")
+				if len(appPorts) != 1 {
+					return nil, "", "", fmt.Errorf("The specified number of application chain ports is incorrect. Ethereum needs to specify 1 port.")
+				}
+			}
+
 			appchainAddr = fmt.Sprintf("ws://%s:%s", appchainIP, appPorts[0])
 		} else {
 			if appchainPorts != "" {
-				if !strings.Contains(appchainAddr, appPorts[0]) {
-					return nil, "", "", fmt.Errorf("AppchainAddr and appchainPorts are inconsistent. Please check the input parameters.")
+				if appchainPorts != "0000" {
+					appPorts = strings.Split(appchainPorts, ",")
+					if len(appPorts) != 1 {
+						return nil, "", "", fmt.Errorf("The specified number of application chain ports is incorrect. Ethereum needs to specify 1 port.")
+					}
+					if !strings.Contains(appchainAddr, appPorts[0]) {
+						return nil, "", "", fmt.Errorf("AppchainAddr(%s) and appchainPorts(%s) are inconsistent. Please check the input parameters.", appchainAddr, appchainPorts)
+					}
+				} else {
+					appPorts = append(appPorts, "0000")
 				}
+			} else {
+				appPorts = append(appPorts, "0000")
 			}
 			if appchainIP != "" {
-				if !strings.Contains(appchainAddr, appchainIP) {
-					return nil, "", "", fmt.Errorf("AppchainAddr and appchainIP are inconsistent. Please check the input parameters.")
+				if appchainIP != "0.0.0.0" {
+					if !strings.Contains(appchainAddr, appchainIP) {
+						return nil, "", "", fmt.Errorf("AppchainAddr and appchainIP are inconsistent. Please check the input parameters.")
+					}
 				}
 			} else {
 				// In the case of Ethereum, if ADDR is given, then the IP parameter will be invalid and will just be assigned a default value
 				appchainIP = "0.0.0.0"
 			}
 		}
+
 	default:
 		return nil, "", "", fmt.Errorf("unsupported appchain type")
 	}
