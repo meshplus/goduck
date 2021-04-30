@@ -71,17 +71,17 @@ function generateConfig() {
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchainType "fabric" \
-      --appchainIP ${APPCHAINIP} \
-      --appchainPorts ${APPCHAINPORTS} \
-      --appchainAddr ${APPCHAINADDR} \
-      --contractAddr ${APPCHAINCONTRACTADDR} \
-      --target ${CONFIG_PATH} \
-      --tls ${TLS} \
-      --httpPort ${HTTP} \
-      --pprofPort ${PPROF} \
-      --apiPort ${API} \
-      --cryptoPath ${CRYPTOPATH} \
-      --version ${VERSION}
+      --appchainIP "${APPCHAINIP}" \
+      --appchainPorts "${APPCHAINPORTS}" \
+      --appchainAddr "${APPCHAINADDR}" \
+      --contractAddr "${APPCHAINCONTRACTADDR}" \
+      --target "${CONFIG_PATH}" \
+      --tls "${TLS}" \
+      --httpPort "${HTTP}" \
+      --pprofPort "${PPROF}" \
+      --apiPort "${API}" \
+      --cryptoPath "${CRYPTOPATH}" \
+      --version "${VERSION}"
 
     # copy appchain crypto-config and modify config.yaml
     print_blue "===> Copy fabric crypto-config"
@@ -97,15 +97,17 @@ function generateConfig() {
     mkdir -p "${CONFIG_PATH}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="fabric-client-1.4.so"
+      PLUGINNAME="fabric-client-1.4.so"
     else
       PLUGIN="fabric-client-1.4"
+      PLUGINNAME="appchain_plugin"
     fi
 
     if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for fabric first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
+    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGINNAME}"
 
     cd "${CONFIG_PATH}"/fabric
     if [ ! -f validating.wasm ]; then
@@ -131,10 +133,10 @@ function generateConfig() {
       --validators "0x97c8B516D19edBf575D72a172Af7F418BE498C37" \
       --validators "0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8" \
       --appchainType "ethereum" \
-      --appchainIP ${APPCHAINIP} \
-      --appchainAddr ${APPCHAINADDR} \
-      --appchainPorts ${APPCHAINPORTS} \
-      --contractAddr ${APPCHAINCONTRACTADDR} \
+      --appchainIP "${APPCHAINIP}" \
+      --appchainAddr "${APPCHAINADDR}" \
+      --appchainPorts "${APPCHAINPORTS}" \
+      --contractAddr "${APPCHAINCONTRACTADDR}" \
       --target "${CONFIG_PATH}" \
       --tls "${TLS}" \
       --httpPort "${HTTP}" \
@@ -147,25 +149,23 @@ function generateConfig() {
     mkdir -p "${CONFIG_PATH}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="eth-client.so"
+      PLUGINNAME="eth-client.so"
     else
       PLUGIN="eth-client"
+      PLUGINNAME="appchain_plugin"
     fi
 
     if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for ethereum first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGIN}"
+    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGINNAME}"
 
     cd "${CONFIG_PATH}"/ethereum
     if [ ! -f validating.wasm ]; then
       print_blue "===> Downloading validating.wasm"
       wget https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm
     fi
-  fi
-
-  if [[ "${VERSION}" != "v1.0.0-rc1" && "${VERSION}" != "v1.0.0" ]]; then
-    mv "${CONFIG_PATH}"/plugins/"${PLUGIN}" "${CONFIG_PATH}"/plugins/appchain_plugin
   fi
 }
 
@@ -489,7 +489,7 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:s:n:r:" opt; do
   esac
 done
 
-CONFIG_PATH="${CURRENT_PATH}"/pier/.pier_${MODE}
+CONFIG_PATH="${PIERREPO}"
 PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
 
 if [ "$OPT" == "register" ]; then
