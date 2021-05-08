@@ -45,7 +45,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
+					Value:   "v1.7.0",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -120,7 +120,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
+					Value:   "v1.7.0",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -293,7 +293,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
+					Value:   "v1.7.0",
 					Usage:   "pier version",
 				},
 			},
@@ -463,6 +463,32 @@ func downloadPierBinary(repoPath string, version string) error {
 				}
 			}
 		}
+
+		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) {
+			url := fmt.Sprintf(types.PierFabricClientUrlLinux, version, version)
+			err := download.Download(root, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Darwin %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename fabric client error: %s", err)
+			}
+		}
+
+		if !fileutil.Exist(filepath.Join(root, types.EthClient)) {
+			url := fmt.Sprintf(types.PierEthereumClientUrlLinux, version, version)
+			err := download.Download(root, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Darwin %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename eth client error: %s", err)
+			}
+		}
 	}
 	if runtime.GOOS == "darwin" {
 		if !fileutil.Exist(filepath.Join(root, "pier")) {
@@ -475,6 +501,32 @@ func downloadPierBinary(repoPath string, version string) error {
 			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 1 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
 			if err != nil {
 				return fmt.Errorf("extract pier binary: %s", err)
+			}
+		}
+
+		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) {
+			url := fmt.Sprintf(types.PierFabricClientUrlMacOS, version, version)
+			err := download.Download(root, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Darwin %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename fabric client error: %s", err)
+			}
+		}
+
+		if !fileutil.Exist(filepath.Join(root, types.EthClient)) {
+			url := fmt.Sprintf(types.PierEthereumClientUrlMacOS, version, version)
+			err := download.Download(root, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Darwin %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename eth client error: %s", err)
 			}
 		}
 
