@@ -175,7 +175,8 @@ function appchain_register() {
     --type $2 \
     --desc $3 \
     --version $4 \
-    --validators "${CONFIG_PATH}"/$5
+    --validators "${CONFIG_PATH}"/$5 \
+    --consensusType ""
 }
 
 function rule_deploy() {
