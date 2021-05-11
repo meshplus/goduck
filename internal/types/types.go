@@ -31,7 +31,7 @@ const (
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
 
 	BitxhubUrlLinux            = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_linux-amd64_%s.tar.gz"
-	BitxhubUrlMacOS            = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_macos_x86_64_%s.tar.gz"
+	BitxhubUrlMacOS            = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_darwin_x86_64_%s.tar.gz"
 	PierUrlLinux               = "https://github.com/meshplus/pier/releases/download/%s/pier_linux-amd64_%s.tar.gz"
 	PierUrlMacOS               = "https://github.com/meshplus/pier/releases/download/%s/pier_darwin_x86_64_%s.tar.gz"
 	PierFabricClientUrlLinux   = "https://github.com/meshplus/pier-client-fabric/releases/download/%s/fabric-client-%s-Linux"
