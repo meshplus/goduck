@@ -37,12 +37,12 @@ func deployCMD() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Aliases:  []string{"username", "u"},
+						Name:     "username",
 						Usage:    "server username",
 						Required: true,
 					},
 					&cli.StringFlag{
-						Aliases:  []string{"version", "v"},
+						Name:     "version",
 						Usage:    "BitXHub version",
 						Required: true,
 					},
@@ -103,7 +103,7 @@ func deployCMD() *cli.Command {
 						Required: true,
 					},
 					&cli.StringFlag{
-						Aliases:  []string{"username", "u"},
+						Name:     "username",
 						Usage:    "server username",
 						Required: true,
 					},
@@ -151,7 +151,7 @@ func deployCMD() *cli.Command {
 						Usage: "address of the contract on the appChain. Only works on Ethereum",
 					},
 					&cli.StringFlag{
-						Aliases:  []string{"version", "v"},
+						Name:     "version",
 						Usage:    "pier version",
 						Required: true,
 					},
@@ -237,7 +237,7 @@ func deployBitXHub(ctx *cli.Context) error {
 		}
 
 		err = sh.
-			Command("ssh", who, fmt.Sprintf("tar xzf %s -C ~/.bitxhub --strip-components 1 && mkdir -p .bitxhub/node%d/plugins && cp .bitxhub/raft.so .bitxhub/node%d/plugins", filename, idx+1, idx+1)).Run()
+			Command("ssh", who, fmt.Sprintf("tar xzf %s -C ~/.bitxhub && mkdir -p .bitxhub/node%d/plugins && cp .bitxhub/raft.so .bitxhub/node%d/plugins", filename, idx+1, idx+1)).Run()
 		if err != nil {
 			return err
 		}
@@ -254,7 +254,7 @@ func deployBitXHub(ctx *cli.Context) error {
 		}
 
 		err = sh.Command("ssh", who,
-			fmt.Sprintf("sleep 1 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} > ~/.bitxhub/bitxhub%d.PID", idx+1, idx+1)).Start()
+			fmt.Sprintf("sleep 3 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} > ~/.bitxhub/bitxhub%d.PID", idx+1, idx+1)).Start()
 		if err != nil {
 			color.Red("Start BitXHub node%d fail\n", idx+1)
 			return err
@@ -348,24 +348,28 @@ func deployPier(ctx *cli.Context) error {
 		return err
 	}
 
-	err = appchainRegister(who, chain)
+	err = appchainRegister(who, chain, version)
 	if err != nil {
 		return err
 	}
 
-	err = ruleDeploy(who, chain)
-	if err != nil {
-		return err
-	}
+	if version < "v1.6.0" {
+		err = ruleDeploy(who, chain)
+		if err != nil {
+			return err
+		}
 
-	err = pierStartRemote(who, chain)
-	if err != nil {
-		return err
-	}
+		err = pierStartRemote(who, chain)
+		if err != nil {
+			return err
+		}
 
-	err = pierCheck(who, chain, pprof)
-	if err != nil {
-		return err
+		err = pierCheck(who, chain, pprof)
+		if err != nil {
+			return err
+		}
+	} else {
+		color.Blue("The PIER has been successfully deployed and the application chain registration proposal has been initiated to the relay chain. Please wait for the proposal to pass before registering the validation rules and starting the PIER\n")
 	}
 
 	return nil
@@ -421,14 +425,14 @@ func pierStartRemote(who string, chain string) error {
 func ruleDeploy(who string, chain string) error {
 	color.Blue("====> Deploy rule in bitxhub\n")
 	err := sh.Command("ssh", who,
-		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/%s_rule.wasm", chain, chain, chain, chain)).Run()
+		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/validating.wasm", chain, chain, chain)).Run()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func appchainRegister(who, chain string) error {
+func appchainRegister(who, chain, version string) error {
 	color.Blue("====> Register pier(%s) to BitXHub \n", chain)
 
 	chainVersion := ""
@@ -440,16 +444,31 @@ func appchainRegister(who, chain string) error {
 		return fmt.Errorf("not support chain type")
 	}
 
-	err := sh.Command("ssh", who,
-		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s appchain register "+
-			"--name chain-%s "+
-			"--type %s "+
-			"--desc chain-%s-description "+
-			"--version %s "+
-			"--validators $HOME/.pier_%s/%s/%s.validators",
-			chain, chain, chain, chain, chainVersion, chain, chain, chain)).Run()
-	if err != nil {
-		return err
+	if version < "v1.7.0" {
+		err := sh.Command("ssh", who,
+			fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s appchain register "+
+				"--name chain-%s "+
+				"--type %s "+
+				"--desc chain-%s-description "+
+				"--version %s "+
+				"--validators $HOME/.pier_%s/%s/%s.validators",
+				chain, chain, chain, chain, chainVersion, chain, chain, chain)).Run()
+		if err != nil {
+			return err
+		}
+	} else {
+		err := sh.Command("ssh", who,
+			fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s appchain register "+
+				"--name chain-%s "+
+				"--type %s "+
+				"--desc chain-%s-description "+
+				"--version %s "+
+				"--validators $HOME/.pier_%s/%s/%s.validators "+
+				"--consensusType consensusType",
+				chain, chain, chain, chain, chainVersion, chain, chain, chain)).Run()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -478,6 +497,41 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		}
 	}
 
+	if !fileutil.Exist(filePath) {
+		url := fmt.Sprintf(types.PierUrlLinux, version, version)
+		err = download.Download(binPath, url)
+		if err != nil {
+			return err
+		}
+	}
+	if chain == types.ChainTypeFabric {
+		if !fileutil.Exist(filepath.Join(binPath, types.FabricClient)) {
+			url := fmt.Sprintf(types.PierFabricClientUrlLinux, version, version)
+			err := download.Download(binPath, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Linux %s && chmod +x %s", binPath, version, types.FabricClient, types.FabricClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename fabric client error: %s", err)
+			}
+		}
+	} else if chain == types.ChainTypeEther {
+		if !fileutil.Exist(filepath.Join(binPath, types.EthClient)) {
+			url := fmt.Sprintf(types.PierEthereumClientUrlLinux, version, version)
+			err := download.Download(binPath, url)
+			if err != nil {
+				return err
+			}
+
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Linux %s && chmod +x %s", binPath, version, types.EthClient, types.EthClient)).Run()
+			if err != nil {
+				return fmt.Errorf("rename eth client error: %s", err)
+			}
+		}
+	}
+
 	libPath := filepath.Join(binPath, "libwasmer.so")
 	if !fileutil.Exist(libPath) {
 		err = download.Download(binPath, types.LinuxWasmLibUrl)
@@ -486,8 +540,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		}
 	}
 
-	ruleName := fmt.Sprintf("%s_rule.wasm", chain)
-	rulePath := filepath.Join(binPath, ruleName)
+	rulePath := filepath.Join(binPath, types.RuleName)
 	if !fileutil.Exist(rulePath) {
 		if chain == "fabric" {
 			err = download.Download(rulePath, types.FabricRuleUrl)
@@ -516,14 +569,33 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 		return err
 	}
 	// The files needed for deployment are placed in the ~/pier folder, and the configuration folder for actual deployment is ~/.pier_${chaintype}.
-	err = sh.
-		Command("scp", libPath, fmt.Sprintf("%spier/", target)).
-		Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
-		Command("scp", "-r", configPath, fmt.Sprintf("%spier/pier_deploy", target)).
-		Command("scp", filePath, fmt.Sprintf("%spier/", target)).
-		Run()
-	if err != nil {
-		return err
+	if version < "v1.7.0" {
+		err = sh.
+			Command("scp", libPath, fmt.Sprintf("%spier/", target)).
+			Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
+			Command("scp", "-r", configPath, fmt.Sprintf("%spier/pier_deploy", target)).
+			Command("scp", filePath, fmt.Sprintf("%spier/", target)).
+			Run()
+		if err != nil {
+			return err
+		}
+	} else {
+		clientPath := ""
+		if chain == types.ChainTypeEther {
+			clientPath = filepath.Join(binPath, types.EthClient)
+		} else if chain == types.ChainTypeFabric {
+			clientPath = filepath.Join(binPath, types.FabricClient)
+		}
+		err = sh.
+			Command("scp", libPath, fmt.Sprintf("%spier/", target)).
+			Command("scp", rulePath, fmt.Sprintf("%spier/", target)).
+			Command("scp", "-r", configPath, fmt.Sprintf("%spier/pier_deploy", target)).
+			Command("scp", clientPath, fmt.Sprintf("%spier/", target)).
+			Command("scp", filePath, fmt.Sprintf("%spier/", target)).
+			Run()
+		if err != nil {
+			return err
+		}
 	}
 	err = sh.
 		Command("ssh", who, fmt.Sprintf("cd $HOME/pier && tar xf %s -C $HOME/pier --strip-components 1", filename)).
@@ -605,7 +677,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	color.Blue("====> Copy rule\n")
 	err = sh.
-		Command("ssh", who, fmt.Sprintf("mv $HOME/pier/%s_rule.wasm $HOME/.pier_%s/%s/%s_rule.wasm", chain, chain, chain, chain)).
+		Command("ssh", who, fmt.Sprintf("mv $HOME/pier/validating.wasm $HOME/.pier_%s/%s/validating.wasm", chain, chain)).
 		Run()
 
 	color.Green("====> Pier_root: $HOME/.pier_%s, BitXHub_addr: %s\n", chain, bitxhub)
