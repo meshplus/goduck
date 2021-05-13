@@ -26,6 +26,7 @@ const (
 	Pier         = "pier"
 	EthClient    = "eth-client"
 	FabricClient = "fabric-client-1.4"
+	RuleName     = "validating.wasm"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
@@ -39,8 +40,8 @@ const (
 	PierEthereumClientUrlLinux = "https://github.com/meshplus/pier-client-ethereum/releases/download/%s/eth-client-%s-Linux"
 	PierEthereumClientUrlMacOS = "https://github.com/meshplus/pier-client-ethereum/releases/download/%s/eth-client-%s-Darwin"
 
-	FabricRuleUrl   = "https://github.com/meshplus/bitxhub/blob/master/scripts/quick_start/fabric_rule.wasm"
-	EthereumRuleUrl = "https://github.com/meshplus/pier-client-ethereum/blob/master/config/validating.wasm"
+	FabricRuleUrl   = "https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm"
+	EthereumRuleUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm"
 
 	FabricConfig = "config.yaml"
 )

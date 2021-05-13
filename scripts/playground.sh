@@ -34,11 +34,9 @@ function binary_prepare() {
   if [ ! -a "${BXH_PATH}"/bitxhub ]; then
     if [ "${SYSTEM}" == "linux" ]; then
       tar xf bitxhub_linux-amd64_$VERSION.tar.gz
-      cp ./build/* . && rm -r build
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"${BXH_PATH}"/
     elif [ "${SYSTEM}" == "darwin" ]; then
       tar xf bitxhub_darwin_x86_64_$VERSION.tar.gz
-      cp ./build/* . && rm -r build
       install_name_tool -change @rpath/libwasmer.dylib "${BXH_PATH}"/libwasmer.dylib "${BXH_PATH}"/bitxhub
     else
       print_red "Bitxhub does not support the current operating system"

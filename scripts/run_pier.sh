@@ -170,13 +170,22 @@ function generateConfig() {
 }
 
 function appchain_register() {
-  "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" appchain register \
-    --name $1 \
-    --type $2 \
-    --desc $3 \
-    --version $4 \
-    --validators "${CONFIG_PATH}"/$5 \
-    --consensusType ""
+  if [[ "${VERSION}" < "v1.7.0" ]]; then
+    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" appchain register \
+      --name $1 \
+      --type $2 \
+      --desc $3 \
+      --version $4 \
+      --validators "${CONFIG_PATH}"/$5
+  else
+    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" appchain register \
+      --name $1 \
+      --type $2 \
+      --desc $3 \
+      --version $4 \
+      --validators "${CONFIG_PATH}"/$5 \
+      --consensusType ""
+  fi
 }
 
 function rule_deploy() {
