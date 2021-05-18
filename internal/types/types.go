@@ -12,8 +12,6 @@ const (
 	ChainTypeEther  = "ethereum"
 	ChainTypeFabric = "fabric"
 
-	BxhConfigRepo    = "bxh_config"
-	BitxhubConfig    = "bitxhub_config.sh"
 	PlaygroundScript = "playground.sh"
 	FabricScript     = "fabric.sh"
 	ChaincodeScript  = "chaincode.sh"
@@ -26,7 +24,6 @@ const (
 	TmpPath          = "tmp"
 
 	Pier         = "pier"
-	BitXHub      = "bitxhub"
 	EthClient    = "eth-client"
 	FabricClient = "fabric-client-1.4"
 	RuleName     = "validating.wasm"
@@ -46,7 +43,5 @@ const (
 	FabricRuleUrl   = "https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm"
 	EthereumRuleUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm"
 
-	FabricConfig    = "config.yaml"
-	BxhModifyConfig = "bxh_config.toml"
-	BitxhubTarName  = "bitxhub_%s_x86_64_%s.tar.gz"
+	FabricConfig = "config.yaml"
 )
