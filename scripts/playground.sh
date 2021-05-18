@@ -9,7 +9,8 @@ CONFIG_PATH="${CURRENT_PATH}"/bitxhub
 OPT=$1
 VERSION=$2
 TYPE=$3
-CONFIGPATH=$4
+MODE=$4
+N=$5
 SYSTEM=$(uname -s)
 if [ $SYSTEM == "Linux" ]; then
   SYSTEM="linux"
@@ -17,8 +18,6 @@ elif [ $SYSTEM == "Darwin" ]; then
   SYSTEM="darwin"
 fi 
 BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_${VERSION}"
-MODE=`sed '/^.*mode/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
-NUM=`sed '/^.*num/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
 function printHelp() {
   print_blue "Usage:  "
@@ -48,13 +47,6 @@ function binary_prepare() {
     print_red "Bitxhub already run in daemon processes"
     exit 1
   fi
-
-  if [ -a "${CONFIG_PATH}"/bitxhub.cid ]; then
-    print_red "Bitxhub already run in daemon processes"
-    exit 1
-  fi
-
-  goduck bitxhub config --version $VERSION --target ./bitxhub
 }
 
 function bitxhub_binary_check() {
@@ -89,7 +81,7 @@ function bitxhub_binary_solo() {
     mkdir nodeSolo/plugins
     cp -r "${BXH_PATH}"/solo.so nodeSolo/plugins
   fi
-  print_blue "======> Start bitxhub solo by binary"
+  print_blue "Start bitxhub solo by binary"
   nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
   NODEPATH="${CONFIG_PATH}"/nodeSolo
@@ -100,14 +92,12 @@ function bitxhub_binary_solo() {
 }
 
 function bitxhub_docker_solo() {
-  goduck bitxhub config --version $VERSION --target ./bitxhub/.bitxhub
-
   VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub-solo:$VERSION
   fi
 
-  print_blue "======> Start bitxhub solo mode by docker"
+  print_blue "Start bitxhub solo mode by docker"
   if [ "$(docker container ls -a | grep -c bitxhub_solo)" -ge 1 ]; then
     docker start bitxhub_solo
   else
@@ -132,8 +122,9 @@ function bitxhub_binary_cluster() {
   binary_prepare
   declare -a PIDS
   cd "${CONFIG_PATH}"
-  print_blue "======> Start bitxhub cluster"
-  for ((i = 1; i < $NUM + 1; i = i + 1)); do
+  print_blue "Start bitxhub cluster"
+
+  for ((i = 1; i < N + 1; i = i + 1)); do
     if [ ! -d node${i}/plugins ]; then
       mkdir node${i}/plugins
       cp -r "${BXH_PATH}"/raft.so node${i}/plugins
@@ -143,7 +134,7 @@ function bitxhub_binary_cluster() {
     PIDS[${i}]=$!
   done
 
-  for ((i = 1; i < $NUM + 1; i = i + 1)); do
+  for ((i = 1; i < N + 1; i = i + 1)); do
     NODEPATH="${CONFIG_PATH}"/node${i}
     PID=${PIDS[${i}]}
     echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
@@ -153,17 +144,15 @@ function bitxhub_binary_cluster() {
 }
 
 function bitxhub_docker_cluster() {
-  goduck bitxhub config --version $VERSION --target ./bitxhub/.bitxhub
-
   VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub:$VERSION
   fi
-  print_blue "======> Start bitxhub cluster mode by docker compose"
+  print_blue "Start bitxhub cluster mode by docker compose"
   x_replace "s/bitxhub:latest/bitxhub:$VERSION/g" "${CURRENT_PATH}"/docker/docker-compose.yml
   docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
 
-  for ((i = 1; i < $NUM + 1; i = i + 1)); do
+  for ((i = 1; i < N + 1; i = i + 1)); do
     echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     CID=`docker container ls | grep bitxhub_node$i`
     echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
@@ -174,7 +163,7 @@ function bitxhub_docker_cluster() {
 
 function bitxhub_down() {
   set +e
-  print_blue "======> Stop bitxhub"
+  print_blue "===> Stop bitxhub"
 
   if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
     list=$(cat "${CONFIG_PATH}"/bitxhub.pid)
@@ -203,11 +192,10 @@ function bitxhub_down() {
   fi
 }
 
-MODE=cluster
 function bitxhub_up() {
-  case $TYPE in
+  case $MODE in
   "docker")
-    case $MODE in
+    case $TYPE in
     "solo")
       bitxhub_docker_solo
       ;;
@@ -215,13 +203,13 @@ function bitxhub_up() {
       bitxhub_docker_cluster
       ;;
     *)
-      print_red "MODE should be solo or cluster"
+      print_red "TYPE should be solo or cluster"
       exit 1
       ;;
     esac
     ;;
   "binary")
-    case $MODE in
+    case $TYPE in
     "solo")
       bitxhub_binary_solo
       ;;
@@ -229,13 +217,13 @@ function bitxhub_up() {
       bitxhub_binary_cluster
       ;;
     *)
-      print_red "MODE should be solo or cluster"
+      print_red "TYPE should be solo or cluster"
       exit 1
       ;;
     esac
     ;;
   *)
-    print_red "TYPE should be docker or binary"
+    print_red "MODE should be docker or binary"
     exit 1
     ;;
   esac
@@ -246,7 +234,7 @@ function bitxhub_clean() {
 
   bitxhub_down
 
-  print_blue "======> Clean bitxhub"
+  print_blue "===> Clean bitxhub"
 
   file_list=$(ls ${CONFIG_PATH} 2>/dev/null | grep -v '^$')
   for file_name in $file_list; do

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
-	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
@@ -20,10 +20,6 @@ import (
 type Release struct {
 	Bitxhub []string `json:"bitxhub"`
 	Pier    []string `json:"pier"`
-}
-
-var bxhConfigMap = map[string]string{
-	"v1.6.0": "v1.6.0",
 }
 
 func bitxhubCMD() *cli.Command {
@@ -41,12 +37,23 @@ func bitxhubCMD() *cli.Command {
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
-						Name:  "configPath",
-						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_config.toml",
+						Name:  "mode",
+						Value: types.SoloMode,
+						Usage: "configuration mode, one of solo or cluster",
+					},
+					&cli.Uint64Flag{
+						Name:  "num",
+						Value: 4,
+						Usage: "node number, only useful in cluster mode, ignored in solo mode",
+					},
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.0",
+						Value:   "v1.7.0",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -66,18 +73,38 @@ func bitxhubCMD() *cli.Command {
 				Name:  "config",
 				Usage: "Generate configuration for BitXHub nodes",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "target",
-						Required: true,
-						Usage:    "where to put the generated configuration files",
+					&cli.Uint64Flag{
+						Name:  "num",
+						Value: 4,
+						Usage: "node number, only useful in cluster mode, ignored in solo mode",
 					},
 					&cli.StringFlag{
-						Name:  "configPath",
-						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_config.toml",
+						Name:  "type",
+						Value: types.TypeBinary,
+						Usage: "configuration type, one of binary or docker",
+					},
+					&cli.StringFlag{
+						Name:  "mode",
+						Value: types.ClusterMode,
+						Usage: "configuration mode, one of solo or cluster",
+					},
+					&cli.StringSliceFlag{
+						Name:  "ips",
+						Usage: "nodes' IP, use 127.0.0.1 for all nodes by default, e.g. --ips \"127.0.0.1\" --ips \"127.0.0.2\" --ips \"127.0.0.3\" --ips \"127.0.0.4\" ",
+					},
+					&cli.StringFlag{
+						Name:  "target",
+						Value: ".",
+						Usage: "where to put the generated configuration files",
+					},
+					&cli.BoolFlag{
+						Name:  "tls",
+						Value: false,
+						Usage: "whether to enable TLS, only useful for v1.4.0+",
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.0",
+						Value:   "v1.7.0",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -102,8 +129,10 @@ func stopBitXHub(ctx *cli.Context) error {
 }
 
 func startBitXHub(ctx *cli.Context) error {
+	num := ctx.Int("num")
 	typ := ctx.String("type")
-	configPath := ctx.String("configPath")
+	mode := ctx.String("mode")
+	tls := ctx.Bool("tls")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -128,8 +157,11 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+	bxhConfig := filepath.Join(repoPath, "bitxhub")
+	ips := make([]string, 0)
+	err = InitBitXHubConfig(typ, mode, bxhConfig, num, ips, tls, version)
+	if err != nil {
+		return fmt.Errorf("init config error:%w", err)
 	}
 
 	if typ == types.TypeBinary {
@@ -141,7 +173,7 @@ func startBitXHub(ctx *cli.Context) error {
 
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
-	args = append(args, version, typ, configPath)
+	args = append(args, version, mode, typ, strconv.Itoa(num))
 	return utils.ExecuteShell(args, repoPath)
 }
 
@@ -211,23 +243,13 @@ func downloadBinary(repoPath string, version string) error {
 	return nil
 }
 
-func extractBinary(repoPath string, version string) error {
-	path := filepath.Join(repoPath, "bin", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version))
-	file := fmt.Sprintf(types.BitxhubTarName, runtime.GOOS, version)
-
-	if !fileutil.Exist(filepath.Join(path, "bitxhub")) {
-		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xzf %s", path, file)).Run()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func generateBitXHubConfig(ctx *cli.Context) error {
+	num := ctx.Int("num")
+	typ := ctx.String("type")
+	mode := ctx.String("mode")
+	ips := ctx.StringSlice("ips")
 	target := ctx.String("target")
-	configPath := ctx.String("configPath")
+	tls := ctx.Bool("tls")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -252,29 +274,5 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	if _, err := os.Stat(target); os.IsNotExist(err) {
-		if err := os.MkdirAll(target, 0755); err != nil {
-			return err
-		}
-	}
-
-	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
-	}
-
-	err = downloadBinary(repoPath, version)
-	if err != nil {
-		return fmt.Errorf("download binary error:%w", err)
-	}
-	err = extractBinary(repoPath, version)
-	if err != nil {
-		return fmt.Errorf("extract binary error:%w", err)
-	}
-	binPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)))
-	fmt.Println(binPath)
-
-	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.BxhConfigRepo, bxhConfigMap[version], types.BitxhubConfig))
-	args = append(args, "-t", target, "-b", binPath, "-p", configPath)
-	return utils.ExecuteShell(args, repoPath)
+	return InitBitXHubConfig(typ, mode, target, num, ips, tls, version)
 }
