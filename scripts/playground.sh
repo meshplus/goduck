@@ -92,7 +92,6 @@ function bitxhub_binary_solo() {
 }
 
 function bitxhub_docker_solo() {
-  VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub-solo:$VERSION
   fi
@@ -112,9 +111,9 @@ function bitxhub_docker_solo() {
       meshplus/bitxhub-solo:$VERSION
   fi
 
-  echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+  echo v${VERSION} >"${CONFIG_PATH}"/bitxhub.version
   CID=`docker container ls | grep bitxhub_solo`
-  echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
+  echo ${CID:0:12} >"${CONFIG_PATH}"/bitxhub.cid
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
@@ -144,14 +143,16 @@ function bitxhub_binary_cluster() {
 }
 
 function bitxhub_docker_cluster() {
-  VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub:$VERSION
   fi
   print_blue "Start bitxhub cluster mode by docker compose"
-  x_replace "s/bitxhub:latest/bitxhub:$VERSION/g" "${CURRENT_PATH}"/docker/docker-compose.yml
-  docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml up -d
+  cp "${CURRENT_PATH}"/docker/docker-compose.yml "${CONFIG_PATH}"/docker-compose.yml
+  x_replace "s/bitxhub:.*/bitxhub:$VERSION/g" "${CONFIG_PATH}"/docker-compose.yml
+  docker-compose -f "${CONFIG_PATH}"/docker-compose.yml up -d
 
+  rm "${CONFIG_PATH}"/bitxhub.version
+  rm "${CONFIG_PATH}"/bitxhub.cid
   for ((i = 1; i < N + 1; i = i + 1)); do
     echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     CID=`docker container ls | grep bitxhub_node$i`
@@ -175,20 +176,16 @@ function bitxhub_down() {
         print_red "program exit fail, try use kill -9 $pid"
       fi
     done
-    rm "${CONFIG_PATH}"/bitxhub.pid
   fi
 
- if [ -a "${CONFIG_PATH}"/bitxhub.cid ]; then
-    list=$(cat "${CONFIG_PATH}"/bitxhub.cid)
-    for cid in $list; do
-      docker kill "$cid"
-      if [ $? -eq 0 ]; then
-        echo "container id:$cid exit"
-      else
-        print_red "container exit fail"
-      fi
-    done
-    rm "${CONFIG_PATH}"/bitxhub.cid
+  if [ "$(docker ps | grep -c bitxhub_node)" -ge 1 ]; then
+    docker-compose -f "${CONFIG_PATH}"/docker-compose.yml stop
+    echo "bitxhub docker cluster stop"
+  fi
+
+  if [ "$(docker ps | grep -c bitxhub_solo)" -ge 1 ]; then
+    docker stop bitxhub_solo
+    echo "bitxhub docker solo stop"
   fi
 }
 
@@ -245,7 +242,7 @@ function bitxhub_clean() {
   done
 
   if [ "$(docker ps -a | grep -c bitxhub_node)" -ge 1 ]; then
-    docker-compose -f "${CURRENT_PATH}"/docker/docker-compose.yml rm -f
+    docker-compose -f "${CONFIG_PATH}"/docker-compose.yml down
     echo "bitxhub docker cluster clean"
   fi
 
@@ -254,14 +251,19 @@ function bitxhub_clean() {
     echo "bitxhub docker solo clean"
   fi
 
-  if [ -e "${CONFIG_PATH}"/bitxhub.pid ]; then
-    rm "${CONFIG_PATH}"/bitxhub.pid
+cleanBxhInfoFile
+}
+
+function cleanBxhInfoFile(){
+  BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.pid ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.pid
   fi
-  if [ -e "${CONFIG_PATH}"/bitxhub.cid ]; then
-    rm "${CONFIG_PATH}"/bitxhub.cid
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.cid ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.cid
   fi
-  if [ -e "${CONFIG_PATH}"/bitxhub.version ]; then
-    rm "${CONFIG_PATH}"/bitxhub.version
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.version ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.version
   fi
 }
 

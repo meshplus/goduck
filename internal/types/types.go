@@ -23,10 +23,12 @@ const (
 	TlsCerts         = "certs"
 	TmpPath          = "tmp"
 
-	Pier         = "pier"
-	EthClient    = "eth-client"
-	FabricClient = "fabric-client-1.4"
-	RuleName     = "validating.wasm"
+	Pier           = "pier"
+	EthClient      = "eth-client"
+	EthClientSo    = "eth-client.so"
+	FabricClient   = "fabric-client-1.4"
+	FabricClientSo = "fabric-client-1.4.so"
+	RuleName       = "validating.wasm"
 
 	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
 	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"

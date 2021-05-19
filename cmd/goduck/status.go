@@ -86,6 +86,15 @@ func showStatus(ctx *cli.Context) error {
 		}
 	}
 
+	err = sh.Command("/bin/bash", "-c", fmt.Sprintf("%s && %s && %s && %s",
+		fmt.Sprintf("SoloCID=`docker ps -qf \"name=bitxhub_solo\"` && echo ${SoloCID} >%s/bitxhub/bitxhub.cid", repoRoot),
+		fmt.Sprintf("ClusterCID=`docker ps -qf \"name=bitxhub_node\"` && echo ${ClusterCID} >>%s/bitxhub/bitxhub.cid", repoRoot),
+		fmt.Sprintf("PierEthCID=`docker ps -qf \"name=pier-ethereum\"` && echo ${PierEthCID} >%s/pier/pier-ethereum.cid", repoRoot),
+		fmt.Sprintf("PierFabricCID=`docker ps -qf \"name=pier-fabric\"` && echo ${PierFabricCID} >%s/pier/pier-fabric.cid", repoRoot))).Run()
+	if err != nil {
+		return fmt.Errorf("echo cid: %s", err)
+	}
+
 	for _, con := range containers {
 		table, err = existContainer(filepath.Join(repoRoot, con), table)
 		if err != nil {
@@ -287,17 +296,18 @@ func existContainer(cidPath string, table [][]string) ([][]string, error) {
 	br := bufio.NewReader(fi)
 	for {
 		a, _, c := br.ReadLine()
-		if c == io.EOF {
+		if c == io.EOF || string(a) == "" {
 			break
 		}
-		cid := string(a)
+		as := strings.Split(string(a), " ")
+		for _, cid := range as {
+			params, err := getContainerParam(cid, mycli, ctx)
+			if err != nil {
+				return table, err
+			}
 
-		params, err := getContainerParam(cid, mycli, ctx)
-		if err != nil {
-			return table, err
+			table = append(table, params)
 		}
-
-		table = append(table, params)
 	}
 	return table, nil
 }
