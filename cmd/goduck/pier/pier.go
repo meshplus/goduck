@@ -5,11 +5,16 @@ import (
 	"github.com/meshplus/goduck/internal/utils"
 )
 
-func RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo string) error {
+func RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pprof, api, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo, adminKey, method string) error {
 	args := []string{types.PierScript, "register", "-m", chainType, "-t", pierUpType,
 		"-v", version, "-c", cryptoPath, "-f", pprof, "-a", api, "-l", tls, "-p", http,
 		"-o", overwrite, "-i", appchainIP, "-d", appchainAddr, "-s", appchainPorts,
-		"-n", appchainContractAddr, "-r", pierRepo}
+		"-n", appchainContractAddr, "-r", pierRepo, "-k", adminKey, "-e", method}
+	return utils.ExecuteShell(args, repoRoot)
+}
+
+func DeployRule(repoRoot, chainType, pierRepo, ruleRepo, pierUpType, adminKey, method, version string) error {
+	args := []string{types.PierScript, "rule", "-m", chainType, "-r", pierRepo, "-u", ruleRepo, "-t", pierUpType, "-k", adminKey, "-e", method, "-v", version}
 	return utils.ExecuteShell(args, repoRoot)
 }
 

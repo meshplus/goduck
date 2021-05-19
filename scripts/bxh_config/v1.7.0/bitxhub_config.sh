@@ -57,12 +57,17 @@ function readConfig() {
   CACERTPATH=`sed '/^.*ca_cert_path/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   CONSENSUSTYPE=`sed '/^.*consensus_type/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
+  JSONRPCP=`sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GRPCP=`sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GATEWAYP=`sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   PPROFP=`sed '/^.*pprof_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   MONITORP=`sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
   NODEHOST=`sed '/^.*node_host/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
+
+  for a in $JSONRPCP ; do
+    JSONRPCPS+=($a)
+  done
 
   for a in $GRPCP ; do
     GRPCPS+=($a)
@@ -126,7 +131,7 @@ function generateNodeConfig() {
 
   print_blue "【2】generate key"
   ${BITXHUBBINPATH}/bitxhub key gen --name key --target ${TARGET}/$2/certs
-  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/key.priv --save
+  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/certs/key.priv --save
 
   print_blue "【3】generate configuration files"
   ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 init
@@ -183,6 +188,8 @@ function rewriteNodeConfig() {
   # order
   x_replace "s/plugin.*= .*/plugin = \"plugins\/$CONSENSUSTYPE\.so\"/" ${TARGET}/$2/bitxhub.toml
   # genesis
+  dider_addr=${addr_array[0]}
+  x_replace "s/dider.*= .*/dider = \"$dider_addr\"/" ${TARGET}/$2/bitxhub.toml
   if [ $NUM -gt 4 ]; then
     admin_start=`sed -n '/\[\[genesis.admins\]\]/=' ${TARGET}/$2/bitxhub.toml | head -n 1`
     for (( i = 4; i < $NUM; i++ )); do
@@ -267,3 +274,6 @@ while getopts "h?t:b:p:" opt; do
 done
 
 InitConfig
+
+
+# 相比v1.6.0, bitxhub.toml的genesis配置中添加了DID管理员dider的地址

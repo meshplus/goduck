@@ -75,12 +75,13 @@ function generateConfig() {
       --appchainPorts "${APPCHAINPORTS}" \
       --appchainAddr "${APPCHAINADDR}" \
       --contractAddr "${APPCHAINCONTRACTADDR}" \
-      --target "${CONFIG_PATH}" \
+      --target "${PIERREPO}" \
       --tls "${TLS}" \
       --httpPort "${HTTP}" \
       --pprofPort "${PPROF}" \
       --apiPort "${API}" \
       --cryptoPath "${CRYPTOPATH}" \
+      --method "${METHOD}" \
       --version "${VERSION}"
 
     # copy appchain crypto-config and modify config.yaml
@@ -89,12 +90,12 @@ function generateConfig() {
       print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
       exit 1
     fi
-    cp -r "${CRYPTOPATH}" "${CONFIG_PATH}"/fabric/
-    cp "${CONFIG_PATH}"/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem "${CONFIG_PATH}"/fabric/fabric.validators
+    cp -r "${CRYPTOPATH}" "${PIERREPO}"/fabric/
+    cp "${PIERREPO}"/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem "${CONFIG_PATH}"/fabric/fabric.validators
 
     # copy plugins file to pier root
     print_blue "===> Copy fabric plugin"
-    mkdir -p "${CONFIG_PATH}"/plugins
+    mkdir -p "${PIERREPO}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="fabric-client-1.4.so"
       PLUGINNAME="fabric-client-1.4.so"
@@ -107,9 +108,9 @@ function generateConfig() {
       print_red "pier plugin binary is not downloaded, please download pier plugin for fabric first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGINNAME}"
+    cp "${PIER_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
 
-    cd "${CONFIG_PATH}"/fabric
+    cd "${PIERREPO}"/fabric
     if [ ! -f validating.wasm ]; then
       print_blue "===> Downloading validating.wasm"
       wget https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm
@@ -137,16 +138,17 @@ function generateConfig() {
       --appchainAddr "${APPCHAINADDR}" \
       --appchainPorts "${APPCHAINPORTS}" \
       --contractAddr "${APPCHAINCONTRACTADDR}" \
-      --target "${CONFIG_PATH}" \
+      --target "${PIERREPO}" \
       --tls "${TLS}" \
       --httpPort "${HTTP}" \
       --pprofPort "${PPROF}"\
       --apiPort "${API}" \
+      --method "${METHOD}" \
       --version "${VERSION}"
 
     # copy plugins file to pier root
     print_blue "===> Copy ethereum plugin"
-    mkdir -p "${CONFIG_PATH}"/plugins
+    mkdir -p "${PIERREPO}"/plugins
     if [[ "${VERSION}" == "v1.0.0-rc1" || "${VERSION}" == "v1.0.0" ]]; then
       PLUGIN="eth-client.so"
       PLUGINNAME="eth-client.so"
@@ -159,9 +161,9 @@ function generateConfig() {
       print_red "pier plugin binary is not downloaded, please download pier plugin for ethereum first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${CONFIG_PATH}"/plugins/"${PLUGINNAME}"
+    cp "${PIER_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
 
-    cd "${CONFIG_PATH}"/ethereum
+    cd "${PIERREPO}"/ethereum
     if [ ! -f validating.wasm ]; then
       print_blue "===> Downloading validating.wasm"
       wget https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm
@@ -171,28 +173,50 @@ function generateConfig() {
 
 function appchain_register() {
   if [[ "${VERSION}" < "v1.7.0" ]]; then
-    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" appchain register \
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" appchain register \
       --name $1 \
       --type $2 \
       --desc $3 \
       --version $4 \
-      --validators "${CONFIG_PATH}"/$5
-  else
-    "${PIER_PATH}"/pier --repo "${CONFIG_PATH}" appchain register \
+      --validators "${PIERREPO}"/$5
+  elif [[ "${VERSION}" == "v1.7.0" ]]; then
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" appchain register \
       --name $1 \
       --type $2 \
       --desc $3 \
       --version $4 \
-      --validators "${CONFIG_PATH}"/$5 \
+      --validators "${PIERREPO}"/$5 \
       --consensusType ""
+  else
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" appchain method register \
+      --name $1 \
+      --type $2 \
+      --desc $3 \
+      --version $4 \
+      --validators "${PIERREPO}"/$5 \
+      --admin-key $ADMINKEY \
+      --consensus "consensusType" \
+      --method $METHOD \
+      --doc-addr "doc-addr" \
+      --doc-hash "doc-hash"
   fi
 }
 
 function rule_deploy() {
+  print_blue "======> Deploy rule in bitxhub"
   if [ "${SYSTEM}" == "linux" ]; then
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH} && "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
-  elif [ "${SYSTEM}" == "darwin" ]; then
-    "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${PIERREPO}"/$1/validating.wasm
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
+  fi
+
+  if [[ "${VERSION}" < "v1.8.0" ]]; then
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}"
+    print_blue "Please use the 'goduck pier start' command to start the PIER"
+  else
+    deployret=`"${PIER_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}" --method "${METHOD}" --admin-key "${ADMINKEY}"`
+    echo $deployret
+    rule_addr=`echo $deployret | grep -o "0x.*"`
+    "${PIER_PATH}"/pier --repo "${PIERREPO}" rule bind --addr "${rule_addr}" --method "${METHOD}" --admin-key "${ADMINKEY}"
+    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier start' command to start PIER"
   fi
 }
 
@@ -217,16 +241,16 @@ function pier_docker_up() {
       if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-fabric \
         --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
-        -v $CONFIG_PATH/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
-        -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
-        -v $CONFIG_PATH/fabric:/root/.pier/fabric \
+        -v $PIERREPO/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
+        -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+        -v $PIERREPO/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
       else
         docker run -d --name pier-fabric \
-        -v $CONFIG_PATH/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
-        -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
-        -v $CONFIG_PATH/fabric:/root/.pier/fabric \
+        -v $PIERREPO/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
+        -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+        -v $PIERREPO/fabric:/root/.pier/fabric \
         -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
         meshplus/pier-fabric:"${VERSION}"
       fi
@@ -236,15 +260,15 @@ function pier_docker_up() {
       if [ $SYSTEM == "linux" ]; then
         docker run -d --name pier-ethereum \
           --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
-          -v $CONFIG_PATH/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
-          -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
-          -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
+          -v $PIERREPO/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
+          -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+          -v $PIERREPO/ethereum:/root/.pier/ethereum \
           meshplus/pier-ethereum:"${VERSION}"
       else
           docker run -d --name pier-ethereum \
-          -v $CONFIG_PATH/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
-          -v $CONFIG_PATH/pier.toml:/root/.pier/pier.toml \
-          -v $CONFIG_PATH/ethereum:/root/.pier/ethereum \
+          -v $PIERREPO/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
+          -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+          -v $PIERREPO/ethereum:/root/.pier/ethereum \
           meshplus/pier-ethereum:"${VERSION}"
       fi
     else
@@ -271,18 +295,6 @@ function pier_docker_up() {
 function pier_binary_up() {
   cd "${PIERREPO}"
 
-  if [ "$MODE" == "fabric" ]; then
-    print_blue "===> Deploy rule in bitxhub"
-    rule_deploy fabric
-#    export START_PATH="${CONFIG_PATH}" && export CONFIG_PATH="${CONFIG_PATH}"/fabric
-  fi
-
-  if [ "$MODE" == "ethereum" ]; then
-    print_blue "===> Deploy rule in bitxhub"
-    rule_deploy ethereum
-#    export START_PATH="${CONFIG_PATH}"
-  fi
-
   print_blue "===> Start pier of ${MODE} in ${TYPE}..."
   nohup "${PIER_PATH}"/pier --repo "${PIERREPO}" start >/dev/null 2>&1 &
   PID=$!
@@ -302,9 +314,9 @@ function pier_binary_register() {
 
   generateConfig
 
-  print_blue "===> pier_root: "${CONFIG_PATH}", bitxhub_addr: $BITXHUB_ADDR"
+  print_blue "===> pier_root: "${PIERREPO}", bitxhub_addr: $BITXHUB_ADDR"
 
-  cd "${CONFIG_PATH}"
+  cd "${PIERREPO}"
 
   if [ "$MODE" == "fabric" ]; then
     print_blue "===> Register pier(fabric) to bitxhub"
@@ -319,7 +331,7 @@ function pier_binary_register() {
   if [[ "${VERSION}" < "v1.6.0" ]]; then
     print_blue "Please use the 'goduck pier start' command to start the PIER"
   else
-    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier start' command to start the PIER"
+    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier rule' command to deploy rule to bitxhub"
   fi
 }
 
@@ -445,7 +457,7 @@ APORT="8080"
 OPT=$1
 shift
 
-while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:s:n:r:" opt; do
+while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:s:n:r:u:k:e:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -496,10 +508,19 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:s:n:r:" opt; do
   r)
     PIERREPO=$OPTARG
     ;;
+  u)
+    RULEREPO=$OPTARG
+    ;;
+  k)
+    ADMINKEY=$OPTARG
+    ;;
+  e)
+    METHOD=$OPTARG
+    ;;
   esac
 done
 
-CONFIG_PATH="${PIERREPO}"
+CONFIG_PATH="${CURRENT_PATH}/pier/.pier_${MODE}"
 PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
 
 if [ "$OPT" == "register" ]; then
@@ -510,6 +531,8 @@ elif [ "$OPT" == "down" ]; then
   pier_down
 elif [ "$OPT" == "clean" ]; then
   pier_clean
+elif [ "$OPT" == "rule" ]; then
+  rule_deploy
 else
   printHelp
   exit 1

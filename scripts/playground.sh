@@ -100,9 +100,8 @@ function bitxhub_binary_solo() {
 }
 
 function bitxhub_docker_solo() {
-  goduck bitxhub config --version $VERSION --target ./bitxhub/.bitxhub
+  goduck bitxhub config --version $VERSION --target ./bitxhub
 
-  VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub-solo:$VERSION
   fi
@@ -153,9 +152,8 @@ function bitxhub_binary_cluster() {
 }
 
 function bitxhub_docker_cluster() {
-  goduck bitxhub config --version $VERSION --target ./bitxhub/.bitxhub
+  goduck bitxhub config --version $VERSION --target ./bitxhub
 
-  VERSION=${VERSION:1}
   if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
     docker pull meshplus/bitxhub:$VERSION
   fi

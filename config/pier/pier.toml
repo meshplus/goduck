@@ -46,5 +46,6 @@ common_name = "localhost"
 mode = "single"
 
 [appchain]
+did = "did:bitxhub:{{.Method}}:."
 plugin = "{{.PluginFile}}"
 config = "{{.PluginConfig}}"

@@ -94,8 +94,60 @@ var pierCMD = &cli.Command{
 					Name:  "pierRepo",
 					Usage: "the startup path of the pier (default:$repo/pier/.pier_$chainType)",
 				},
+				&cli.StringFlag{
+					Name:     "method",
+					Usage:    "specify appchain method, only useful for v1.8.0+",
+					Value:    "appchain",
+					Required: false,
+				},
+				&cli.StringFlag{
+					Name:  "adminKey",
+					Usage: "the path of appchain admin, only useful for v1.8.0+ (default:$repo/pier/.pier_$chainType/admin.json)",
+				},
 			},
 			Action: pierRegister,
+		},
+		{
+			Name:  "rule",
+			Usage: "deploy rule to BitXHub",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "chain",
+					Usage:    "specify appchain type, ethereum(default) or fabric",
+					Required: false,
+					Value:    types.ChainTypeEther,
+				},
+				&cli.StringFlag{
+					Name:  "pierRepo",
+					Usage: "specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+				},
+				&cli.StringFlag{
+					Name:  "ruleRepo",
+					Usage: "specify the path of the rule (default:$repo/pier/.pier_$chainType/$chainType/validating.wasm)",
+				},
+				&cli.StringFlag{
+					Name:     "pierType",
+					Usage:    "specify pier up type, docker(default) or binary",
+					Required: false,
+					Value:    types.TypeBinary,
+				},
+				&cli.StringFlag{
+					Name:     "method",
+					Usage:    "specify appchain method, only useful for v1.8.0+",
+					Required: false,
+					Value:    "appchain",
+				},
+				&cli.StringFlag{
+					Name:  "adminKey",
+					Usage: "the path of appchain admin, only useful for v1.8.0+ (default:$repo/pier/.pier_$chainType/admin.json)",
+				},
+				&cli.StringFlag{
+					Aliases: []string{"version", "v"},
+					Value:   "v1.7.0",
+					Usage:   "pier version",
+				},
+			},
+			Action: pierRuleDeploy,
 		},
 		{
 			Name:  "start",
@@ -292,6 +344,12 @@ var pierCMD = &cli.Command{
 					Required: false,
 				},
 				&cli.StringFlag{
+					Name:     "method",
+					Usage:    "appchain method, only useful for v1.8.0+, e.g appchain",
+					Value:    "appchain",
+					Required: false,
+				},
+				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
 					Value:   "v1.7.0",
 					Usage:   "pier version",
@@ -318,6 +376,8 @@ func pierRegister(ctx *cli.Context) error {
 	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
 	pierRepo := ctx.String("pierRepo")
+	method := ctx.String("method")
+	adminKey := ctx.String("adminKey")
 
 	appPorts, appchainAddr, appchainIP, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
 	if err != nil {
@@ -348,6 +408,10 @@ func pierRegister(ctx *cli.Context) error {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	}
 
+	if adminKey == "" {
+		adminKey = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/admin.json", chainType))
+	}
+
 	if pierUpType == types.TypeBinary {
 		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
 			if err := downloadPierBinary(repoRoot, version); err != nil {
@@ -356,7 +420,58 @@ func pierRegister(ctx *cli.Context) error {
 		}
 	}
 
-	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo)
+	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo, adminKey, method)
+}
+
+func pierRuleDeploy(ctx *cli.Context) error {
+	chainType := ctx.String("chain")
+	pierRepo := ctx.String("pierRepo")
+	ruleRepo := ctx.String("ruleRepo")
+	pierUpType := ctx.String("pierType")
+	version := ctx.String("version")
+	adminKey := ctx.String("adminKey")
+	method := ctx.String("method")
+
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Pier) {
+		return fmt.Errorf("unsupport pier verison")
+	}
+
+	if pierRepo == "" {
+		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	}
+
+	if ruleRepo == "" {
+		ruleRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/%s/validating.wasm", chainType, chainType))
+	}
+
+	if adminKey == "" {
+		adminKey = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/admin.json", chainType))
+	}
+
+	if pierUpType == types.TypeBinary && !fileutil.Exist(pierRepo) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	}
+
+	if pierUpType == types.TypeDocker {
+		return fmt.Errorf("Not supported currently, waiting for subsequent upgrade")
+	}
+
+	return pier.DeployRule(repoRoot, chainType, pierRepo, ruleRepo, pierUpType, adminKey, method, version)
 }
 
 func pierStart(ctx *cli.Context) error {
@@ -568,6 +683,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	appchainPortsTmp := ctx.String("appchainPorts")
 	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
 	appchainContractAddr := ctx.String("contractAddr")
+	method := ctx.String("method")
 
 	appPorts, appchainAddr, appchainIP, err := getAppchainParams(appchainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
 	if err != nil {
@@ -597,7 +713,7 @@ func generatePierConfig(ctx *cli.Context) error {
 		}
 	}
 
-	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appPorts, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath)
+	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appPorts, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath, method)
 }
 
 func getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath string) ([]string, string, string, error) {
