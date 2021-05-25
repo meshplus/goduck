@@ -57,17 +57,12 @@ function readConfig() {
   CACERTPATH=`sed '/^.*ca_cert_path/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   CONSENSUSTYPE=`sed '/^.*consensus_type/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
-  JSONRPCP=`sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GRPCP=`sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GATEWAYP=`sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   PPROFP=`sed '/^.*pprof_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   MONITORP=`sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
   NODEHOST=`sed '/^.*node_host/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
-
-  for a in $JSONRPCP ; do
-    JSONRPCPS+=($a)
-  done
 
   for a in $GRPCP ; do
     GRPCPS+=($a)
@@ -89,7 +84,10 @@ function readConfig() {
     host_lables+=($a)
   done
 
-NUM_1=`expr $NUM - 1`
+  NUM_1=0
+  if [ $NUM != 1 ]; then
+    NUM_1=`expr $NUM - 1`
+  fi
   for (( i=0; i<=$NUM_1; i++ )); do
     host_lable=${host_lables[$i]}
     host_lable_start=`sed -n "/$host_lable/=" ${CONFIGPATH} | head -n 1` #要求配置文件中第一个配置项是关于host的配置
@@ -131,7 +129,7 @@ function generateNodeConfig() {
 
   print_blue "【2】generate key"
   ${BITXHUBBINPATH}/bitxhub key gen --name key --target ${TARGET}/$2/certs
-  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/certs/key.priv --save
+  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/key.priv --save
 
   print_blue "【3】generate configuration files"
   ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 init
@@ -159,7 +157,6 @@ function rewriteNodesConfig() {
       rewriteNodeConfig $n "nodeSolo"
     else
       rewriteNodeConfig $n "node$n"
-#      rewriteNetwork i "node$i"
     fi
   done
 }
@@ -171,8 +168,6 @@ function rewriteNodeConfig() {
 
   print_blue "【1】rewrite bitxhub.toml"
   # port
-  jsonrpc=${JSONRPCPS[$1-1]}
-  x_replace "s/jsonrpc.*= .*/jsonrpc = $jsonrpc/" ${TARGET}/$2/bitxhub.toml
   grpc=${GRPCPS[$1-1]}
   x_replace "s/grpc.*= .*/grpc = $grpc/" ${TARGET}/$2/bitxhub.toml
   gateway=${GATEWAYPS[$1-1]}
@@ -190,8 +185,6 @@ function rewriteNodeConfig() {
   # order
   x_replace "s/plugin.*= .*/plugin = \"plugins\/$CONSENSUSTYPE\.so\"/" ${TARGET}/$2/bitxhub.toml
   # genesis
-  dider_addr=${addr_array[0]}
-  x_replace "s/dider.*= .*/dider = \"$dider_addr\"/" ${TARGET}/$2/bitxhub.toml
   if [ $NUM -gt 4 ]; then
     admin_start=`sed -n '/\[\[genesis.admins\]\]/=' ${TARGET}/$2/bitxhub.toml | head -n 1`
     for (( i = 4; i < $NUM; i++ )); do
@@ -213,6 +206,7 @@ function rewriteNodeConfig() {
     x_replace "$addr_line s/address = \".*\"/address = \"$addr\"/" ${TARGET}/$2/bitxhub.toml
   done
 
+  if [ $MODE == "cluster" ]; then
   print_blue "【2】rewrite network.toml"
   x_replace "1 s/id = .*/id = $1/" ${TARGET}/$2/network.toml #要求第一行配置是自己的id
   x_replace "s/n = .*/n = $NUM/" ${TARGET}/$2/network.toml
@@ -254,6 +248,7 @@ function rewriteNodeConfig() {
     pid_line=`expr $a_line + 3`
     x_replace "$pid_line s/pid = \".*\"/pid = \"$pid\"/" ${TARGET}/$2/network.toml
   done
+  fi
 }
 
 # parses opts
@@ -276,5 +271,3 @@ while getopts "h?t:b:p:" opt; do
 done
 
 InitConfig
-
-# 相比v1.7.0, bitxhub.toml的端口配置中添加了jsonrpc

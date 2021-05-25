@@ -89,7 +89,10 @@ function readConfig() {
     host_lables+=($a)
   done
 
-NUM_1=`expr $NUM - 1`
+  NUM_1=0
+  if [ $NUM != 1 ]; then
+    NUM_1=`expr $NUM - 1`
+  fi
   for (( i=0; i<=$NUM_1; i++ )); do
     host_lable=${host_lables[$i]}
     host_lable_start=`sed -n "/$host_lable/=" ${CONFIGPATH} | head -n 1` #要求配置文件中第一个配置项是关于host的配置
@@ -211,6 +214,7 @@ function rewriteNodeConfig() {
     x_replace "$addr_line s/address = \".*\"/address = \"$addr\"/" ${TARGET}/$2/bitxhub.toml
   done
 
+  if [ $MODE == "cluster" ]; then
   print_blue "【2】rewrite network.toml"
   x_replace "1 s/id = .*/id = $1/" ${TARGET}/$2/network.toml #要求第一行配置是自己的id
   x_replace "s/n = .*/n = $NUM/" ${TARGET}/$2/network.toml
@@ -252,6 +256,7 @@ function rewriteNodeConfig() {
     pid_line=`expr $a_line + 3`
     x_replace "$pid_line s/pid = \".*\"/pid = \"$pid\"/" ${TARGET}/$2/network.toml
   done
+  fi
 }
 
 # parses opts

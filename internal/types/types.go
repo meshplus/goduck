@@ -13,7 +13,7 @@ const (
 	ChainTypeFabric = "fabric"
 
 	BxhConfigRepo    = "bxh_config"
-	BitxhubConfig    = "bitxhub_config.sh"
+	BitxhubConfig    = "bxh_config.sh"
 	PlaygroundScript = "playground.sh"
 	FabricScript     = "fabric.sh"
 	ChaincodeScript  = "chaincode.sh"
@@ -47,6 +47,6 @@ const (
 	EthereumRuleUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm"
 
 	FabricConfig    = "config.yaml"
-	BxhModifyConfig = "bxh_config.toml"
+	BxhModifyConfig = "bxh_modify_config.toml"
 	BitxhubTarName  = "bitxhub_%s_x86_64_%s.tar.gz"
 )

@@ -8,6 +8,8 @@ PIER_CLIENT_FABRIC_VERSION=master
 PIER_CLIENT_ETHEREUM_VERSION=master
 FABRIC_RULE=fabric_rule.wasm
 ETHEREUM_RULE=ethereum_rule.wasm
+FABRIC_PLUGIN=fabric-client-1.4
+ETHEREUM_PLUGIN=eth-client
 SYSTEM=$(uname -s)
 if [ $SYSTEM == "Linux" ]; then
   SYSTEM="linux"
@@ -91,7 +93,7 @@ function generateConfig() {
       exit 1
     fi
     cp -r "${CRYPTOPATH}" "${PIERREPO}"/fabric/
-    cp "${PIERREPO}"/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem "${CONFIG_PATH}"/fabric/fabric.validators
+    cp "${PIERREPO}"/fabric/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/msp/signcerts/peer1.org2.example.com-cert.pem "${PIERREPO}"/fabric/fabric.validators
 
     # copy plugins file to pier root
     print_blue "===> Copy fabric plugin"
@@ -171,7 +173,7 @@ function generateConfig() {
   fi
 }
 
-function appchain_register() {
+function appchain_register_binary() {
   if [[ "${VERSION}" < "v1.7.0" ]]; then
     "${PIER_PATH}"/pier --repo "${PIERREPO}" appchain register \
       --name $1 \
@@ -202,7 +204,19 @@ function appchain_register() {
   fi
 }
 
-function rule_deploy() {
+function pier_docker_rule_deploy() {
+  print_blue "======> Deploy rule in bitxhub"
+
+  docker exec $CID /root/.pier/scripts/deployRule.sh /root/.pier/$MODE/validating.wasm $METHOD $VERSION
+
+  if [[ "${VERSION}" < "v1.8.0" ]]; then
+    print_blue "Please use the 'goduck pier start' command to start the PIER"
+  else
+    print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier start' command to start PIER"
+  fi
+}
+
+function pier_binary_rule_deploy() {
   print_blue "======> Deploy rule in bitxhub"
   if [ "${SYSTEM}" == "linux" ]; then
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_PATH}
@@ -221,75 +235,9 @@ function rule_deploy() {
 }
 
 function pier_docker_up() {
-  generateConfig
+  print_blue "===> Start pier of ${MODE} in ${TYPE}..."
 
-  print_blue "===> Start pier of ${MODE}-${VERSION} in ${TYPE}..."
-  if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
-#    if [ "$(docker ps -aq -f status=exited -f name=pier-${MODE})" ]; then
-    if [ "$(docker ps -aq -f name=pier-${MODE})" ]; then
-      print_red "pier-${MODE} container already exists, please clean them first"
-      exit 1
-    fi
-
-    print_blue "===> Start a new pier-${MODE} container"
-    VERSION=${VERSION:1}
-    if [ "$MODE" == "fabric" ]; then
-      if [ ! -d "${CRYPTOPATH}" ]; then
-        print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
-        exit 1
-      fi
-      if [ $SYSTEM == "linux" ]; then
-        docker run -d --name pier-fabric \
-        --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
-        -v $PIERREPO/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
-        -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
-        -v $PIERREPO/fabric:/root/.pier/fabric \
-        -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
-        meshplus/pier-fabric:"${VERSION}"
-      else
-        docker run -d --name pier-fabric \
-        -v $PIERREPO/$FABRIC_RULE:/root/.pier/fabric/validating.wasm \
-        -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
-        -v $PIERREPO/fabric:/root/.pier/fabric \
-        -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
-        meshplus/pier-fabric:"${VERSION}"
-      fi
-    elif [ "$MODE" == "ethereum" ]; then
-      print_blue "===> Wait for ethereum-node container to start for seconds..."
-      sleep 5
-      if [ $SYSTEM == "linux" ]; then
-        docker run -d --name pier-ethereum \
-          --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
-          -v $PIERREPO/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
-          -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
-          -v $PIERREPO/ethereum:/root/.pier/ethereum \
-          meshplus/pier-ethereum:"${VERSION}"
-      else
-          docker run -d --name pier-ethereum \
-          -v $PIERREPO/$ETHEREUM_RULE:/root/.pier/ethereum/validating.wasm \
-          -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
-          -v $PIERREPO/ethereum:/root/.pier/ethereum \
-          meshplus/pier-ethereum:"${VERSION}"
-      fi
-    else
-      print_red "Not supported mode"
-      exit 1
-    fi
-  else
-    print_red "pier-${MODE} container already running, please stop them first"
-    exit 1
-  fi
-
-  sleep 5
-  if [ -z `docker ps -qf "name=pier-$MODE"` ]; then
-    print_red "===> Start pier fail"
-  else
-    print_green "===> Start pier successfully"
-    CID=`docker ps -qf "name=pier-$MODE"`
-    echo $CID >"${CURRENT_PATH}/pier/pier-${MODE}.cid"
-    echo `docker exec $CID pier --repo=/root/.pier id` >"${CURRENT_PATH}/pier/pier-${MODE}-docker.addr"
-  fi
-
+  docker exec $CID /root/.pier/scripts/startPier.sh
 }
 
 function pier_binary_up() {
@@ -299,14 +247,95 @@ function pier_binary_up() {
   nohup "${PIER_PATH}"/pier --repo "${PIERREPO}" start >/dev/null 2>&1 &
   PID=$!
 
-  sleep 10
-  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
-    print_green "===> Start pier successfully!!!"
-    echo ${PID} >"${CURRENT_PATH}/pier/pier-${MODE}.pid"
-    echo `"${PIER_PATH}"/pier --repo "${PIERREPO}" id` >"${CURRENT_PATH}/pier/pier-${MODE}-binary.addr"
+  echo ${PID} >"${CONFIG_PATH}"/pier-${MODE}.pid
+  echo `"${PIER_PATH}"/pier --repo "${PIERREPO}" id` >"${CONFIG_PATH}"/pier-${MODE}-binary.addr
+  print_blue "You can use the \"goduck status list\" command to check the status of the startup pier."
+}
+
+function copyPlugin() {
+  cd $PIERREPO
+  mkdir plugins
+  if [ "$MODE" == "fabric" ]; then
+    cp ${PIER_PATH}/$FABRIC_PLUGIN $PIERREPO/plugins/appchain_plugin
+  elif [ "$MODE" == "ethereum" ]; then
+    cp ${PIER_PATH}/$ETHEREUM_PLUGIN $PIERREPO/plugins/appchain_plugin
   else
-    print_red "===> Start pier fail"
+    print_red "Not supported mode"
+    exit 1
   fi
+}
+
+function start_pier_container() {
+  print_blue "===> Start pier container of ${MODE}-${VERSION} in ${TYPE}..."
+  if [ ! "$(docker ps -q -f name=pier-${MODE})" ]; then
+    if [ "$(docker ps -aq -f name=pier-${MODE})" ]; then
+      print_red "pier-${MODE} container already exists, please clean them first"
+      exit 1
+    fi
+
+    print_blue "===> Start a new pier-${MODE} container"
+    if [ "$MODE" == "fabric" ]; then
+      if [ ! -d "${CRYPTOPATH}" ]; then
+        print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
+        exit 1
+      fi
+    fi
+
+    startPierContainer=${PIERREPO}/scripts/docker-compose-pier.yaml
+    x_replace "s/container_name: .*/container_name: pier-$MODE/g" "${startPierContainer}"
+    x_replace "s/image: meshplus\/pier:.*/image: meshplus\/pier:${VERSION}/g" "${startPierContainer}"
+    x_replace "s/\".*:34544\"/\"${HTTP}:34544\"/g" "${startPierContainer}"
+    x_replace "s/\".*:34555\"/\"${PPROF}:34555\"/g" "${startPierContainer}"
+    pierRepoTmp=$(echo "${PIERREPO}"|sed 's/\//\\\//g')
+    x_replace "s/pier-fabric-repo/${pierRepoTmp}/g" "${startPierContainer}"
+
+    docker-compose -f ${PIERREPO}/scripts/docker-compose-pier.yaml up -d
+  else
+    print_red "pier-${MODE} container already running, please stop them first"
+    exit 1
+  fi
+
+  sleep 5
+  if [ -z `docker ps -qf "name=pier-$MODE"` ]; then
+    print_red "===> Start pier container fail"
+  else
+    print_green "===> Start pier container successfully"
+    CID=`docker ps -qf "name=pier-$MODE"`
+    echo $CID >"${CONFIG_PATH}"/pier-${MODE}.cid"
+    echo `docker exec $CID pier --repo=/root/.pier id` >"${CONFIG_PATH}"/pier-${MODE}-docker.addr"
+  fi
+}
+
+function copyScripts() {
+  cd $PIERREPO
+  cp -r ${CURRENT_PATH}/docker/pier ${PIERREPO}/scripts
+
+  cd $PIERREPO/scripts
+  chmod +x registerAppchain.sh
+  chmod +x deployRule.sh
+  chmod +x startPier.sh
+  chmod +x vote.sh
+}
+
+function pier_docker_register() {
+  generateConfig
+
+  copyScripts
+
+  start_pier_container
+
+docker exec
+  if [ "$MODE" == "fabric" ]; then
+    print_blue "===> Register pier(fabric) to bitxhub"
+    docker exec $CID scripts/registerAppchain.sh $METHOD chainA fabric chainA-description 1.4.3 /root/.pier/fabric/fabric.validators consensusType $VERSION
+  fi
+
+  if [ "$MODE" == "ethereum" ]; then
+    print_blue "===> Register pier(ethereum) to bitxhub"
+    docker exec $CID scripts/registerAppchain.sh $METHOD chainB ether chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType $VERSION
+  fi
+
+  print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier rule' command to deploy rule to bitxhub"
 }
 
 function pier_binary_register() {
@@ -320,12 +349,12 @@ function pier_binary_register() {
 
   if [ "$MODE" == "fabric" ]; then
     print_blue "===> Register pier(fabric) to bitxhub"
-    appchain_register chainA fabric chainA-description 1.4.3 fabric/fabric.validators
+    appchain_register_binary chainA fabric chainA-description 1.4.3 fabric/fabric.validators
   fi
 
   if [ "$MODE" == "ethereum" ]; then
     print_blue "===> Register pier(ethereum) to bitxhub"
-    appchain_register chainB ether chainB-description 1.9.13 ethereum/ether.validators
+    appchain_register_binary chainB ether chainB-description 1.9.13 ethereum/ether.validators
   fi
 
   if [[ "${VERSION}" < "v1.6.0" ]]; then
@@ -337,9 +366,19 @@ function pier_binary_register() {
 
 function pier_register() {
   if [ "${TYPE}" == "docker" ]; then
-    print_blue "===> For docker type, versions below v1.6.0 can be registered directly in the START command, version v1.6.0 and above do not support separate PIER registration currently."
+    pier_docker_register
   elif [ "${TYPE}" == "binary" ]; then
     pier_binary_register
+  else
+    echo "Not supported up type "${TYPE}" for pier"
+  fi
+}
+
+function pier_rule_deploy() {
+  if [ "${TYPE}" == "docker" ]; then
+    pier_docker_rule_deploy
+  elif [ "${TYPE}" == "binary" ]; then
+    pier_binary_rule_deploy
   else
     echo "Not supported up type "${TYPE}" for pier"
   fi
@@ -359,9 +398,8 @@ function pier_down() {
   set +e
 
   print_blue "===> Kill $MODE pier in binary"
-  cd "${CURRENT_PATH}"/pier
-  if [ -a pier-$MODE.pid ]; then
-    list=$(cat pier-$MODE.pid)
+  if [ -a "${CONFIG_PATH}"/pier-$MODE.pid ]; then
+    list=$(cat "${CONFIG_PATH}"/pier-$MODE.pid)
     for pid in $list; do
       kill "$pid"
       if [ $? -eq 0 ]; then
@@ -370,16 +408,14 @@ function pier_down() {
         print_red "pier exit fail, try use kill -9 $pid"
       fi
     done
-    rm pier-$MODE.pid
-    rm ${CURRENT_PATH}/pier/pier-${MODE}-binary.addr
+    rm "${CONFIG_PATH}"/pier-$MODE.pid
   else
     echo "pier-$MODE binary is not running"
   fi
 
   print_blue "===> Kill $MODE pier in docker"
-  cd "${CURRENT_PATH}"/pier
-  if [ -a pier-$MODE.cid ]; then
-    list=$(cat pier-$MODE.cid)
+  if [ -a "${CONFIG_PATH}"/pier-$MODE.cid ]; then
+    list=$(cat "${CONFIG_PATH}"/pier-$MODE.cid)
     for cid in $list; do
       docker kill "$cid"
       if [ $? -eq 0 ]; then
@@ -388,8 +424,7 @@ function pier_down() {
         print_red "pier exit fail"
       fi
     done
-    rm pier-$MODE.cid
-    rm ${CURRENT_PATH}/pier/pier-${MODE}-docker.addr
+    rm "${CONFIG_PATH}"/pier-$MODE.cid
   else
     echo "pier-$MODE docker is not running"
   fi
@@ -400,25 +435,24 @@ function pier_clean() {
 
   pier_down
 
-  print_blue "===> Clean $MODE pier in binary"
+  print_blue "===> Clean $MODE pier in docker"
+  if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
+    docker rm pier-$MODE
+  else
+    echo "pier-$MODE container is not existed"
+  fi
 
-  if [ -d "${CONFIG_PATH}" ]; then
+  print_blue "===> Clean $MODE pier config"
+  if [ -d "${CONFIG_PATH}"/.pier_$MODE ]; then
     echo "remove $MODE pier configure"
-    rm -r "${CONFIG_PATH}"
+    rm -r "${CONFIG_PATH}"/.pier_$MODE
   else
     echo "pier-$MODE configure is not existed"
   fi
 
-  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE.pid ]; then
-    rm "${CURRENT_PATH}"/pier/pier-$MODE.pid
-  fi
-  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE-binary.addr ]; then
-    rm "${CURRENT_PATH}"/pier/pier-$MODE-binary.addr
-  fi
-
-  if [[ ! -z `ps | grep ${CURRENT_PATH}/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep"` ]]; then
+  if [[ ! -z `ps | grep "${CONFIG_PATH}"/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep"` ]]; then
     echo "clean the plugin process for $MODE pier"
-    list=`ps aux| grep ${CURRENT_PATH}/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep" | awk '{print $2}'`
+    list=`ps aux| grep "${CONFIG_PATH}"/pier/.pier_$MODE/plugins/appchain_plugin | grep -v "grep" | awk '{print $2}'`
     for pluginPID in $list ; do
       kill $pluginPID
       if [ $? -eq 0 ]; then
@@ -427,21 +461,38 @@ function pier_clean() {
         print_red "pier plugin exit fail, try use kill -9 $pluginPID"
       fi
     done
-    IFS=$OLD_IFS
   fi
 
-  print_blue "===> Clean $MODE pier in docker"
-  if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
-    docker rm pier-$MODE
-  else
-    echo "pier-$MODE container is not existed"
+  cleanPierInfoFile
+}
+
+function cleanPierInfoFile(){
+  PIER_CONFIG_PATH="${CURRENT_PATH}"/pier
+
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum.pid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.pid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric.pid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
   fi
 
-  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE.cid ]; then
-    rm "${CURRENT_PATH}"/pier/pier-$MODE.cid
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.cid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum.cid
   fi
-  if [ -e "${CURRENT_PATH}"/pier/pier-$MODE-docker.addr ]; then
-    rm "${CURRENT_PATH}"/pier/pier-$MODE-docker.addr
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.cid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric.cid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
   fi
 }
 
@@ -520,7 +571,7 @@ while getopts "h?t:m:b:v:c:f:a:l:p:o:i:d:s:n:r:u:k:e:" opt; do
   esac
 done
 
-CONFIG_PATH="${CURRENT_PATH}/pier/.pier_${MODE}"
+CONFIG_PATH="${CURRENT_PATH}"/pier
 PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
 
 if [ "$OPT" == "register" ]; then
@@ -532,7 +583,7 @@ elif [ "$OPT" == "down" ]; then
 elif [ "$OPT" == "clean" ]; then
   pier_clean
 elif [ "$OPT" == "rule" ]; then
-  rule_deploy
+  pier_rule_deploy
 else
   printHelp
   exit 1

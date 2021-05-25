@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  pier:
+    image: meshplus/pier:version
+    container_name: pier-fabric
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的pier配置目录，注意插件的二进制也要放置
+      - pier-fabric-repo:/root/.pier/
+    # 根据实际的使用端口进行映射，冒号前为宿主机端口，后为容器内节点实际使用端口
+    ports:
+      - "44544:34544"
+      - "44555:34555"
+    working_dir: /root/.pier

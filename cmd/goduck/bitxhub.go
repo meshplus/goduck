@@ -43,8 +43,12 @@ func bitxhubCMD() *cli.Command {
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
+						Name:  "target",
+						Usage: "Specify the directory to where to put the generated configuration files, default: $repo/bitxhub/.bitxhub/",
+					},
+					&cli.StringFlag{
 						Name:  "configPath",
-						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_config.toml",
+						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_modify_config.toml",
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
@@ -69,13 +73,12 @@ func bitxhubCMD() *cli.Command {
 				Usage: "Generate configuration for BitXHub nodes",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:     "target",
-						Required: true,
-						Usage:    "where to put the generated configuration files",
+						Name:  "target",
+						Usage: "Specify the directory to where to put the generated configuration files, default: $repo/bitxhub/.bitxhub/",
 					},
 					&cli.StringFlag{
 						Name:  "configPath",
-						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_config.toml",
+						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_modify_config.toml",
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
@@ -106,6 +109,7 @@ func stopBitXHub(ctx *cli.Context) error {
 func startBitXHub(ctx *cli.Context) error {
 	typ := ctx.String("type")
 	configPath := ctx.String("configPath")
+	target := ctx.String("target")
 	version := ctx.String("version")
 
 	repoPath, err := repo.PathRoot()
@@ -134,6 +138,10 @@ func startBitXHub(ctx *cli.Context) error {
 		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	}
 
+	if target == "" {
+		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
+	}
+
 	if typ == types.TypeBinary {
 		err := downloadBinary(repoPath, version)
 		if err != nil {
@@ -143,7 +151,7 @@ func startBitXHub(ctx *cli.Context) error {
 
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
-	args = append(args, version, typ, configPath)
+	args = append(args, version, typ, configPath, target)
 	return utils.ExecuteShell(args, repoPath)
 }
 
@@ -252,6 +260,10 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 
 	if !AdjustVersion(version, release.Bitxhub) {
 		return fmt.Errorf("unsupport BitXHub verison")
+	}
+
+	if target == "" {
+		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
 	}
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {

@@ -26,6 +26,7 @@
 [bitxhub]
   mode = cluster
   num = 4
+  rewrite = true
   # absolute path. It doesn't have to be in double quotes.
   agency_priv_path = /Users/fangbaozhu/.goduck/bitxhub/certs/agency.priv
   agency_cert_path = /Users/fangbaozhu/.goduck/bitxhub/certs/agency.cert
@@ -33,24 +34,28 @@
   consensus_type = raft
   [[bitxhub.node1]]
     node_host = host1
+    jsonrpc_port = 8881
     grpc_port = 60011
     gateway_port = 9091
     pprof_port = 53121
     monitor_port = 40011
   [[bitxhub.node2]]
     node_host = host1
+    jsonrpc_port = 8882
     grpc_port = 60012
     gateway_port = 9092
     pprof_port = 53122
     monitor_port = 40012
   [[bitxhub.node3]]
     node_host = host1
+    jsonrpc_port = 8883
     grpc_port = 60013
     gateway_port = 9093
     pprof_port = 53123
     monitor_port = 40013
   [[bitxhub.node4]]
     node_host = host1
+    jsonrpc_port = 8884
     grpc_port = 60014
     gateway_port = 9094
     pprof_port = 53124
