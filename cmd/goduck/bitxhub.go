@@ -53,7 +53,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.7.0",
+						Value:   "v1.0.0-rc1",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -104,7 +104,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.7.0",
+						Value:   "v1.0.0-rc1",
 						Usage:   "BitXHub version",
 					},
 				},

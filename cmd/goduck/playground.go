@@ -24,7 +24,7 @@ func playgroundCMD() *cli.Command {
 					&cli.StringFlag{
 						Aliases:  []string{"version", "v"},
 						Usage:    "version of the demo interchain system",
-						Value:    "v1.7.0",
+						Value:    "v1.0.0-rc1",
 						Required: false,
 					},
 				},
@@ -39,6 +39,11 @@ func playgroundCMD() *cli.Command {
 				Name:   "clean",
 				Usage:  "Clean up the demo interchain system",
 				Action: dockerDown,
+			},
+			{
+				Name:   "transfer",
+				Usage:  "Conduct cross-chain transactions",
+				Action: transfer,
 			},
 		},
 	}

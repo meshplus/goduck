@@ -45,7 +45,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.7.0",
+					Value:   "v1.0.0-rc1",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -120,7 +120,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.7.0",
+					Value:   "v1.0.0-rc1",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -293,7 +293,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.7.0",
+					Value:   "v1.0.0-rc1",
 					Usage:   "pier version",
 				},
 			},
@@ -348,11 +348,14 @@ func pierRegister(ctx *cli.Context) error {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	}
 
-	if pierUpType == types.TypeBinary {
-		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
-			if err := downloadPierBinary(repoRoot, version); err != nil {
-				return fmt.Errorf("download pier binary error:%w", err)
-			}
+	if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
+		if err := downloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
+			return fmt.Errorf("download pier binary error:%w", err)
+		}
+	}
+	if pierUpType == types.TypeDocker && !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_linux_%s/pier", version))) {
+		if err := downloadPierBinary(repoRoot, version, "linux"); err != nil {
+			return fmt.Errorf("download pier binary error:%w", err)
 		}
 	}
 
@@ -433,8 +436,8 @@ func pierClean(ctx *cli.Context) error {
 	return pier.CleanPier(repoRoot, chainType)
 }
 
-func downloadPierBinary(repoPath string, version string) error {
-	path := fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)
+func downloadPierBinary(repoPath string, version string, system string) error {
+	path := fmt.Sprintf("pier_%s_%s", system, version)
 	root := filepath.Join(repoPath, "bin", path)
 	if !fileutil.Exist(root) {
 		err := os.MkdirAll(root, 0755)
@@ -443,7 +446,7 @@ func downloadPierBinary(repoPath string, version string) error {
 		}
 	}
 
-	if runtime.GOOS == "linux" {
+	if system == "linux" {
 		if !fileutil.Exist(filepath.Join(root, "pier")) {
 			url := fmt.Sprintf(types.PierUrlLinux, version, version)
 			err := download.Download(root, url)
@@ -463,8 +466,7 @@ func downloadPierBinary(repoPath string, version string) error {
 				}
 			}
 		}
-
-		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) {
+		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) && !fileutil.Exist(filepath.Join(root, types.FabricClientSo)) {
 			url := fmt.Sprintf(types.PierFabricClientUrlLinux, version, version)
 			err := download.Download(root, url)
 			if err != nil {
@@ -477,7 +479,7 @@ func downloadPierBinary(repoPath string, version string) error {
 			}
 		}
 
-		if !fileutil.Exist(filepath.Join(root, types.EthClient)) {
+		if !fileutil.Exist(filepath.Join(root, types.EthClient)) && !fileutil.Exist(filepath.Join(root, types.EthClientSo)) {
 			url := fmt.Sprintf(types.PierEthereumClientUrlLinux, version, version)
 			err := download.Download(root, url)
 			if err != nil {
@@ -490,7 +492,7 @@ func downloadPierBinary(repoPath string, version string) error {
 			}
 		}
 	}
-	if runtime.GOOS == "darwin" {
+	if system == "darwin" {
 		if !fileutil.Exist(filepath.Join(root, "pier")) {
 			url := fmt.Sprintf(types.PierUrlMacOS, version, version)
 			err := download.Download(root, url)
@@ -504,7 +506,7 @@ func downloadPierBinary(repoPath string, version string) error {
 			}
 		}
 
-		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) {
+		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) && !fileutil.Exist(filepath.Join(root, types.FabricClientSo)) {
 			url := fmt.Sprintf(types.PierFabricClientUrlMacOS, version, version)
 			err := download.Download(root, url)
 			if err != nil {
@@ -517,7 +519,7 @@ func downloadPierBinary(repoPath string, version string) error {
 			}
 		}
 
-		if !fileutil.Exist(filepath.Join(root, types.EthClient)) {
+		if !fileutil.Exist(filepath.Join(root, types.EthClient)) && !fileutil.Exist(filepath.Join(root, types.EthClientSo)) {
 			url := fmt.Sprintf(types.PierEthereumClientUrlMacOS, version, version)
 			err := download.Download(root, url)
 			if err != nil {
@@ -592,7 +594,12 @@ func generatePierConfig(ctx *cli.Context) error {
 	pierP := fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version)
 	pierPath := filepath.Join(repoRoot, pierP)
 	if !fileutil.Exist(pierPath) {
-		if err := downloadPierBinary(repoRoot, version); err != nil {
+		if err := downloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
+			return fmt.Errorf("download pier binary error:%w", err)
+		}
+	}
+	if startType == types.TypeDocker && !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_linux_%s/pier", version))) {
+		if err := downloadPierBinary(repoRoot, version, "linux"); err != nil {
 			return fmt.Errorf("download pier binary error:%w", err)
 		}
 	}
