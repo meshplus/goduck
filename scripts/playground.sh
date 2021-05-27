@@ -111,7 +111,7 @@ function bitxhub_docker_solo() {
       meshplus/bitxhub-solo:$VERSION
   fi
 
-  echo v${VERSION} >"${CONFIG_PATH}"/bitxhub.version
+  echo ${VERSION} >"${CONFIG_PATH}"/bitxhub.version
   CID=`docker container ls | grep bitxhub_solo`
   echo ${CID:0:12} >"${CONFIG_PATH}"/bitxhub.cid
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
@@ -154,7 +154,7 @@ function bitxhub_docker_cluster() {
   rm "${CONFIG_PATH}"/bitxhub.version
   rm "${CONFIG_PATH}"/bitxhub.cid
   for ((i = 1; i < N + 1; i = i + 1)); do
-    echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     CID=`docker container ls | grep bitxhub_node$i`
     echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
   done
