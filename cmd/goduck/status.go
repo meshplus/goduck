@@ -43,7 +43,7 @@ var modes = []string{
 func GetStatusCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "status",
-		Usage: "check status of interchain system",
+		Usage: "Check status of interchain system",
 		Subcommands: []*cli.Command{
 			{
 				Name:   "list",

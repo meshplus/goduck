@@ -397,7 +397,6 @@ function pier_down() {
       fi
     done
     rm pier-$MODE.pid
-    rm "${CONFIG_PATH}"/pier-${MODE}-binary.addr
   else
     echo "pier-$MODE binary is not running"
   fi
@@ -415,7 +414,6 @@ function pier_down() {
       fi
     done
     rm pier-$MODE.cid
-    rm "${CONFIG_PATH}"/pier-${MODE}-docker.addr
   else
     echo "pier-$MODE docker is not running"
   fi
