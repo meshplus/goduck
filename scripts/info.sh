@@ -83,11 +83,31 @@ function showBxhInfo() {
 function showPierInfo() {
   if [ "$(docker ps -q -f name=pier-ethereum)" ]; then
     print_blue "======> info about piers of ethereum in docker"
+    CIDS=`docker ps -qf "name=pier-ethereum"`
+    echo $CIDS >"${CURRENT_PATH}/pier/pier-ethereum.cid"
+    if [ -e "${CURRENT_PATH}"/pier/pier-ethereum-docker.addr ]; then
+      rm "${CURRENT_PATH}"/pier/pier-ethereum-docker.addr
+    fi
+    for cid in $CIDS; do
+      if [ cid != "" ]; then
+        echo `docker exec $cid pier --repo=/root/.pier id` >>"${CURRENT_PATH}/pier/pier-ethereum-docker.addr"
+      fi
+    done
     cat ${CURRENT_PATH}/pier/pier-ethereum-docker.addr
   fi
 
   if [ "$(docker ps -q -f name=pier-fabric)" ]; then
     print_blue "======> info about piers of fabric in docker"
+    CIDS=`docker ps -qf "name=pier-fabric"`
+    echo $CIDS >"${CURRENT_PATH}/pier/pier-fabric.cid"
+    if [ -e "${CURRENT_PATH}"/pier/pier-fabric-docker.addr ]; then
+      rm "${CURRENT_PATH}"/pier/pier-fabric-docker.addr
+    fi
+    for cid in $CIDS; do
+      if [ cid != "" ]; then
+        echo `docker exec $cid pier --repo=/root/.pier id` >>"${CURRENT_PATH}/pier/pier-fabric-docker.addr"
+      fi
+    done
     cat ${CURRENT_PATH}/pier/pier-fabric-docker.addr
   fi
 

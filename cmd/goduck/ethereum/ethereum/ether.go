@@ -11,6 +11,33 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func GetEtherCMD() *cli.Command {
+	return &cli.Command{
+		Name:  "ether",
+		Usage: "Operation about ethereum chain",
+		Subcommands: []*cli.Command{
+			{
+				Name:  "start",
+				Usage: "Start a ethereum chain",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "specify ethereum up type, docker(default) or binary",
+						Required: false,
+						Value:    types.TypeDocker,
+					},
+				},
+				Action: startEther,
+			},
+			{
+				Name:   "stop",
+				Usage:  "Stop ethereum chain",
+				Action: stopEther,
+			},
+			contractCMD,
+		},
+	}
+}
 
 func startEther(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))

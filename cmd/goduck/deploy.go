@@ -431,8 +431,12 @@ func pierStartRemote(who string, chain string) error {
 
 func ruleDeploy(who string, chain string) error {
 	color.Blue("====> Deploy rule in bitxhub\n")
+	chainRepo := chain
+	if chain == types.ChainTypeEther {
+		chainRepo = "ether"
+	}
 	err := sh.Command("ssh", who,
-		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/validating.wasm", chain, chain, chain)).Run()
+		fmt.Sprintf("export LD_LIBRARY_PATH=$HOME/pier && $HOME/pier/pier --repo $HOME/.pier_%s rule deploy --path $HOME/.pier_%s/%s/validating.wasm", chain, chain, chainRepo)).Run()
 	if err != nil {
 		return err
 	}

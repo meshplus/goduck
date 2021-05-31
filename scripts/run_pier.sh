@@ -106,11 +106,15 @@ function generateConfig() {
       PLUGINNAME="appchain_plugin"
     fi
 
-    if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
+    PIER_PLUGIN_PATH="${PIER_PATH}"
+    if [ $TYPE == "docker" ]; then
+      PIER_PLUGIN_PATH="${PIER_LINUX_PATH}"
+    fi
+    if [ ! -f "${PIER_PLUGIN_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for fabric first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
+    cp "${PIER_PLUGIN_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
 
     cd "${PIERREPO}"/fabric
     if [ ! -f validating.wasm ]; then
@@ -159,13 +163,18 @@ function generateConfig() {
       PLUGINNAME="appchain_plugin"
     fi
 
-    if [ ! -f "${PIER_PATH}"/"${PLUGIN}" ]; then
+    PIER_PLUGIN_PATH="${PIER_PATH}"
+    if [ $TYPE == "docker" ]; then
+      PIER_PLUGIN_PATH="${PIER_LINUX_PATH}"
+    fi
+    if [ ! -f "${PIER_PLUGIN_PATH}"/"${PLUGIN}" ]; then
       print_red "pier plugin binary is not downloaded, please download pier plugin for ethereum first"
       exit 1
     fi
-    cp "${PIER_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
 
-    cd "${PIERREPO}"/ethereum
+
+    cp "${PIER_PLUGIN_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
+    cd "${PIERREPO}"/ether
     if [ ! -f validating.wasm ]; then
       print_blue "===> Downloading validating.wasm"
       wget https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm
@@ -279,6 +288,75 @@ function start_pier_container() {
         print_red "crypto-config ${CRYPTOPATH} not found, please start fabric network first"
         exit 1
       fi
+      
+      if [ $SYSTEM == "linux" ]; then
+        if [[ "${VERSION}" < "v1.6.0" ]]; then
+          docker run -d --name pier-fabric \
+            --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/fabric:/root/.pier/fabric \
+            -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
+            meshplus/pier-fabric:"${VERSION}"
+        else
+          docker run -d --name pier-fabric \
+            --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/fabric:/root/.pier/fabric \
+            -v $PIERREPO/plugins:/root/.pier/plugins \
+            -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
+            meshplus/pier-fabric:"${VERSION}"
+        fi
+      else
+        if [[ "${VERSION}" < "v1.6.0" ]]; then
+          docker run -d --net host --name pier-fabric \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/fabric:/root/.pier/fabric \
+            -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
+            meshplus/pier-fabric:"${VERSION}"
+        else
+          docker run -d --net host --name pier-fabric \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/fabric:/root/.pier/fabric \
+            -v $PIERREPO/plugins:/root/.pier/plugins \
+            -v ${CRYPTOPATH}:/root/.pier/fabric/crypto-config \
+            meshplus/pier-fabric:"${VERSION}"
+        fi
+      fi
+    elif [ "$MODE" == "ethereum" ]; then
+      print_blue "===> Wait for ethereum-node container to start for seconds..."
+      sleep 5
+      if [ $SYSTEM == "linux" ]; then
+        if [[ "${VERSION}" < "v1.6.0" ]]; then
+          docker run -d --name pier-ethereum \
+            --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/ether:/root/.pier/ether \
+            meshplus/pier-ethereum:"${VERSION}"
+        else
+          docker run -d --name pier-ethereum \
+            --add-host host.docker.internal:`hostname -I | awk '{print $1}'` \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/ether:/root/.pier/ether \
+            -v $PIERREPO/plugins:/root/.pier/plugins \
+            meshplus/pier-ethereum:"${VERSION}"
+        fi
+      else
+        if [[ "${VERSION}" < "v1.6.0" ]]; then
+          docker run -d --net host --name pier-ethereum \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/ether:/root/.pier/ether \
+            meshplus/pier-ethereum:"${VERSION}"
+        else
+          docker run -d --net host --name pier-ethereum \
+            -v $PIERREPO/pier.toml:/root/.pier/pier.toml \
+            -v $PIERREPO/ether:/root/.pier/ether \
+            -v $PIERREPO/plugins:/root/.pier/plugins \
+            meshplus/pier-ethereum:"${VERSION}"
+        fi
+      fi
+    else
+      print_red "Not supported mode"
+      exit 1
     fi
 
     startPierContainer=${PIERREPO}/scripts/docker-compose-pier.yaml
@@ -442,6 +520,7 @@ function pier_clean() {
     echo "pier-$MODE container is not existed"
   fi
 
+
   print_blue "===> Clean $MODE pier config"
   if [ -d "${CONFIG_PATH}"/.pier_$MODE ]; then
     echo "remove $MODE pier configure"
@@ -482,6 +561,26 @@ function cleanPierInfoFile(){
     rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
   fi
 
+
+cleanPierInfoFile
+}
+
+function cleanPierInfoFile(){
+  PIER_CONFIG_PATH="${CURRENT_PATH}"/pier
+
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum.pid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.pid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric.pid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
+  fi
+
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.cid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-ethereum.cid
   fi
@@ -491,6 +590,7 @@ function cleanPierInfoFile(){
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.cid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric.cid
   fi
+
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
   fi
@@ -573,6 +673,7 @@ done
 
 CONFIG_PATH="${CURRENT_PATH}"/pier
 PIER_PATH="${CURRENT_PATH}/bin/pier_${SYSTEM}_${VERSION}"
+PIER_LINUX_PATH="${CURRENT_PATH}/bin/pier_linux_${VERSION}"
 
 if [ "$OPT" == "register" ]; then
   pier_register

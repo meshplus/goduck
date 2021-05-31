@@ -356,14 +356,19 @@ function bitxhub_clean() {
     fi
   done
 
-  if [ -e "${CONFIG_PATH}"/bitxhub.pid ]; then
-    rm "${CONFIG_PATH}"/bitxhub.pid
+cleanBxhInfoFile
+}
+
+function cleanBxhInfoFile(){
+  BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.pid ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.pid
   fi
-  if [ -e "${CONFIG_PATH}"/bitxhub.cid ]; then
-    rm "${CONFIG_PATH}"/bitxhub.cid
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.cid ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.cid
   fi
-  if [ -e "${CONFIG_PATH}"/bitxhub.version ]; then
-    rm "${CONFIG_PATH}"/bitxhub.version
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.version ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.version
   fi
 }
 

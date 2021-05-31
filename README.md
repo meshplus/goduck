@@ -30,7 +30,8 @@ goduck [global options] command [command options] [arguments...]
 - `deploy`         Deploy BitXHub and pier
 - `version`         Components version  
 - `init`          Init config home for GoDuck
-- `status`          List the status of instantiated components  
+- `status`          Check status of interchain system  
+- `ether`       Operation about ethereum chain
 - `key`          Create and show key information
 - `bitxhub`          Start or stop BitXHub nodes
 - `pier`          Operation about pier  

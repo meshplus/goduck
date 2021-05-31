@@ -383,6 +383,9 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 	}
 
 	pluginConfig := p.appchainType
+	if pluginConfig == types.ChainTypeEther {
+		pluginConfig = "ether"
+	}
 
 	pluginFile := "appchain_plugin"
 	if p.version == "v1.0.0" || p.version == "v1.0.0-rc1" {
@@ -420,7 +423,13 @@ func (p *PierConfigGenerator) copyConfigFiles() error {
 		return fmt.Errorf("initialize Pier configuration file: %w", err)
 	}
 
-	dstDir := filepath.Join(p.target, p.appchainType)
+	dstDir := ""
+	if p.appchainType == types.ChainTypeEther {
+		dstDir = filepath.Join(p.target, "ether")
+	} else {
+		dstDir = filepath.Join(p.target, p.appchainType)
+	}
+
 	srcDir := filepath.Join("pier", p.appchainType)
 
 	files2 := []string{

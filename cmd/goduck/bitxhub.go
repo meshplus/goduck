@@ -39,7 +39,7 @@ func bitxhubCMD() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
-						Value: types.TypeBinary,
+						Value: types.TypeDocker,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
