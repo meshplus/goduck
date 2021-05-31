@@ -1,0 +1,25 @@
+version: '2'
+
+services:
+  bitxhub:
+    image: meshplus/bitxhub-solo:test
+    container_name: bitxhub_solo
+    restart: always
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的bitxhub配置目录，映射改动过的配置即可，以下为示例：
+      - ./bitxhub/.bitxhub/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ./bitxhub/.bitxhub/nodeSolo/network.toml:/root/.bitxhub/network.toml
+      - ./bitxhub/.bitxhub/nodeSolo/key.json:/root/.bitxhub/key.json
+      - ./bitxhub/.bitxhub/nodeSolo/certs:/root/.bitxhub/certs
+      - ./bitxhub/.bitxhub/nodeSolo/order.toml:/root/.bitxhub/order.toml
+    # network_mode: "host"
+    ports:
+      - "7881:7881"
+      - "50011:50011"
+      - "8091:8091"
+      - "43121:43121"
+      - "30011:30011"
+    working_dir: /root/.bitxhub

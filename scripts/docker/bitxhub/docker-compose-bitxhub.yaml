@@ -1,0 +1,117 @@
+version: '2'
+
+services:
+  bitxhub_node1:
+    restart: always
+    # 需要改成实际使用的bitxhub镜像，请注意tag
+    image: meshplus/bitxhub:test
+    container_name: bitxhub_node1
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的bitxhub配置目录，映射改动过的配置即可，以下为示例：
+      - ./bitxhub/.bitxhub/node1/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ./bitxhub/.bitxhub/node1/network.toml:/root/.bitxhub/network.toml
+      - ./bitxhub/.bitxhub/node1/key.json:/root/.bitxhub/key.json
+      - ./bitxhub/.bitxhub/node1/certs:/root/.bitxhub/certs
+      - ./bitxhub/.bitxhub/node1/order.toml:/root/.bitxhub/order.toml
+    # network_mode: "host"
+    ports:
+      - "7881:7881"
+      - "50011:50011"
+      - "8091:8091"
+      - "43121:43121"
+      - "30011:30011"
+      - "4001:4001"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.2
+  bitxhub_node2:
+    restart: always
+    # 需要改成实际使用的bitxhub镜像，请注意tag
+    image: meshplus/bitxhub:test
+    container_name: bitxhub_node2
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的bitxhub配置目录，映射改动过的配置即可，以下为示例：
+      - ./bitxhub/.bitxhub/node2/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ./bitxhub/.bitxhub/node2/network.toml:/root/.bitxhub/network.toml
+      - ./bitxhub/.bitxhub/node2/key.json:/root/.bitxhub/key.json
+      - ./bitxhub/.bitxhub/node2/certs:/root/.bitxhub/certs
+      - ./bitxhub/.bitxhub/node2/order.toml:/root/.bitxhub/order.toml
+    # network_mode: "host"
+    ports:
+      - "7882:7882"
+      - "50012:50012"
+      - "8092:8092"
+      - "43122:43122"
+      - "30012:30012"
+      - "4002:4002"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.3
+  bitxhub_node3:
+    restart: always
+    # 需要改成实际使用的bitxhub镜像，请注意tag
+    image: meshplus/bitxhub:test
+    container_name: bitxhub_node3
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的bitxhub配置目录，映射改动过的配置即可，以下为示例：
+      - ./bitxhub/.bitxhub/node3/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ./bitxhub/.bitxhub/node3/network.toml:/root/.bitxhub/network.toml
+      - ./bitxhub/.bitxhub/node3/key.json:/root/.bitxhub/key.json
+      - ./bitxhub/.bitxhub/node3/certs:/root/.bitxhub/certs
+      - ./bitxhub/.bitxhub/node3/order.toml:/root/.bitxhub/order.toml
+    # network_mode: "host"
+    ports:
+      - "7883:7883"
+      - "50013:50013"
+      - "8093:8093"
+      - "43123:43123"
+      - "30013:30013"
+      - "4003:4003"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.4
+  bitxhub_node4:
+    restart: always
+    # 需要改成实际使用的bitxhub镜像，请注意tag
+    image: meshplus/bitxhub:test
+    container_name: bitxhub_node4
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+#      - /etc/localtime:/etc/localtime:ro
+      # 需要替换成正确的bitxhub配置目录，映射改动过的配置即可，以下为示例：
+      - ./bitxhub/.bitxhub/node4/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ./bitxhub/.bitxhub/node4/network.toml:/root/.bitxhub/network.toml
+      - ./bitxhub/.bitxhub/node4/key.json:/root/.bitxhub/key.json
+      - ./bitxhub/.bitxhub/node4/certs:/root/.bitxhub/certs
+      - ./bitxhub/.bitxhub/node4/order.toml:/root/.bitxhub/order.toml
+    # network_mode: "host"
+    ports:
+      - "7884:7884"
+      - "50014:50014"
+      - "8094:8094"
+      - "43124:43124"
+      - "30014:30014"
+      - "4004:4004"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.5
+networks:
+  p2p:
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1

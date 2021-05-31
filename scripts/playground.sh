@@ -4,19 +4,22 @@ set -e
 source x.sh
 
 CURRENT_PATH=$(pwd)
-CONFIG_PATH="${CURRENT_PATH}"/bitxhub
-
 OPT=$1
 VERSION=$2
 TYPE=$3
-MODE=$4
-N=$5
+MODIFY_CONFIG_PATH=$4
+TARGET=$5
+MODE=$(sed '/^.*mode/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+NUM=$(sed '/^.*num/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+REWRITE=$(sed '/^.*rewrite/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+CONFIG_PATH="${CURRENT_PATH}"/bitxhub
+
 SYSTEM=$(uname -s)
 if [ $SYSTEM == "Linux" ]; then
   SYSTEM="linux"
 elif [ $SYSTEM == "Darwin" ]; then
   SYSTEM="darwin"
-fi 
+fi
 BXH_PATH="${CURRENT_PATH}/bin/bitxhub_${SYSTEM}_${VERSION}"
 
 function printHelp() {
@@ -27,6 +30,40 @@ function printHelp() {
   echo "      - 'down' - clear the bitxhub network"
   echo "      - 'restart' - restart the bitxhub network"
   echo "  playground.sh -h (print this message)"
+}
+
+function check_bitxhub(){
+  if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
+    print_red "Bitxhub already run in daemon processes"
+    exit 1
+  fi
+
+  if [ -a "${CONFIG_PATH}"/bitxhub.cid ]; then
+    print_red "Bitxhub already run in daemon processes"
+    exit 1
+  fi
+
+  flag=true
+  if [[ -d ${TARGET}/nodeSolo && $MODE == "solo" ]]; then
+    print_blue "BitXHub solo configuration file already exists"
+    print_blue "reinitializing would overwrite your configuration? ($REWRITE)"
+    flag=$REWRITE
+    if [ $REWRITE == true ]; then
+      rm -r ${TARGET}
+    fi
+  fi
+  if [[ -d ${TARGET}/node1 && $MODE == "cluster" ]]; then
+    print_blue "BitXHub cluster configuration file already exists"
+    print_blue "reinitializing would overwrite your configuration? ($REWRITE)"
+    flag=$REWRITE
+    if [ $REWRITE == true ]; then
+      rm -r ${TARGET}
+    fi
+  fi
+
+  if [ $flag == true ]; then
+    goduck bitxhub config --version $VERSION --target "${TARGET}" --configPath "${MODIFY_CONFIG_PATH}"
+  fi
 }
 
 function binary_prepare() {
@@ -43,48 +80,19 @@ function binary_prepare() {
     fi
   fi
 
-  if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
-    print_red "Bitxhub already run in daemon processes"
-    exit 1
-  fi
-}
-
-function bitxhub_binary_check() {
-  if [ -n "$(ps -p ${PID} -o pid=)" ]; then
-    if [ -n "$(tail -n 50 ${NODEPATH}/logs/bitxhub.log | grep "Order is ready")" ]; then
-      checkRet=1
-    else
-      checkRet=0
-    fi;
-  else
-    checkRet=0
-  fi
-}
-
-function bitxhub_docker_check() {
-  if [ "$(docker container ls | grep -c ${CONTAINER})" -ge 1 ]; then
-    if [ -n "$(docker logs --tail 50 ${CONTAINER} | grep "Order is ready")" ]; then
-      checkRet=1
-    else
-      checkRet=0
-    fi;
-  else
-    checkRet=0
-  fi
+  check_bitxhub
 }
 
 function bitxhub_binary_solo() {
   binary_prepare
-
-  cd "${CONFIG_PATH}"
+  cd "${TARGET}"
   if [ ! -d nodeSolo/plugins ]; then
-    mkdir nodeSolo/plugins
+    mkdir "${TARGET}"/nodeSolo/plugins
     cp -r "${BXH_PATH}"/solo.so nodeSolo/plugins
   fi
-  print_blue "Start bitxhub solo by binary"
-  nohup "${BXH_PATH}"/bitxhub --repo "${CONFIG_PATH}"/nodeSolo start >/dev/null 2>&1 &
+  print_blue "======> Start bitxhub solo by binary"
+  nohup "${BXH_PATH}"/bitxhub --repo "${TARGET}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
-  NODEPATH="${CONFIG_PATH}"/nodeSolo
   echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
   echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
 
@@ -92,49 +100,32 @@ function bitxhub_binary_solo() {
 }
 
 function bitxhub_docker_solo() {
-  if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
-    docker pull meshplus/bitxhub-solo:$VERSION
-  fi
+  docker_prepare
+  print_blue "======> Start bitxhub solo mode by docker compose"
+  docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub-solo.yaml up -d
 
-  print_blue "Start bitxhub solo mode by docker"
-  if [ "$(docker container ls -a | grep -c bitxhub_solo)" -ge 1 ]; then
-    docker start bitxhub_solo
-  else
-    docker run -d --name bitxhub_solo \
-      -p 60011:60011 -p 9091:9091 -p 53121:53121 -p 40011:40011 \
-      -v "${CONFIG_PATH}"/nodeSolo/api:/root/.bitxhub/api \
-      -v "${CONFIG_PATH}"/nodeSolo/bitxhub.toml:/root/.bitxhub/bitxhub.toml \
-      -v "${CONFIG_PATH}"/nodeSolo/genesis.json:/root/.bitxhub/genesis.json \
-      -v "${CONFIG_PATH}"/nodeSolo/network.toml:/root/.bitxhub/network.toml \
-      -v "${CONFIG_PATH}"/nodeSolo/order.toml:/root/.bitxhub/order.toml \
-      -v "${CONFIG_PATH}"/nodeSolo/certs:/root/.bitxhub/certs \
-      meshplus/bitxhub-solo:$VERSION
-  fi
-
-  echo ${VERSION} >"${CONFIG_PATH}"/bitxhub.version
-  CID=`docker container ls | grep bitxhub_solo`
-  echo ${CID:0:12} >"${CONFIG_PATH}"/bitxhub.cid
+  echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+  CID=$(docker container ls | grep bitxhub-solo)
+  echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
 function bitxhub_binary_cluster() {
   binary_prepare
   declare -a PIDS
-  cd "${CONFIG_PATH}"
-  print_blue "Start bitxhub cluster"
-
-  for ((i = 1; i < N + 1; i = i + 1)); do
+  cd "${TARGET}"
+  print_blue "======> Start bitxhub cluster"
+  for ((i = 1; i < $NUM + 1; i = i + 1)); do
     if [ ! -d node${i}/plugins ]; then
       mkdir node${i}/plugins
       cp -r "${BXH_PATH}"/raft.so node${i}/plugins
     fi
     echo "Start bitxhub node${i}"
-    nohup "${BXH_PATH}"/bitxhub --repo="${CONFIG_PATH}"/node${i} start >/dev/null 2>&1 &
+    nohup "${BXH_PATH}"/bitxhub --repo="${TARGET}"/node${i} start >/dev/null 2>&1 &
     PIDS[${i}]=$!
   done
 
-  for ((i = 1; i < N + 1; i = i + 1)); do
-    NODEPATH="${CONFIG_PATH}"/node${i}
+  for ((i = 1; i < $NUM + 1; i = i + 1)); do
     PID=${PIDS[${i}]}
     echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
@@ -142,21 +133,136 @@ function bitxhub_binary_cluster() {
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
 }
 
-function bitxhub_docker_cluster() {
-  if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
-    docker pull meshplus/bitxhub:$VERSION
-  fi
-  print_blue "Start bitxhub cluster mode by docker compose"
-  cp "${CURRENT_PATH}"/docker/docker-compose.yml "${CONFIG_PATH}"/docker-compose.yml
-  x_replace "s/bitxhub:.*/bitxhub:$VERSION/g" "${CONFIG_PATH}"/docker-compose.yml
-  docker-compose -f "${CONFIG_PATH}"/docker-compose.yml up -d
+function docker_prepare() {
+  check_bitxhub
 
-  rm "${CONFIG_PATH}"/bitxhub.version
-  rm "${CONFIG_PATH}"/bitxhub.cid
-  for ((i = 1; i < N + 1; i = i + 1)); do
-    echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
-    CID=`docker container ls | grep bitxhub_node$i`
-    echo ${CID:0:12} >> "${CONFIG_PATH}"/bitxhub.cid
+  if [ $flag == true ]; then
+
+  for ((i = 1; i <= $NUM; i++)); do
+    nodeName="node$i"
+    if [ $MODE == "solo" ]; then
+      nodeName="nodeSolo"
+    fi
+    for ((j = 1; j <= $NUM; j++)); do
+      j_tmp=$(expr $j + 1)
+      x_replace "s/\"\/ip4\/127.0.0.1\/tcp\/400$j\/p2p\/\"/\"\/ip4\/172.19.0.$j_tmp\/tcp\/400$j\/p2p\/\"/g" "${TARGET}"/$nodeName/network.toml
+    done
+  done
+
+  DOCKER_COMPOSE_FILE=docker-compose-bitxhub.yaml
+  if [ $MODE == "cluster" ]; then
+    if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
+      docker pull meshplus/bitxhub:$VERSION
+    fi
+
+    cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub.yaml "${CONFIG_PATH}"
+    x_replace "s/image: meshplus\/bitxhub:.*/image: meshplus\/bitxhub:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+  else
+    if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
+      docker pull meshplus/bitxhub-solo:$VERSION
+    fi
+
+    DOCKER_COMPOSE_FILE=docker-compose-bitxhub-solo.yaml
+    cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub-solo.yaml "${CONFIG_PATH}"
+    x_replace "s/image: meshplus\/bitxhub-solo:.*/image: meshplus\/bitxhub-solo:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+  fi
+
+  bitxhubRepoTmp=$(echo "${TARGET}" | sed 's/\//\\\//g')
+
+  # read port
+  JSONRPCP=$(sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  GRPCP=$(sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  GATEWAYP=$(sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  PPROFP=$(sed '/^.*pprof_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  MONITORP=$(sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  NUM=$(sed '/^.*num/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+  for a in $JSONRPCP; do
+    JSONRPCPS+=($a)
+  done
+  for a in $GRPCP; do
+    GRPCPS+=($a)
+  done
+  for a in $GATEWAYP; do
+    GATEWAYPS+=($a)
+  done
+  for a in $PPROFP; do
+    PPROFPS+=($a)
+  done
+  for a in $MONITORP; do
+    MONITORPS+=($a)
+  done
+
+  if [ $NUM -gt 4 ]; then
+    for ((i = 5; i <= $NUM; i++)); do
+      jsonrpcP=${JSONRPCPS[$i - 1]}
+      grpcP=${GRPCPS[$i - 1]}
+      gatewayP=${GATEWAYPS[$i - 1]}
+      pprofP=${PPROFPS[$i - 1]}
+      monitorP=${MONITORPS[$i - 1]}
+      i_tmp=$(expr $i + 1)
+      echo "
+bitxhub_node$i:
+    restart: always
+          image: meshplus/bitxhub:$VERSION
+    container_name: bitxhub-0$i
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+      - ${bitxhubRepoTmp}\/node$i/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ${bitxhubRepoTmp}\/node$i/network.toml:/root/.bitxhub/network.toml
+      - ${bitxhubRepoTmp}\/node$i/key.json:/root/.bitxhub/key.json
+      - ${bitxhubRepoTmp}\/node$i/certs:/root/.bitxhub/certs
+    ports:
+      - \"$jsonrpcP:$jsonrpcP\"
+      - \"$grpcP:$grpcP\"
+      - \"$gatewayP:$gatewayP\"
+      - \"$pprofP:$pprofP\"
+      - \"$monitorP:$monitorP\"
+      - \"400$i:400$i\"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.$i_tmp" >>"${TARGET}"/"${DOCKER_COMPOSE_FILE}"
+    done
+  fi
+
+  for ((i = 1; i <= $NUM; i++)); do
+    nodeName="node$i"
+    if [ $MODE == "solo" ]; then
+      nodeName="nodeSolo"
+    fi
+    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/- ${bitxhubRepoTmp}\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/- ${bitxhubRepoTmp}\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/- ${bitxhubRepoTmp}\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/- ${bitxhubRepoTmp}\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/certs:\/root\/.bitxhub\/certs/- ${bitxhubRepoTmp}\/$nodeName\/certs:\/root\/.bitxhub\/certs/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+
+    jsonrpcP=${JSONRPCPS[$i - 1]}
+    grpcP=${GRPCPS[$i - 1]}
+    gatewayP=${GATEWAYPS[$i - 1]}
+    pprofP=${PPROFPS[$i - 1]}
+    monitorP=${MONITORPS[$i - 1]}
+    x_replace "s/\".*:788$i\"/\"$jsonrpcP:$jsonrpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/\".*:5001$i\"/\"$grpcP:$grpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/\".*:809$i\"/\"$gatewayP:$gatewayP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/\".*:4312$i\"/\"$pprofP:$pprofP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    x_replace "s/\".*:3001$i\"/\"$monitorP:$monitorP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+
+    x_replace "s/ipv4_address: 172.19.0.$i/ipv4_address: 172.19.0.$i/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+  done
+
+  fi
+}
+
+function bitxhub_docker_cluster() {
+  docker_prepare
+  print_blue "======> Start bitxhub cluster mode by docker compose"
+  docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml up -d
+
+  for ((i = 1; i < $NUM + 1; i = i + 1)); do
+    echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    CID=$(docker container ls | grep bitxhub_node$i)
+    echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   done
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
@@ -164,8 +270,8 @@ function bitxhub_docker_cluster() {
 
 function bitxhub_down() {
   set +e
-  print_blue "===> Stop bitxhub"
-
+  print_blue "======> Stop bitxhub"
+  TARGET="${CURRENT_PATH}"/bitxhub/.bitxhub
   if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
     list=$(cat "${CONFIG_PATH}"/bitxhub.pid)
     for pid in $list; do
@@ -179,20 +285,20 @@ function bitxhub_down() {
   fi
 
   if [ "$(docker ps | grep -c bitxhub_node)" -ge 1 ]; then
-    docker-compose -f "${CONFIG_PATH}"/docker-compose.yml stop
+    docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml stop
     echo "bitxhub docker cluster stop"
   fi
 
   if [ "$(docker ps | grep -c bitxhub_solo)" -ge 1 ]; then
-    docker stop bitxhub_solo
+    docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub-solo.yaml stop
     echo "bitxhub docker solo stop"
   fi
 }
 
 function bitxhub_up() {
-  case $MODE in
+  case $TYPE in
   "docker")
-    case $TYPE in
+    case $MODE in
     "solo")
       bitxhub_docker_solo
       ;;
@@ -200,13 +306,13 @@ function bitxhub_up() {
       bitxhub_docker_cluster
       ;;
     *)
-      print_red "TYPE should be solo or cluster"
+      print_red "MODE should be solo or cluster"
       exit 1
       ;;
     esac
     ;;
   "binary")
-    case $TYPE in
+    case $MODE in
     "solo")
       bitxhub_binary_solo
       ;;
@@ -214,13 +320,13 @@ function bitxhub_up() {
       bitxhub_binary_cluster
       ;;
     *)
-      print_red "TYPE should be solo or cluster"
+      print_red "MODE should be solo or cluster"
       exit 1
       ;;
     esac
     ;;
   *)
-    print_red "MODE should be docker or binary"
+    print_red "TYPE should be docker or binary"
     exit 1
     ;;
   esac
@@ -231,25 +337,24 @@ function bitxhub_clean() {
 
   bitxhub_down
 
-  print_blue "===> Clean bitxhub"
-
-  file_list=$(ls ${CONFIG_PATH} 2>/dev/null | grep -v '^$')
-  for file_name in $file_list; do
-    if [ "${file_name:0:4}" == "node" ]; then
-      rm -r "${CONFIG_PATH}"/"$file_name"
-      echo "remove bitxhub configure $file_name"
-    fi
-  done
-
+  print_blue "======> Clean bitxhub"
   if [ "$(docker ps -a | grep -c bitxhub_node)" -ge 1 ]; then
-    docker-compose -f "${CONFIG_PATH}"/docker-compose.yml down
+    docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml rm -f
     echo "bitxhub docker cluster clean"
   fi
 
   if [ "$(docker ps -a | grep -c bitxhub_solo)" -ge 1 ]; then
-    docker rm bitxhub_solo
+    docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub-solo.yaml rm -f
     echo "bitxhub docker solo clean"
   fi
+
+  file_list=$(ls ${TARGET} 2>/dev/null | grep -v '^$')
+  for file_name in $file_list; do
+    if [ "${file_name:0:4}" == "node" ]; then
+      rm -r "${TARGET}"/"$file_name"
+      echo "remove bitxhub configure $file_name"
+    fi
+  done
 
 cleanBxhInfoFile
 }

@@ -45,19 +45,19 @@ function showBxhInfo() {
   fi
 
   if [ -e ${BITXHUB_PATH}/bitxhub.pid ]; then
-    if [ -d ${BITXHUB_PATH}/nodeSolo ]; then
+    if [ -d ${BITXHUB_PATH}/.bitxhub/nodeSolo ]; then
       if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
         print_blue "======> Show address of solo bitxhub node started in binary"
-        $binPath/bitxhub key address --path ${BITXHUB_PATH}/nodeSolo/certs/$bitxhubKeyName
+        $binPath/bitxhub key address --path ${BITXHUB_PATH}/.bitxhub/nodeSolo/certs/$bitxhubKeyName
       fi
     fi
 
-    nodes=$(ls ${BITXHUB_PATH} | grep node | grep -v nodeSolo || true)
+    nodes=$(ls ${BITXHUB_PATH}/.bitxhub | grep node | grep -v nodeSolo || true)
     if [ -n "$nodes" ]; then
       if [ "$(ps aux | grep bitxhub | grep -v grep | grep -v info)" ]; then
         print_blue "======> Show address of each bitxhub node started in binary"
         for n in $nodes ; do
-          $binPath/bitxhub key address --path ${BITXHUB_PATH}/$n/certs/$bitxhubKeyName
+          $binPath/bitxhub key address --path ${BITXHUB_PATH}/.bitxhub/$n/certs/$bitxhubKeyName
         done
       fi
     fi

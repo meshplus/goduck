@@ -30,6 +30,8 @@ const (
 	KeyName = "key.json"
 	// NodeKeyName
 	NodeKeyName = "node.priv"
+	// PierAdminKeyName
+	AdminKeyName = "admin.json"
 	// Pier config name
 	PierConfigName = "pier.toml"
 	// KeyPassword
