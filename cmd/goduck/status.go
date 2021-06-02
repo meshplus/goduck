@@ -296,8 +296,11 @@ func existContainer(cidPath string, table [][]string) ([][]string, error) {
 	br := bufio.NewReader(fi)
 	for {
 		a, _, c := br.ReadLine()
-		if c == io.EOF || string(a) == "" {
+		if c == io.EOF {
 			break
+		}
+		if string(a) == "" {
+			continue
 		}
 		as := strings.Split(string(a), " ")
 		for _, cid := range as {

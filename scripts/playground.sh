@@ -32,7 +32,7 @@ function printHelp() {
   echo "  playground.sh -h (print this message)"
 }
 
-function check_bitxhub(){
+function check_bitxhub() {
   if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
     print_red "Bitxhub already run in daemon processes"
     exit 1
@@ -138,69 +138,93 @@ function docker_prepare() {
 
   if [ $flag == true ]; then
 
-  for ((i = 1; i <= $NUM; i++)); do
-    nodeName="node$i"
-    if [ $MODE == "solo" ]; then
-      nodeName="nodeSolo"
-    fi
-    for ((j = 1; j <= $NUM; j++)); do
-      j_tmp=$(expr $j + 1)
-      x_replace "s/\"\/ip4\/127.0.0.1\/tcp\/400$j\/p2p\/\"/\"\/ip4\/172.19.0.$j_tmp\/tcp\/400$j\/p2p\/\"/g" "${TARGET}"/$nodeName/network.toml
+    for ((i = 1; i <= $NUM; i++)); do
+      nodeName="node$i"
+      if [ $MODE == "solo" ]; then
+        nodeName="nodeSolo"
+      fi
+      for ((j = 1; j <= $NUM; j++)); do
+        j_tmp=$(expr $j + 1)
+        x_replace "s/\"\/ip4\/127.0.0.1\/tcp\/400$j\/p2p\/\"/\"\/ip4\/172.19.0.$j_tmp\/tcp\/400$j\/p2p\/\"/g" "${TARGET}"/$nodeName/network.toml
+      done
     done
-  done
 
-  DOCKER_COMPOSE_FILE=docker-compose-bitxhub.yaml
-  if [ $MODE == "cluster" ]; then
-    if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
-      docker pull meshplus/bitxhub:$VERSION
+    DOCKER_COMPOSE_FILE=docker-compose-bitxhub.yaml
+    if [ $MODE == "cluster" ]; then
+      if [[ -z "$(docker images -q meshplus/bitxhub:$VERSION 2>/dev/null)" ]]; then
+        docker pull meshplus/bitxhub:$VERSION
+      fi
+
+      cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub.yaml "${CONFIG_PATH}"
+      x_replace "s/image: meshplus\/bitxhub:.*/image: meshplus\/bitxhub:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    else
+      if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
+        docker pull meshplus/bitxhub-solo:$VERSION
+      fi
+
+      DOCKER_COMPOSE_FILE=docker-compose-bitxhub-solo.yaml
+      cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub-solo.yaml "${CONFIG_PATH}"
+      x_replace "s/image: meshplus\/bitxhub-solo:.*/image: meshplus\/bitxhub-solo:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
     fi
 
-    cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub.yaml "${CONFIG_PATH}"
-    x_replace "s/image: meshplus\/bitxhub:.*/image: meshplus\/bitxhub:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-  else
-    if [[ -z "$(docker images -q meshplus/bitxhub-solo:$VERSION 2>/dev/null)" ]]; then
-      docker pull meshplus/bitxhub-solo:$VERSION
-    fi
+    bitxhubRepoTmp=$(echo "${TARGET}" | sed 's/\//\\\//g')
 
-    DOCKER_COMPOSE_FILE=docker-compose-bitxhub-solo.yaml
-    cp "${CURRENT_PATH}"/docker/bitxhub/docker-compose-bitxhub-solo.yaml "${CONFIG_PATH}"
-    x_replace "s/image: meshplus\/bitxhub-solo:.*/image: meshplus\/bitxhub-solo:$VERSION/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-  fi
+    # read port
+    JSONRPCP=$(sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    GRPCP=$(sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    GATEWAYP=$(sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    PPROFP=$(sed '/^.*pprof_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    MONITORP=$(sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    NUM=$(sed '/^.*num/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
+    for a in $JSONRPCP; do
+      JSONRPCPS+=($a)
+    done
+    for a in $GRPCP; do
+      GRPCPS+=($a)
+    done
+    for a in $GATEWAYP; do
+      GATEWAYPS+=($a)
+    done
+    for a in $PPROFP; do
+      PPROFPS+=($a)
+    done
+    for a in $MONITORP; do
+      MONITORPS+=($a)
+    done
 
-  bitxhubRepoTmp=$(echo "${TARGET}" | sed 's/\//\\\//g')
-
-  # read port
-  JSONRPCP=$(sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  GRPCP=$(sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  GATEWAYP=$(sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  PPROFP=$(sed '/^.*pprof_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  MONITORP=$(sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  NUM=$(sed '/^.*num/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH})
-  for a in $JSONRPCP; do
-    JSONRPCPS+=($a)
-  done
-  for a in $GRPCP; do
-    GRPCPS+=($a)
-  done
-  for a in $GATEWAYP; do
-    GATEWAYPS+=($a)
-  done
-  for a in $PPROFP; do
-    PPROFPS+=($a)
-  done
-  for a in $MONITORP; do
-    MONITORPS+=($a)
-  done
-
-  if [ $NUM -gt 4 ]; then
-    for ((i = 5; i <= $NUM; i++)); do
-      jsonrpcP=${JSONRPCPS[$i - 1]}
-      grpcP=${GRPCPS[$i - 1]}
-      gatewayP=${GATEWAYPS[$i - 1]}
-      pprofP=${PPROFPS[$i - 1]}
-      monitorP=${MONITORPS[$i - 1]}
-      i_tmp=$(expr $i + 1)
-      echo "
+    if [ $NUM -gt 4 ]; then
+      for ((i = 5; i <= $NUM; i++)); do
+        jsonrpcP=${JSONRPCPS[$i - 1]}
+        grpcP=${GRPCPS[$i - 1]}
+        gatewayP=${GATEWAYPS[$i - 1]}
+        pprofP=${PPROFPS[$i - 1]}
+        monitorP=${MONITORPS[$i - 1]}
+        i_tmp=$(expr $i + 1)
+        if [ "${VERSION}" == "v1.6.0" ]; then
+          echo "
+bitxhub_node$i:
+    restart: always
+          image: meshplus/bitxhub:$VERSION
+    container_name: bitxhub-0$i
+    tty: true
+    volumes:
+      - /var/run/:/host/var/run/
+      - ${bitxhubRepoTmp}\/node$i/bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ${bitxhubRepoTmp}\/node$i/network.toml:/root/.bitxhub/network.toml
+      - ${bitxhubRepoTmp}\/node$i/key.json:/root/.bitxhub/key.json
+      - ${bitxhubRepoTmp}\/node$i/certs:/root/.bitxhub/certs
+    ports:
+      - \"$grpcP:$grpcP\"
+      - \"$gatewayP:$gatewayP\"
+      - \"$pprofP:$pprofP\"
+      - \"$monitorP:$monitorP\"
+      - \"400$i:400$i\"
+    working_dir: /root/.bitxhub
+    networks:
+      p2p:
+        ipv4_address: 172.19.0.$i_tmp" >>"${TARGET}"/"${DOCKER_COMPOSE_FILE}"
+        else
+          echo "
 bitxhub_node$i:
     restart: always
           image: meshplus/bitxhub:$VERSION
@@ -223,33 +247,38 @@ bitxhub_node$i:
     networks:
       p2p:
         ipv4_address: 172.19.0.$i_tmp" >>"${TARGET}"/"${DOCKER_COMPOSE_FILE}"
-    done
-  fi
-
-  for ((i = 1; i <= $NUM; i++)); do
-    nodeName="node$i"
-    if [ $MODE == "solo" ]; then
-      nodeName="nodeSolo"
+        fi
+      done
     fi
-    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/- ${bitxhubRepoTmp}\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/- ${bitxhubRepoTmp}\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/- ${bitxhubRepoTmp}\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/- ${bitxhubRepoTmp}\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/certs:\/root\/.bitxhub\/certs/- ${bitxhubRepoTmp}\/$nodeName\/certs:\/root\/.bitxhub\/certs/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
 
-    jsonrpcP=${JSONRPCPS[$i - 1]}
-    grpcP=${GRPCPS[$i - 1]}
-    gatewayP=${GATEWAYPS[$i - 1]}
-    pprofP=${PPROFPS[$i - 1]}
-    monitorP=${MONITORPS[$i - 1]}
-    x_replace "s/\".*:788$i\"/\"$jsonrpcP:$jsonrpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/\".*:5001$i\"/\"$grpcP:$grpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/\".*:809$i\"/\"$gatewayP:$gatewayP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/\".*:4312$i\"/\"$pprofP:$pprofP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-    x_replace "s/\".*:3001$i\"/\"$monitorP:$monitorP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    for ((i = 1; i <= $NUM; i++)); do
+      nodeName="node$i"
+      if [ $MODE == "solo" ]; then
+        nodeName="nodeSolo"
+      fi
+      x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/- ${bitxhubRepoTmp}\/$nodeName\/bitxhub.toml:\/root\/.bitxhub\/bitxhub.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/- ${bitxhubRepoTmp}\/$nodeName\/network.toml:\/root\/.bitxhub\/network.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/- ${bitxhubRepoTmp}\/$nodeName\/order.toml:\/root\/.bitxhub\/order.toml/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/- ${bitxhubRepoTmp}\/$nodeName\/key.json:\/root\/.bitxhub\/key.json/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/- .\/bitxhub\/.bitxhub\/$nodeName\/certs:\/root\/.bitxhub\/certs/- ${bitxhubRepoTmp}\/$nodeName\/certs:\/root\/.bitxhub\/certs/g" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
 
-    x_replace "s/ipv4_address: 172.19.0.$i/ipv4_address: 172.19.0.$i/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
-  done
+      jsonrpcP=${JSONRPCPS[$i - 1]}
+      grpcP=${GRPCPS[$i - 1]}
+      gatewayP=${GATEWAYPS[$i - 1]}
+      pprofP=${PPROFPS[$i - 1]}
+      monitorP=${MONITORPS[$i - 1]}
+
+      if [ "${VERSION}" != "v1.6.0" ]; then
+        x_replace "s/\".*:788$i\"/\"$jsonrpcP:$jsonrpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      fi
+
+      x_replace "s/\".*:5001$i\"/\"$grpcP:$grpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/\".*:809$i\"/\"$gatewayP:$gatewayP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/\".*:4312$i\"/\"$pprofP:$pprofP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+      x_replace "s/\".*:3001$i\"/\"$monitorP:$monitorP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+
+      x_replace "s/ipv4_address: 172.19.0.$i/ipv4_address: 172.19.0.$i/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
+    done
 
   fi
 }
@@ -337,6 +366,8 @@ function bitxhub_clean() {
 
   bitxhub_down
 
+  cleanBxhInfoFile
+
   print_blue "======> Clean bitxhub"
   if [ "$(docker ps -a | grep -c bitxhub_node)" -ge 1 ]; then
     docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml rm -f
@@ -355,11 +386,9 @@ function bitxhub_clean() {
       echo "remove bitxhub configure $file_name"
     fi
   done
-
-cleanBxhInfoFile
 }
 
-function cleanBxhInfoFile(){
+function cleanBxhInfoFile() {
   BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
   if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.pid ]; then
     rm "${BITXHUB_CONFIG_PATH}"/bitxhub.pid

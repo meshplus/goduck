@@ -45,7 +45,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.0.0-rc1",
+					Value:   "v1.6.0",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -172,7 +172,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.0.0-rc1",
+					Value:   "v1.6.0",
 					Usage:   "pier version",
 				},
 				&cli.StringFlag{
@@ -351,7 +351,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.0.0-rc1",
+					Value:   "v1.6.0",
 					Usage:   "pier version",
 				},
 			},
@@ -414,7 +414,7 @@ func pierRegister(ctx *cli.Context) error {
 
 	if pierUpType == types.TypeBinary {
 		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
-			if err := downloadPierBinary(repoRoot, version); err != nil {
+			if err := downloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
 				return fmt.Errorf("download pier binary error:%w", err)
 			}
 		}
@@ -590,7 +590,7 @@ func downloadPierBinary(repoPath string, version string, system string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Darwin %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Linux %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
 			if err != nil {
 				return fmt.Errorf("rename fabric client error: %s", err)
 			}
@@ -603,7 +603,7 @@ func downloadPierBinary(repoPath string, version string, system string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Darwin %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Linux %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
 			if err != nil {
 				return fmt.Errorf("rename eth client error: %s", err)
 			}
