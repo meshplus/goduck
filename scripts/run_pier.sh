@@ -174,7 +174,7 @@ function generateConfig() {
 
 
     cp "${PIER_PLUGIN_PATH}"/"${PLUGIN}" "${PIERREPO}"/plugins/"${PLUGINNAME}"
-    cd "${PIERREPO}"/ether
+    cd "${PIERREPO}"/ethereum
     if [ ! -f validating.wasm ]; then
       print_blue "===> Downloading validating.wasm"
       wget https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm
@@ -513,6 +513,8 @@ function pier_clean() {
 
   pier_down
 
+  cleanPierInfoFile
+
   print_blue "===> Clean $MODE pier in docker"
   if [ "$(docker ps -a -q -f name=pier-$MODE)" ]; then
     docker rm pier-$MODE
@@ -541,8 +543,6 @@ function pier_clean() {
       fi
     done
   fi
-
-  cleanPierInfoFile
 }
 
 function cleanPierInfoFile(){
@@ -560,9 +560,6 @@ function cleanPierInfoFile(){
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
   fi
-
-
-cleanPierInfoFile
 }
 
 function cleanPierInfoFile(){
