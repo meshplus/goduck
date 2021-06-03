@@ -52,7 +52,7 @@ function docker-compose-up() {
     docker-compose -f ./docker/quick_start/quick_start.yml restart
   fi
 
-  sleep 3
+  sleep 5
   curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}' 2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
   curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json 2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
 }

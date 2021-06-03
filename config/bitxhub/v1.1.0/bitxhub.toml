@@ -6,8 +6,12 @@ solo = {{.Solo}}
   grpc = 6001{{.Id}}
   gateway = 909{{.Id}}
   pprof = 5312{{.Id}}
+  monitor = 4001{{.Id}}
 
 [pprof]
+  enable = true
+
+[monitor]
   enable = true
 
 [gateway]
