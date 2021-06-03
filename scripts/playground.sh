@@ -151,8 +151,7 @@ function bitxhub_docker_cluster() {
   x_replace "s/bitxhub:.*/bitxhub:$VERSION/g" "${CONFIG_PATH}"/docker-compose.yml
   docker-compose -f "${CONFIG_PATH}"/docker-compose.yml up -d
 
-  rm "${CONFIG_PATH}"/bitxhub.version
-  rm "${CONFIG_PATH}"/bitxhub.cid
+  cleanBxhInfoFile
   for ((i = 1; i < N + 1; i = i + 1)); do
     echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     CID=`docker container ls | grep bitxhub_node$i`

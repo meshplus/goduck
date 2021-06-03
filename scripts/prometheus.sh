@@ -35,31 +35,31 @@ function prometheus_up() {
   docker-compose -f $PROM_PATH/docker-prom-compose.yml up -d
   echo "grafana host: $GRAFANA_HOST"
 
-  sleep 2
+  sleep 5
   print_blue "====> Create datasource"
   curl -X POST \
-  http://${GRAFANA_HOST}:3000/api/datasources \
-  -H "Content-Type:application/json" \
-  -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy", "isDefault":true}' \
-  2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
+    http://${GRAFANA_HOST}:3000/api/datasources \
+    -H "Content-Type:application/json" \
+    -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy", "isDefault":true}' \
+    2>${PROM_PATH}/datasources2.log 1>${PROM_PATH}/datasources1.log
 
   print_blue "====> Create host dashboard"
   curl -X POST \
-  http://${GRAFANA_HOST}:3000/api/dashboards/db \
-  -H 'Accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'cache-control: no-cache' \
-  -d @$PROM_PATH/Go_Processes.json \
-  2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
+    http://${GRAFANA_HOST}:3000/api/dashboards/db \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -H 'cache-control: no-cache' \
+    -d @$PROM_PATH/Go_Processes.json \
+    2>${PROM_PATH}/dashboards2.log 1>${PROM_PATH}/dashboards1.log
 
   echo ""
   prometheus_check
   print_green "Start prometheus successful!"
-  print_green 'You can access to "http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes" to get prometheus information.'
+  print_green "You can access to \"http://${GRAFANA_HOST}:3000/d/HaYqdcgGk/go-processes\" to get prometheus information."
 }
 
 function prometheus_check() {
-  if [[ `cat $PROM_PATH/datasources1.log | grep '"message":"Datasource added"'` ]]; then
+  if [[ $(cat $PROM_PATH/datasources1.log | grep '"message":"Datasource added"') ]]; then
     print_green "===> Add Create dashboards to grafana successfully!!!"
   else
     echo ""
@@ -70,7 +70,7 @@ function prometheus_check() {
     exit 0
   fi
 
-  if [[ `cat $PROM_PATH/dashboards1.log | grep '"status":"success"'` ]]; then
+  if [[ $(cat $PROM_PATH/dashboards1.log | grep '"status":"success"') ]]; then
     print_green "===> Create dashboards of grafana successfully!!!"
   else
     echo ""
@@ -91,7 +91,6 @@ function prometheus_restart() {
   prometheus_down
   prometheus_up
 }
-
 
 if [ "$OPT" == "up" ]; then
   prometheus_up
