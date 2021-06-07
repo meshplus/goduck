@@ -235,7 +235,7 @@ function rewriteNodeConfig() {
     account = \" \"
 " ${TARGET}/$2/network.toml
       x_replace "$nodes_start i\\
-  [[noeds]]
+  [[nodes]]
 " ${TARGET}/$2/network.toml
     done
   fi
