@@ -30,16 +30,18 @@ services:
   pier-ethereum-1:
     restart: always
     container_name: pier-ethereum-1
-    command: --add-host host.docker.internal:0.0.0.0
     image: meshplus/pier-ethereum:1.0.0-rc1
+    extra_hosts:
+      - host.docker.internal:0.0.0.0
     depends_on:
       - bitxhub_solo
       - ethereum-1
   pier-ethereum-2:
     restart: always
     container_name: pier-ethereum-2
-    command: --add-host host.docker.internal:0.0.0.0
     image: meshplus/pier-ethereum:1.0.0-rc1
+    extra_hosts:
+      - host.docker.internal:0.0.0.0
     depends_on:
       - bitxhub_solo
       - ethereum-2

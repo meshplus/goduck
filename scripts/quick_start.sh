@@ -34,14 +34,14 @@ function docker-compose-up() {
 #  x_replace "s/ethereum:.*/ethereum:${version%-*}/g" "${quickConfig}"
 
   if [ $SYSTEM == "Darwin" ]; then
-    localIP=`ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\."`
+    IP=`ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\."`
   elif [ $SYSTEM == "Linux" ]; then
-    localIP=`hostname -I | awk '{print $1}'`
+    IP=`ip -4 route list |grep docker0|awk '{print $9}'`
   else
     print_red "Bitxhub does not support the current operating system"
     exit 0
   fi
-  x_replace "s/host.docker.internal:0.0.0.0/host.docker.internal:$localIP/g" $QUICK_PATH/quick_start.yml
+  x_replace "s/host.docker.internal:.*/host.docker.internal:$IP/g" $QUICK_PATH/quick_start.yml
 
   echo ${VERSION} >"${CONFIG_PATH}"/bitxhub.version
   if [ ! "$(docker network ls -q -f name=quick_start_default)" ]; then
