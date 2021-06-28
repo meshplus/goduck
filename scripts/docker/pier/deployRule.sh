@@ -4,7 +4,7 @@ rulePath=$1
 method=$2
 pierVersion=$3
 
-if [[ "$pierVersion" < "v1.8.0" ]]; then
+if [ "$pierVersion" \< "v1.8.0" ]; then
   pier --repo /root/.pier rule deploy --path $1
 else
   command1=$(pier --repo /root/.pier rule deploy --path $1 --method $2 --admin-key /root/.pier/key.json)

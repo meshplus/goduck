@@ -23,7 +23,7 @@ type Release struct {
 }
 
 var bxhConfigMap = map[string]string{
-	"v1.6.0": "v1.6.0",
+	"v1.6.1": "v1.6.1",
 	"v1.7.0": "v1.7.0",
 	"v1.8.0": "v1.8.0",
 }
@@ -39,7 +39,7 @@ func bitxhubCMD() *cli.Command {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "type",
-						Value: types.TypeDocker,
+						Value: types.TypeBinary,
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
@@ -52,7 +52,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.0",
+						Value:   "v1.6.1",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -82,7 +82,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.0",
+						Value:   "v1.6.1",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -195,23 +195,11 @@ func downloadBinary(repoPath string, version string) error {
 				return err
 			}
 		}
-		if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-			err := download.Download(root, types.LinuxWasmLibUrl)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	if runtime.GOOS == "darwin" {
 		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 			url := fmt.Sprintf(types.BitxhubUrlMacOS, version, version)
 			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-		}
-		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
-			err := download.Download(root, types.MacOSWasmLibUrl)
 			if err != nil {
 				return err
 			}
@@ -288,7 +276,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	fmt.Println(binPath)
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.BxhConfigRepo, bxhConfigMap[version], types.BitxhubConfig))
+	args = append(args, filepath.Join(repoPath, types.BxhConfigRepo, bxhConfigMap[version], types.BitxhubConfigScript))
 	args = append(args, "-t", target, "-b", binPath, "-p", configPath)
 	return utils.ExecuteShell(args, repoPath)
 }

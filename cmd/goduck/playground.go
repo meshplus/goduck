@@ -24,7 +24,7 @@ func playgroundCMD() *cli.Command {
 					&cli.StringFlag{
 						Aliases:  []string{"version", "v"},
 						Usage:    "version of the demo interchain system",
-						Value:    "v1.6.0",
+						Value:    "v1.6.1",
 						Required: false,
 					},
 				},

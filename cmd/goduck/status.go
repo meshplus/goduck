@@ -1,13 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -21,18 +16,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var processes = []string{
-	"bitxhub/bitxhub.pid",
-	"ethereum/ethereum.pid",
-	"pier/pier-ethereum.pid",
-	"pier/pier-fabric.pid",
+var processesNames = []string{
+	"bitxhub/node",
+	"pier_ethereum",
+	"pier_fabric",
 }
 
-var containers = []string{
-	"bitxhub/bitxhub.cid",
-	"ethereum/ethereum.cid",
-	"pier/pier-ethereum.cid",
-	"pier/pier-fabric.cid",
+var containerNames = []string{
+	"bitxhub_solo",
+	"bitxhub_node",
+	"pier-ethereum",
+	"pier-fabric",
 }
 
 var modes = []string{
@@ -79,28 +73,16 @@ func showStatus(ctx *cli.Context) error {
 	var table [][]string
 	table = append(table, []string{"Name", "Component", "Mode", "PID/ContanierID", "Status", "Created Time", "Args"})
 
-	for _, pro := range processes {
-		table, err = existProcess(filepath.Join(repoRoot, pro), table)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = sh.Command("/bin/bash", "-c", fmt.Sprintf("%s && %s && %s && %s",
-		fmt.Sprintf("SoloCID=`docker ps -qf \"name=bitxhub_solo\"` && echo ${SoloCID} >%s/bitxhub/bitxhub.cid", repoRoot),
-		fmt.Sprintf("ClusterCID=`docker ps -qf \"name=bitxhub_node\"` && echo ${ClusterCID} >>%s/bitxhub/bitxhub.cid", repoRoot),
-		fmt.Sprintf("PierEthCID=`docker ps -qf \"name=pier-ethereum\"` && echo ${PierEthCID} >%s/pier/pier-ethereum.cid", repoRoot),
-		fmt.Sprintf("PierFabricCID=`docker ps -qf \"name=pier-fabric\"` && echo ${PierFabricCID} >%s/pier/pier-fabric.cid", repoRoot))).Run()
+	table, err = existProcess(table)
 	if err != nil {
-		return fmt.Errorf("echo cid: %s", err)
+		return err
 	}
 
-	for _, con := range containers {
-		table, err = existContainer(filepath.Join(repoRoot, con), table)
-		if err != nil {
-			return err
-		}
+	table, err = existContainer(table)
+	if err != nil {
+		return err
 	}
+
 	PrintTable(table, true)
 	return nil
 }
@@ -188,34 +170,29 @@ func dockerStatus(port string) ([]string, error) {
 	return nil, nil
 }
 
-func existProcess(pidPath string, table [][]string) ([][]string, error) {
-	if !fileutil.Exist(pidPath) {
-		return table, nil
-	}
-	fi, err := os.Open(pidPath)
-	if err != nil {
-		return table, err
-	}
-	defer fi.Close()
-
-	filenameWithSuffix := path.Base(pidPath)
-	fileSuffix := path.Ext(filenameWithSuffix)
-	processName := strings.TrimSuffix(filenameWithSuffix, fileSuffix)
-
-	br := bufio.NewReader(fi)
-	i := 1
-	for {
-		a, _, c := br.ReadLine()
-		if c == io.EOF {
-			break
-		}
-		params, err := getProcessParam(string(a), fmt.Sprintf("%s_%d", processName, i))
+func existProcess(table [][]string) ([][]string, error) {
+	for _, pname := range processesNames {
+		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps | grep %s | grep start | grep -v grep | awk '{print $1}'", pname)).Output()
 		if err != nil {
-			return table, err
+			return nil, fmt.Errorf("get cid error: %w", err)
 		}
-		table = append(table, params)
-		i++
+		pidOutStr := string(pidOut)
+
+		if pidOutStr != "" {
+			processesIDs := strings.Split(pidOutStr, "\n")
+			for i, pid := range processesIDs {
+				if pid != "" {
+					params, err := getProcessParam(pid, fmt.Sprintf("%s_%d", pname, i+1))
+					if err != nil {
+						return table, err
+					}
+
+					table = append(table, params)
+				}
+			}
+		}
 	}
+
 	return table, nil
 
 }
@@ -277,41 +254,34 @@ func getProcessParam(pidStr, pName string) ([]string, error) {
 	}, nil
 }
 
-func existContainer(cidPath string, table [][]string) ([][]string, error) {
-	if !fileutil.Exist(cidPath) {
-		return table, nil
-	}
-	fi, err := os.Open(cidPath)
-	if err != nil {
-		return table, err
-	}
-	defer fi.Close()
-
+func existContainer(table [][]string) ([][]string, error) {
 	ctx := context.Background()
 	mycli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return table, err
 	}
 
-	br := bufio.NewReader(fi)
-	for {
-		a, _, c := br.ReadLine()
-		if c == io.EOF {
-			break
+	for _, cname := range containerNames {
+		cidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("docker ps -qf \"name=%s\"", cname)).Output()
+		if err != nil {
+			return nil, fmt.Errorf("get cid error: %w", err)
 		}
-		if string(a) == "" {
-			continue
-		}
-		as := strings.Split(string(a), " ")
-		for _, cid := range as {
-			params, err := getContainerParam(cid, mycli, ctx)
-			if err != nil {
-				return table, err
-			}
+		cidOutStr := string(cidOut)
+		if cidOutStr != "" {
+			containerIDs := strings.Split(cidOutStr, "\n")
+			for _, cid := range containerIDs {
+				if cid != "" {
+					params, err := getContainerParam(cid, mycli, ctx)
+					if err != nil {
+						return table, err
+					}
 
-			table = append(table, params)
+					table = append(table, params)
+				}
+			}
 		}
 	}
+
 	return table, nil
 }
 

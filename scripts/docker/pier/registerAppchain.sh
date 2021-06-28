@@ -9,14 +9,7 @@ appchainValidators=$6
 appchainConsensus=$7
 pierVersion=$8
 
-if [[ "${pierVersion}" == "v1.6.0" ]]; then
-  pier --repo /root/.pier appchain register \
-    --name $2 \
-    --type $3 \
-    --desc $4 \
-    --version $5 \
-    --validators $6
-elif [[ "${VERSION}" == "v1.7.0" ]]; then
+if [ "${pierVersion}" \< "v1.8.0" ]; then
   pier --repo /root/.pier appchain register \
     --name $2 \
     --type $3 \

@@ -97,6 +97,9 @@ function bitxhub_binary_solo() {
   echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
+  if [ ${VERSION} == "v1.8.0" ]; then
+      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+  fi
 }
 
 function bitxhub_docker_solo() {
@@ -108,6 +111,9 @@ function bitxhub_docker_solo() {
   CID=$(docker container ls | grep bitxhub-solo)
   echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
+  if [ ${VERSION} == "v1.8.0" ]; then
+      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+  fi
 }
 
 function bitxhub_binary_cluster() {
@@ -131,6 +137,9 @@ function bitxhub_binary_cluster() {
     echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   done
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
+  if [ ${VERSION} == "v1.8.0" ]; then
+      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+  fi
 }
 
 function docker_prepare() {
@@ -200,7 +209,7 @@ function docker_prepare() {
         pprofP=${PPROFPS[$i - 1]}
         monitorP=${MONITORPS[$i - 1]}
         i_tmp=$(expr $i + 1)
-        if [ "${VERSION}" == "v1.6.0" ]; then
+        if [ "${VERSION}" == "v1.6.1" ]; then
           echo "
 bitxhub_node$i:
     restart: always
@@ -268,7 +277,7 @@ bitxhub_node$i:
       pprofP=${PPROFPS[$i - 1]}
       monitorP=${MONITORPS[$i - 1]}
 
-      if [ "${VERSION}" != "v1.6.0" ]; then
+      if [ "${VERSION}" != "v1.6.1" ]; then
         x_replace "s/\".*:788$i\"/\"$jsonrpcP:$jsonrpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
       fi
 
@@ -295,6 +304,9 @@ function bitxhub_docker_cluster() {
   done
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
+  if [ ${VERSION} == "v1.8.0" ]; then
+      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+  fi
 }
 
 function bitxhub_down() {

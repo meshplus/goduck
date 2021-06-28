@@ -129,7 +129,7 @@ function generateNodeConfig() {
 
   print_blue "【2】generate key"
   ${BITXHUBBINPATH}/bitxhub key gen --name key --target ${TARGET}/$2/certs
-  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/key.priv --save
+  ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 key convert --priv ${TARGET}/$2/certs/key.priv --save
 
   print_blue "【3】generate configuration files"
   ${BITXHUBBINPATH}/bitxhub --repo ${TARGET}/$2 init
