@@ -64,9 +64,11 @@ function pier_binary_rule_deploy() {
     "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}"
   else
     deployret=$("${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}" --method "${METHOD}" --admin-key "${PIERREPO}/key.json")
-    echo $deployret
-    rule_addr=$(echo $deployret | grep -o "0x.*")
-    "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule bind --addr "${rule_addr}" --method "${METHOD}" --admin-key "${PIERREPO}/key.json"
+    if [[ "${VERSION}" == "v1.8.0" ]]; then
+      echo $deployret
+      rule_addr=$(echo $deployret | grep -o "0x.*")
+      "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule bind --addr "${rule_addr}" --method "${METHOD}" --admin-key "${PIERREPO}/key.json"
+    fi
   fi
 }
 
