@@ -98,7 +98,7 @@ function bitxhub_binary_solo() {
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
-      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+    print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
   fi
 }
 
@@ -112,7 +112,7 @@ function bitxhub_docker_solo() {
   echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
-      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+    print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
   fi
 }
 
@@ -138,7 +138,7 @@ function bitxhub_binary_cluster() {
   done
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
-      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+    print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
   fi
 }
 
@@ -305,25 +305,22 @@ function bitxhub_docker_cluster() {
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
-      print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
+    print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
   fi
 }
 
 function bitxhub_down() {
   set +e
   print_blue "======> Stop bitxhub"
-  TARGET="${CURRENT_PATH}"/bitxhub/.bitxhub
-  if [ -a "${CONFIG_PATH}"/bitxhub.pid ]; then
-    list=$(cat "${CONFIG_PATH}"/bitxhub.pid)
-    for pid in $list; do
-      kill "$pid"
-      if [ $? -eq 0 ]; then
-        echo "node pid:$pid exit"
-      else
-        print_red "program exit fail, try use kill -9 $pid"
-      fi
-    done
-  fi
+  while [ $(ps | grep bitxhub | grep start | grep -v grep | awk '{print $1}' | sed -n "1p") ]; do
+    pid=$(ps | grep bitxhub | grep start | grep -v grep | awk '{print $1}' | sed -n "1p")
+    kill "$pid"
+    if [ $? -eq 0 ]; then
+      echo "node pid:$pid exit"
+    else
+      print_red "program exit fail, try use kill -9 $pid"
+    fi
+  done
 
   if [ "$(docker ps | grep -c bitxhub_node)" -ge 1 ]; then
     docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml stop
@@ -391,10 +388,10 @@ function bitxhub_clean() {
     echo "bitxhub docker solo clean"
   fi
 
-  file_list=$(ls ${TARGET} 2>/dev/null | grep -v '^$')
+  file_list=$(ls ${CONFIG_PATH}/.bitxhub 2>/dev/null | grep -v '^$')
   for file_name in $file_list; do
     if [ "${file_name:0:4}" == "node" ]; then
-      rm -r "${TARGET}"/"$file_name"
+      rm -r ${CONFIG_PATH}/.bitxhub/"$file_name"
       echo "remove bitxhub configure $file_name"
     fi
   done

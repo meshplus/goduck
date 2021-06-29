@@ -199,19 +199,15 @@ function pier_down() {
   set +e
 
   print_blue "======> Kill $APPCHAINTYPE pier in binary"
-  list=$(ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}')
-  if [ $list ]; then
-    for pid in $list; do
-      kill "$pid"
-      if [ $? -eq 0 ]; then
-        echo "pier-$APPCHAINTYPE pid:$pid exit"
-      else
-        print_red "pier exit fail, try use kill -9 $pid"
-      fi
-    done
-  else
-    echo "pier-$APPCHAINTYPE binary is not running"
-  fi
+  while [ $(ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}' | sed -n "1p") ]; do
+    pid=$(ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}' | sed -n "1p")
+    kill "$pid"
+    if [ $? -eq 0 ]; then
+      echo "pier-$APPCHAINTYPE pid:$pid exit"
+    else
+      print_red "pier exit fail, try use kill -9 $pid"
+    fi
+  done
 
   print_blue "======> Kill $APPCHAINTYPE pier in docker"
   list=$(docker ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}')
@@ -224,8 +220,6 @@ function pier_down() {
         print_red "pier exit fail"
       fi
     done
-  else
-    echo "pier-$APPCHAINTYPE docker is not running"
   fi
 }
 
@@ -239,16 +233,12 @@ function pier_clean() {
   print_blue "======> Clean $APPCHAINTYPE pier in docker"
   if [ "$(docker ps -a -q -f name=pier-$APPCHAINTYPE)" ]; then
     docker rm pier-$APPCHAINTYPE
-  else
-    echo "pier-$APPCHAINTYPE container is not existed"
   fi
 
   print_blue "======> Clean $APPCHAINTYPE pier config"
   if [ -d "${PIER_CONFIG_PATH}"/.pier_$APPCHAINTYPE ]; then
     echo "remove $APPCHAINTYPE pier configure"
     rm -r "${PIER_CONFIG_PATH}"/.pier_$APPCHAINTYPE
-  else
-    echo "pier-$APPCHAINTYPE configure is not existed"
   fi
 
   if [[ ! -z $(ps | grep "${PIER_CONFIG_PATH}"/.pier_$APPCHAINTYPE/plugins/appchain_plugin | grep -v "grep") ]]; then
