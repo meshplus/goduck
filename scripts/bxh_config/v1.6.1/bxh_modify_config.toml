@@ -26,12 +26,12 @@
 [bitxhub]
   mode = cluster
   num = 4
+  consensus_type = raft
   rewrite = true
   # absolute path. It doesn't have to be in double quotes.
   agency_priv_path = /Users/fangbaozhu/.goduck/bitxhub/certs/agency.priv
   agency_cert_path = /Users/fangbaozhu/.goduck/bitxhub/certs/agency.cert
   ca_cert_path = /Users/fangbaozhu/.goduck/bitxhub/certs/ca.cert
-  consensus_type = raft
   [[bitxhub.node1]]
     node_host = host1
     grpc_port = 60011

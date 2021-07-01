@@ -192,6 +192,7 @@ function rewriteNodeConfig() {
   fi
   # order
   x_replace "s/plugin.*= .*/plugin = \"plugins\/$CONSENSUSTYPE\.so\"/" ${TARGET}/$2/bitxhub.toml
+
   # genesis
   dider_addr=${addr_array[0]}
   x_replace "s/dider.*= .*/dider = \"$dider_addr\"/" ${TARGET}/$2/bitxhub.toml
@@ -208,6 +209,13 @@ function rewriteNodeConfig() {
   [[genesis.admins]]
 " ${TARGET}/$2/bitxhub.toml
     done
+  fi
+
+  if [ $NUM -lt 4 ]; then
+    NUM_ADD=$(expr $NUM + 1)
+    delete_line_start=$(sed -n "/genesis.admins/=" ${TARGET}/$2/bitxhub.toml | head -n $NUM_ADD | tail -n 1)
+    delete_line_end=$(sed -n "/weight/=" ${TARGET}/$2/bitxhub.toml | head -n 4 | tail -n 1)
+    x_replace "${delete_line_start},${delete_line_end}d" ${TARGET}/$2/bitxhub.toml
   fi
 
   for (( i = 1; i <= ${NUM}; i++ )); do
