@@ -6,6 +6,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
+	libp2pcert "github.com/meshplus/go-libp2p-cert"
+
+	"github.com/meshplus/goduck/cmd/goduck/bitxhub"
+
+	"github.com/meshplus/goduck/cmd/goduck/pier"
+
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -21,6 +28,11 @@ func playgroundCMD() *cli.Command {
 				Name:  "start",
 				Usage: "Start a demo interchain system",
 				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "prometheus",
+						Usage: "Whether to enable Prometheus",
+						Value: "false",
+					},
 					&cli.StringFlag{
 						Aliases:  []string{"version", "v"},
 						Usage:    "version of the demo interchain system",
@@ -50,6 +62,7 @@ func playgroundCMD() *cli.Command {
 }
 
 func dockerUp(ctx *cli.Context) error {
+	prometheus := ctx.String("prometheus")
 	version := ctx.String("version")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
@@ -71,8 +84,31 @@ func dockerUp(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport verison")
 	}
 
+	//get bitxhub addr
+	keyData, err := ioutil.ReadFile(filepath.Join(repoRoot, "docker/quick_start/bitxhubCerts/key.priv"))
+	if err != nil {
+		return fmt.Errorf("read key.priv error:%w", err)
+	}
+	privKey, err := libp2pcert.ParsePrivateKey(keyData, crypto2.Secp256k1)
+	if err != nil {
+		return fmt.Errorf("ParsePrivateKey error:%w", err)
+	}
+	address, err := privKey.PublicKey().Address()
+	if err != nil {
+		return fmt.Errorf("get address error:%w", err)
+	}
+
+	// download
+	if err := pier.DownloadPierPlugin(repoRoot, types.ChainTypeEther, version, types.LinuxSystem); err != nil {
+		return fmt.Errorf("download pier plugin binary error:%w", err)
+	}
+
+	if err := bitxhub.DownloadBitxhubConfig(filepath.Join(repoRoot, fmt.Sprintf(types.QuickStartBitxhubCofigPath, version)), version); err != nil {
+		return fmt.Errorf("download bitxhub.toml error:%w", err)
+	}
+
 	args := []string{types.QuickStartScript, "up"}
-	args = append(args, version)
+	args = append(args, address.String(), prometheus, version)
 	return utils.ExecuteShell(args, repoRoot)
 }
 

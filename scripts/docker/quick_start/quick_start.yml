@@ -3,12 +3,16 @@ services:
   bitxhub_solo:
     restart: always
     container_name: bitxhub_solo
-    image: meshplus/bitxhub-solo:1.0.0-rc1
+    image: meshplus/bitxhub-solo:quickStartVersion
     ports:
       - 60011:60011
       - 9091:9091
       - 53121:53121
       - 40011:40011
+    volumes:
+      - ./bitxhub.toml:/root/.bitxhub/bitxhub.toml
+      - ../bitxhubCerts:/root/.bitxhub/certs
+      - ../../bitxhub:/root/.bitxhub/scripts
   ethereum-1:
     image: meshplus/ethereum:1.0.0
     container_name: ethereum-1
@@ -30,28 +34,50 @@ services:
   pier-ethereum-1:
     restart: always
     container_name: pier-ethereum-1
-    command: --add-host host.docker.internal:0.0.0.0
-    image: meshplus/pier-ethereum:1.0.0-rc1
+    image: meshplus/pier:quickStartVersion
+    extra_hosts:
+      - host.docker.internal:0.0.0.0
     depends_on:
       - bitxhub_solo
       - ethereum-1
+    volumes:
+      - ethereum-path1:/root/.pier/ethereum
+      - plugin-path:/root/.pier/plugins/appchain_plugin
+      - ../../pier:/root/.pier/scripts
+    command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
+      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&
+      sed -i 's/config = \".*\"/config = \"ethereum\"/g' /root/.pier/pier.toml &&
+      sed -i 's/did = \".*\"/did = \"did:bitxhub:appchain1:.\"/g' /root/.pier/pier.toml &&
+      sed -i 's/localhost/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      pier start"
   pier-ethereum-2:
     restart: always
     container_name: pier-ethereum-2
-    command: --add-host host.docker.internal:0.0.0.0
-    image: meshplus/pier-ethereum:1.0.0-rc1
+    image: meshplus/pier:quickStartVersion
+    extra_hosts:
+      - host.docker.internal:0.0.0.0
     depends_on:
       - bitxhub_solo
       - ethereum-2
     volumes:
-      - ./ethereum.toml:/root/.pier/ether/ethereum.toml
-      - ./key.json:/root/.pier/key.json
+      - ethereum-path2:/root/.pier/ethereum
+      - plugin-path:/root/.pier/plugins/appchain_plugin
+      - ../key.json:/root/.pier/key.json
+      - ../../pier:/root/.pier/scripts
+    command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
+      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&
+      sed -i 's/config = \".*\"/config = \"ethereum\"/g' /root/.pier/pier.toml &&
+      sed -i 's/did = \".*\"/did = \"did:bitxhub:appchain2:.\"/g' /root/.pier/pier.toml &&
+      sed -i 's/localhost/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      pier start"
   prom:
     restart: always
     container_name: prometheus
     image: prom/prometheus:v2.0.0
     volumes:
-      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
     ports:
       - 9090:9090

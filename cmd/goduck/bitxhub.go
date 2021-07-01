@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/codeskyblue/go-sh"
+	"github.com/meshplus/goduck/cmd/goduck/bitxhub"
+
 	"github.com/meshplus/bitxhub-kit/fileutil"
-	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -144,7 +144,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	if typ == types.TypeBinary {
-		err := downloadBinary(repoPath, version)
+		err := bitxhub.DownloadBitxhubBinary(repoPath, version)
 		if err != nil {
 			return fmt.Errorf("download binary error:%w", err)
 		}
@@ -176,52 +176,6 @@ func cleanBitXHub(ctx *cli.Context) error {
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "clean")
 	return utils.ExecuteShell(args, repoPath)
-}
-
-func downloadBinary(repoPath string, version string) error {
-	path := fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)
-	root := filepath.Join(repoPath, "bin", path)
-	if !fileutil.Exist(root) {
-		err := os.MkdirAll(root, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	if runtime.GOOS == "linux" {
-		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
-			url := fmt.Sprintf(types.BitxhubUrlLinux, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if runtime.GOOS == "darwin" {
-		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
-			url := fmt.Sprintf(types.BitxhubUrlMacOS, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func extractBinary(repoPath string, version string) error {
-	path := filepath.Join(repoPath, "bin", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version))
-	file := fmt.Sprintf(types.BitxhubTarName, runtime.GOOS, version)
-
-	if !fileutil.Exist(filepath.Join(path, "bitxhub")) {
-		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xzf %s", path, file)).Run()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func generateBitXHubConfig(ctx *cli.Context) error {
@@ -265,11 +219,11 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	}
 
-	err = downloadBinary(repoPath, version)
+	err = bitxhub.DownloadBitxhubBinary(repoPath, version)
 	if err != nil {
 		return fmt.Errorf("download binary error:%w", err)
 	}
-	err = extractBinary(repoPath, version)
+	err = bitxhub.ExtractBitxhubBinary(repoPath, version)
 	if err != nil {
 		return fmt.Errorf("extract binary error:%w", err)
 	}

@@ -77,7 +77,6 @@ function pier_docker_up() {
   cd $PIERREPO/scripts
   chmod +x registerAppchain.sh
   chmod +x deployRule.sh
-  chmod +x getPierId.sh
 
   print_blue "======> Start pier of ${APPCHAINTYPE}-${VERSION} in ${UPTYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${APPCHAINTYPE})" ]; then
