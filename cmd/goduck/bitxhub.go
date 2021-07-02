@@ -218,7 +218,7 @@ func downloadBinary(repoPath string, version string) error {
 			}
 		}
 		if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-			err := download.Download(root, types.LinuxWasmLibUrl)
+			err := download.Download(root, fmt.Sprintf(types.LinuxWasmLibUrl, version))
 			if err != nil {
 				return err
 			}
@@ -233,7 +233,7 @@ func downloadBinary(repoPath string, version string) error {
 			}
 		}
 		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
-			err := download.Download(root, types.MacOSWasmLibUrl)
+			err := download.Download(root, fmt.Sprintf(types.MacOSWasmLibUrl, version))
 			if err != nil {
 				return err
 			}

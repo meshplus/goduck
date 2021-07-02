@@ -30,8 +30,8 @@ const (
 	FabricClientSo = "fabric-client-1.4.so"
 	RuleName       = "validating.wasm"
 
-	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.so"
-	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/master/build/libwasmer.dylib"
+	LinuxWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/%s/build/libwasmer.so"
+	MacOSWasmLibUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/%s/build/libwasmer.dylib"
 
 	BitxhubUrlLinux            = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_linux-amd64_%s.tar.gz"
 	BitxhubUrlMacOS            = "https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_darwin_x86_64_%s.tar.gz"
