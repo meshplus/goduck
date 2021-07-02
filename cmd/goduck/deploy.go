@@ -538,7 +538,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 
 	libPath := filepath.Join(binPath, "libwasmer.so")
 	if !fileutil.Exist(libPath) {
-		err = download.Download(binPath, types.LinuxWasmLibUrl)
+		err = download.Download(binPath, fmt.Sprintf(types.LinuxWasmLibUrl, version))
 		if err != nil {
 			return err
 		}
