@@ -200,7 +200,7 @@ function rewriteNodeConfig() {
     admin_start=`sed -n '/\[\[genesis.admins\]\]/=' ${TARGET}/$2/bitxhub.toml | head -n 1`
     for (( i = 4; i < $NUM; i++ )); do
       x_replace "$admin_start i\\
-    weight = 1
+    weight = 2
 " ${TARGET}/$2/bitxhub.toml
       x_replace "$admin_start i\\
     address = \" \"
@@ -289,4 +289,4 @@ done
 
 InitConfig
 
-# 相比v1.7.0, bitxhub.toml的端口配置中添加了jsonrpc
+# 相比v1.8.0, weight为2

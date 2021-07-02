@@ -9,100 +9,87 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/codeskyblue/go-sh"
+	"github.com/fatih/color"
+
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/pier"
-	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
 )
+
+var pierConfigMap = map[string]string{
+	"v1.6.1": "v1.6.1",
+	"v1.7.0": "v1.6.1",
+	"v1.8.0": "v1.8.0",
+	"v1.9.0": "v1.8.0",
+}
 
 var pierCMD = &cli.Command{
 	Name:  "pier",
 	Usage: "Operation about pier",
 	Subcommands: []*cli.Command{
 		{
+			Name:  "start",
+			Usage: "Start pier with its appchain up",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
+				},
+				&cli.StringFlag{
+					Name:  "pierRepo",
+					Usage: "Specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+				},
+				&cli.StringFlag{
+					Name:  "upType",
+					Usage: "Specify the startup type, one of binary or docker",
+					Value: types.TypeBinary,
+				},
+				&cli.StringFlag{
+					Name:  "configPath",
+					Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/pier_config/$VERSION/pier_modify_config.toml",
+				},
+				&cli.StringFlag{
+					Aliases: []string{"version", "v"},
+					Value:   "v1.6.1",
+					Usage:   "Pier version",
+				},
+			},
+			Action: pierStart,
+		},
+		{
 			Name:  "register",
 			Usage: "Register pier to BitXHub",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "chain",
-					Usage:    "specify appchain type, ethereum(default) or fabric",
-					Required: false,
-					Value:    types.ChainTypeEther,
-				},
-				&cli.StringFlag{
-					Name:     "cryptoPath",
-					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
-					Required: false,
-				},
-				&cli.StringFlag{
-					Name:     "pierType",
-					Usage:    "specify pier up type, docker(default) or binary",
-					Required: false,
-					Value:    types.TypeDocker,
-				},
-				&cli.StringFlag{
-					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
-					Usage:   "pier version",
-				},
-				&cli.StringFlag{
-					Name:  "tls",
-					Value: "false",
-					Usage: "whether to enable TLS, true or false, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "httpPort",
-					Value: "44544",
-					Usage: "peer's http port, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "pprofPort",
-					Value: "44550",
-					Usage: "pier pprof port, only useful for binary",
-				},
-				&cli.StringFlag{
-					Name:  "apiPort",
-					Value: "8080",
-					Usage: "pier api port, only useful for binary",
-				},
-				&cli.StringFlag{
-					Name:  "overwrite",
-					Value: "true",
-					Usage: "whether to overwrite the configuration if the pier configuration file exists locally",
-				},
-				&cli.StringFlag{
-					Name:  "appchainIP",
-					Usage: "IP of appchain which pier connects to (default: \"127.0.0.1\")",
-				},
-				&cli.StringFlag{
-					Name:  "appchainAddr",
-					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\" ",
-				},
-				&cli.StringFlag{
-					Name:  "appchainPorts",
-					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"",
-				},
-				&cli.StringFlag{
-					Name:  "contractAddr",
-					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
-					Usage: "address of the contract on the appChain. Only works on Ethereum",
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
 					Name:  "pierRepo",
-					Usage: "the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+					Usage: "Specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
 				},
 				&cli.StringFlag{
-					Name:     "method",
-					Usage:    "specify appchain method, only useful for v1.8.0+",
-					Value:    "appchain",
-					Required: false,
+					Name:  "upType",
+					Usage: "Specify the startup type, one of binary or docker",
+					Value: types.TypeBinary,
 				},
 				&cli.StringFlag{
-					Name:  "adminKey",
-					Usage: "the path of appchain admin, only useful for v1.8.0+ (default:$repo/pier/.pier_$chainType/admin.json)",
+					Name:  "method",
+					Usage: "Specify appchain method, only useful for v1.8.0+",
+					Value: "appchain",
+				},
+				&cli.StringFlag{
+					Name:  "cid",
+					Usage: "Specify the contanierID of the pier, only useful for docker",
+				},
+				&cli.StringFlag{
+					Aliases: []string{"version", "v"},
+					Value:   "v1.6.1",
+					Usage:   "Pier version",
 				},
 			},
 			Action: pierRegister,
@@ -112,127 +99,48 @@ var pierCMD = &cli.Command{
 			Usage: "deploy rule to BitXHub",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "chain",
-					Usage:    "specify appchain type, ethereum(default) or fabric",
-					Required: false,
-					Value:    types.ChainTypeEther,
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
 					Name:  "pierRepo",
-					Usage: "specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
+					Usage: "Specify the startup path of the pier, only useful for binary (default:$repo/pier/.pier_$chainType)",
+				},
+				&cli.StringFlag{
+					Name:  "cid",
+					Usage: "Specify the contanierID of the pier, only useful for docker",
 				},
 				&cli.StringFlag{
 					Name:  "ruleRepo",
-					Usage: "specify the path of the rule (default:$repo/pier/.pier_$chainType/$chainType/validating.wasm)",
+					Usage: "Specify the path of the rule (default:$repo/pier/.pier_$chainType/$chainType/validating.wasm)",
 				},
 				&cli.StringFlag{
-					Name:     "pierType",
-					Usage:    "specify pier up type, docker(default) or binary",
-					Required: false,
-					Value:    types.TypeBinary,
+					Name:  "upType",
+					Usage: "Specify the startup type, one of binary or docker",
+					Value: types.TypeBinary,
 				},
 				&cli.StringFlag{
-					Name:     "method",
-					Usage:    "specify appchain method, only useful for v1.8.0+",
-					Required: false,
-					Value:    "appchain",
-				},
-				&cli.StringFlag{
-					Name:  "adminKey",
-					Usage: "the path of appchain admin, only useful for v1.8.0+ (default:$repo/pier/.pier_$chainType/admin.json)",
+					Name:  "method",
+					Usage: "Specify appchain method, only useful for v1.8.0+",
+					Value: "appchain",
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.7.0",
-					Usage:   "pier version",
+					Value:   "v1.6.1",
+					Usage:   "Pier version",
 				},
 			},
 			Action: pierRuleDeploy,
-		},
-		{
-			Name:  "start",
-			Usage: "Start pier with its appchain up",
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:     "chain",
-					Usage:    "specify appchain type, ethereum(default) or fabric",
-					Required: false,
-					Value:    types.ChainTypeEther,
-				},
-				&cli.StringFlag{
-					Name:     "cryptoPath",
-					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
-					Required: false,
-				},
-				&cli.StringFlag{
-					Name:     "pierType",
-					Usage:    "specify pier up type, docker(default) or binary",
-					Required: false,
-					Value:    types.TypeDocker,
-				},
-				&cli.StringFlag{
-					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
-					Usage:   "pier version",
-				},
-				&cli.StringFlag{
-					Name:  "tls",
-					Value: "false",
-					Usage: "whether to enable TLS, true or false, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "httpPort",
-					Value: "44544",
-					Usage: "peer's http port, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "pprofPort",
-					Value: "44550",
-					Usage: "pier pprof port, only useful for binary",
-				},
-				&cli.StringFlag{
-					Name:  "apiPort",
-					Value: "8080",
-					Usage: "pier api port, only useful for binary",
-				},
-				&cli.StringFlag{
-					Name:  "overwrite",
-					Value: "true",
-					Usage: "whether to overwrite the configuration if the pier configuration file exists locally",
-				},
-				&cli.StringFlag{
-					Name:  "appchainIP",
-					Usage: "IP of appchain which pier connects to (default: \"127.0.0.1\")",
-				},
-				&cli.StringFlag{
-					Name:  "appchainAddr",
-					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\" ",
-				},
-				&cli.StringFlag{
-					Name:  "appchainPorts",
-					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"",
-				},
-				&cli.StringFlag{
-					Name:  "contractAddr",
-					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
-					Usage: "address of the contract on the appChain. Only works on Ethereum",
-				},
-				&cli.StringFlag{
-					Name:  "pierRepo",
-					Usage: "the startup path of the pier (default:$repo/pier/.pier_$chainType)",
-				},
-			},
-			Action: pierStart,
 		},
 		{
 			Name:  "stop",
 			Usage: "Stop pier with its appchain down",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "chain",
-					Usage:    "specify appchain type, ethereum(default) or fabric",
-					Required: false,
-					Value:    types.ChainTypeEther,
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
 				},
 			},
 			Action: pierStop,
@@ -242,10 +150,9 @@ var pierCMD = &cli.Command{
 			Usage: "Clean pier with its appchain",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "chain",
-					Usage:    "specify appchain type, ethereum(default) or fabric",
-					Required: false,
-					Value:    types.ChainTypeEther,
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
 				},
 			},
 			Action: pierClean,
@@ -255,104 +162,27 @@ var pierCMD = &cli.Command{
 			Usage: "Generate configuration for Pier",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "mode",
-					Value: types.PierModeDirect,
-					Usage: "configuration mode, one of direct, relay or union",
+					Name:  "appchain",
+					Usage: "Specify appchain type, one of ethereum or fabric",
+					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
-					Name:  "type",
+					Name:  "pierRepo",
+					Usage: "Specify the directory to where to put the generated configuration files, default: $repo/pier/.pier_$APPCHAINTYPE/",
+				},
+				&cli.StringFlag{
+					Name:  "configPath",
+					Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/pier_config/$VERSION/pier_modify_config.toml",
+				},
+				&cli.StringFlag{
+					Name:  "upType",
+					Usage: "Specify the startup type, one of binary or docker",
 					Value: types.TypeBinary,
-					Usage: "configuration type, one of binary or docker",
-				},
-				&cli.StringFlag{
-					Name:  "bitxhub",
-					Usage: "BitXHub's address, only useful in relay mode",
-				},
-				&cli.StringSliceFlag{
-					Name:  "validators",
-					Usage: "BitXHub's validators, only useful in relay mode, e.g. --validators \"0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013\" --validators \"0x79a1215469FaB6f9c63c1816b45183AD3624bE34\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\" --validators \"0x97c8B516D19edBf575D72a172Af7F418BE498C37\"",
-				},
-				&cli.StringFlag{
-					Name:  "port",
-					Value: "5001",
-					Usage: "pier's port, only useful in direct mode",
-				},
-				&cli.StringSliceFlag{
-					Name:  "peers",
-					Usage: "peers' address, only useful in direct mode, e.g. --peers \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL\"",
-				},
-				&cli.StringSliceFlag{
-					Name:  "connectors",
-					Usage: "address of peers which need to connect, only useful in union mode for v1.4.0+, e.g. --connectors \"/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL\" --connectors \"/ip4/127.0.0.1/tcp/4002/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5abcD\"",
-				},
-				&cli.StringFlag{
-					Name:  "providers",
-					Value: "1",
-					Usage: "the minimum number of cross-chain gateways that need to be found in a large-scale network, only useful in union mode for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "appchainType",
-					Value: "ethereum",
-					Usage: "appchain type, one of ethereum or fabric",
-				},
-				&cli.StringFlag{
-					Name:  "appchainIP",
-					Usage: "IP of appchain which pier connects to (default: \"127.0.0.1\")",
-				},
-				&cli.StringFlag{
-					Name:  "appchainAddr",
-					Usage: "address of appchain which pier connects to, e.g. ethereum \"ws://127.0.0.1:8546\", fabric \"127.0.0.1:7053\"",
-				},
-				&cli.StringFlag{
-					Name:  "appchainPorts",
-					Usage: "ports of appchain which pier connects to. e.g. ethereum \"8546\", fabric \"7050, 7051, 7053, 8051, 8053, 9051, 9053, 10051, 10053\"(The first one is port of orderer. The remaining, in turn, are the first node's urlSubstitutionExp port and eventUrlSubstitutionExp port, and the second node's urlSubstitutionExp port and eventUrlSubstitutionExp port...)",
-				},
-				&cli.StringFlag{
-					Name:  "contractAddr",
-					Value: "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4",
-					Usage: "address of the contract on the appChain. Only works on Ethereum",
-				},
-				&cli.StringFlag{
-					Name:  "target",
-					Value: ".",
-					Usage: "where to put the generated configuration files",
-				},
-				&cli.StringFlag{
-					Name:  "tls",
-					Value: "false",
-					Usage: "whether to enable TLS, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "httpPort",
-					Value: "44544",
-					Usage: "peer's http port, only useful for v1.4.0+",
-				},
-				&cli.StringFlag{
-					Name:  "pprofPort",
-					Value: "44550",
-					Usage: "peer's pprof port",
-				},
-				&cli.StringFlag{
-					Name:  "apiPort",
-					Value: "8080",
-					Usage: "peer's api port",
-				},
-				&cli.StringFlag{
-					Name:     "cryptoPath",
-					Usage:    "path of crypto-config, only useful for fabric chain, e.g $HOME/crypto-config",
-					Value:    "$HOME/.goduck/crypto-config",
-					Required: false,
-				},
-				&cli.StringFlag{
-					Name:     "method",
-					Usage:    "appchain method, only useful for v1.8.0+, e.g appchain",
-					Value:    "appchain",
-					Required: false,
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.0",
-					Usage:   "pier version",
+					Value:   "v1.6.1",
+					Usage:   "Pier version",
 				},
 			},
 			Action: generatePierConfig,
@@ -360,30 +190,12 @@ var pierCMD = &cli.Command{
 	},
 }
 
-func pierRegister(ctx *cli.Context) error {
-	chainType := ctx.String("chain")
-	cryptoPath := ctx.String("cryptoPath")
-	pierUpType := ctx.String("pierType")
-	version := ctx.String("version")
-	tls := ctx.String("tls")
-	http := ctx.String("httpPort")
-	pport := ctx.String("pprofPort")
-	aport := ctx.String("apiPort")
-	overwrite := ctx.String("overwrite")
-	appchainIP := ctx.String("appchainIP")
-	appchainAddr := ctx.String("appchainAddr")
-	appchainPortsTmp := ctx.String("appchainPorts")
-	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
-	appchainContractAddr := ctx.String("contractAddr")
+func pierStart(ctx *cli.Context) error {
+	chainType := ctx.String("appchain")
 	pierRepo := ctx.String("pierRepo")
-	method := ctx.String("method")
-	adminKey := ctx.String("adminKey")
-
-	appPorts, appchainAddr, appchainIP, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
-	if err != nil {
-		return err
-	}
-	appchainPorts = strings.Join(appPorts, ",")
+	upType := ctx.String("upType")
+	configPath := ctx.String("configPath")
+	version := ctx.String("version")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -408,34 +220,78 @@ func pierRegister(ctx *cli.Context) error {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	}
 
-	if adminKey == "" {
-		adminKey = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/admin.json", chainType))
-	}
-
-	if pierUpType == types.TypeBinary {
-		if !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version))) {
-			if err := downloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
-				return fmt.Errorf("download pier binary error:%w", err)
-			}
+	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
+		if err := os.MkdirAll(pierRepo, 0755); err != nil {
+			return err
 		}
 	}
-	if pierUpType == types.TypeDocker && !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_linux_%s/pier", version))) {
-		if err := downloadPierBinary(repoRoot, version, "linux"); err != nil {
+
+	if configPath == "" {
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
+	}
+
+	return pier.StartPier(repoRoot, chainType, pierRepo, upType, configPath, version)
+}
+
+func pierRegister(ctx *cli.Context) error {
+	chainType := ctx.String("appchain")
+	upType := ctx.String("upType")
+	method := ctx.String("method")
+	pierRepo := ctx.String("pierRepo")
+	version := ctx.String("version")
+	cid := ctx.String("cid")
+
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	if err != nil {
+		return err
+	}
+
+	var release *Release
+	if err := json.Unmarshal(data, &release); err != nil {
+		return err
+	}
+
+	if !AdjustVersion(version, release.Pier) {
+		return fmt.Errorf("unsupport pier verison")
+	}
+
+	if pierRepo == "" {
+		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	}
+
+	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	}
+
+	if upType == types.TypeDocker && cid == "" {
+		return fmt.Errorf("Docker mode needs to specify CID (you can find it by using the conmand `goduck status list`)")
+	}
+
+	if upType == types.TypeBinary {
+		if err := pier.DownloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
 			return fmt.Errorf("download pier binary error:%w", err)
 		}
+		binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)))
+		color.Blue("pier binary path: %s", binPath)
 	}
 
-	return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo, adminKey, method)
+	return pier.RegisterPier(repoRoot, pierRepo, chainType, upType, method, version, cid)
+	//return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo, adminKey, method)
 }
 
 func pierRuleDeploy(ctx *cli.Context) error {
-	chainType := ctx.String("chain")
+	chainType := ctx.String("appchain")
 	pierRepo := ctx.String("pierRepo")
 	ruleRepo := ctx.String("ruleRepo")
-	pierUpType := ctx.String("pierType")
-	version := ctx.String("version")
-	adminKey := ctx.String("adminKey")
+	upType := ctx.String("upType")
 	method := ctx.String("method")
+	version := ctx.String("version")
+	cid := ctx.String("cid")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -458,81 +314,25 @@ func pierRuleDeploy(ctx *cli.Context) error {
 
 	if pierRepo == "" {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	}
+
+	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	}
+
+	if upType == types.TypeDocker && cid == "" {
+		return fmt.Errorf("Docker mode needs to specify CID (you can find it by using the conmand `goduck status list`)")
 	}
 
 	if ruleRepo == "" {
 		ruleRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/%s/validating.wasm", chainType, chainType))
 	}
 
-	if adminKey == "" {
-		adminKey = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/admin.json", chainType))
-	}
-
-	if pierUpType == types.TypeBinary && !fileutil.Exist(pierRepo) {
-		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
-	}
-
-	if pierUpType == types.TypeDocker {
-		return fmt.Errorf("Not supported currently, waiting for subsequent upgrade")
-	}
-
-	return pier.DeployRule(repoRoot, chainType, pierRepo, ruleRepo, pierUpType, adminKey, method, version)
-}
-
-func pierStart(ctx *cli.Context) error {
-	chainType := ctx.String("chain")
-	cryptoPath := ctx.String("cryptoPath")
-	pierUpType := ctx.String("pierType")
-	version := ctx.String("version")
-	tls := ctx.String("tls")
-	http := ctx.String("httpPort")
-	pport := ctx.String("pprofPort")
-	aport := ctx.String("apiPort")
-	overwrite := ctx.String("overwrite")
-	appchainIP := ctx.String("appchainIP")
-	appchainAddr := ctx.String("appchainAddr")
-	appchainPorts := strings.Replace(ctx.String("appchainPorts"), " ", "", -1)
-	appchainContractAddr := ctx.String("contractAddr")
-	pierRepo := ctx.String("pierRepo")
-
-	appPorts, appchainAddr, appchainIP, err := getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
-	if err != nil {
-		return err
-	}
-	appchainPorts = strings.Join(appPorts, ",")
-
-	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
-	if err != nil {
-		return err
-	}
-
-	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
-	if err != nil {
-		return err
-	}
-
-	var release *Release
-	if err := json.Unmarshal(data, &release); err != nil {
-		return err
-	}
-
-	if !AdjustVersion(version, release.Pier) {
-		return fmt.Errorf("unsupport pier verison")
-	}
-
-	if pierRepo == "" {
-		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
-	}
-
-	if pierUpType == types.TypeBinary && !fileutil.Exist(pierRepo) {
-		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
-	}
-
-	return pier.StartPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo)
+	return pier.DeployRule(repoRoot, chainType, pierRepo, ruleRepo, upType, method, version, cid)
 }
 
 func pierStop(ctx *cli.Context) error {
-	chainType := ctx.String("chain")
+	chainType := ctx.String("appchain")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -543,7 +343,7 @@ func pierStop(ctx *cli.Context) error {
 }
 
 func pierClean(ctx *cli.Context) error {
-	chainType := ctx.String("chain")
+	chainType := ctx.String("appchain")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -553,148 +353,22 @@ func pierClean(ctx *cli.Context) error {
 	return pier.CleanPier(repoRoot, chainType)
 }
 
-func downloadPierBinary(repoPath string, version string, system string) error {
-	path := fmt.Sprintf("pier_%s_%s", system, version)
-	root := filepath.Join(repoPath, "bin", path)
-	if !fileutil.Exist(root) {
-		err := os.MkdirAll(root, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	if system == "linux" {
-		if !fileutil.Exist(filepath.Join(root, "pier")) {
-			url := fmt.Sprintf(types.PierUrlLinux, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz -C %s --strip-components 1 && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
-			if err != nil {
-				return fmt.Errorf("extract pier binary: %s", err)
-			}
-
-			if !fileutil.Exist(filepath.Join(root, "libwasmer.so")) {
-				err := download.Download(root, types.LinuxWasmLibUrl)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) && !fileutil.Exist(filepath.Join(root, types.FabricClientSo)) {
-			url := fmt.Sprintf(types.PierFabricClientUrlLinux, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Linux %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
-			if err != nil {
-				return fmt.Errorf("rename fabric client error: %s", err)
-			}
-		}
-
-		if !fileutil.Exist(filepath.Join(root, types.EthClient)) && !fileutil.Exist(filepath.Join(root, types.EthClientSo)) {
-			url := fmt.Sprintf(types.PierEthereumClientUrlLinux, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Linux %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
-			if err != nil {
-				return fmt.Errorf("rename eth client error: %s", err)
-			}
-		}
-	}
-	if system == "darwin" {
-		if !fileutil.Exist(filepath.Join(root, "pier")) {
-			url := fmt.Sprintf(types.PierUrlMacOS, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 1 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
-			if err != nil {
-				return fmt.Errorf("extract pier binary: %s", err)
-			}
-		}
-
-		if !fileutil.Exist(filepath.Join(root, types.FabricClient)) && !fileutil.Exist(filepath.Join(root, types.FabricClientSo)) {
-			url := fmt.Sprintf(types.PierFabricClientUrlMacOS, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv fabric-client-%s-Darwin %s && chmod +x %s", root, version, types.FabricClient, types.FabricClient)).Run()
-			if err != nil {
-				return fmt.Errorf("rename fabric client error: %s", err)
-			}
-		}
-
-		if !fileutil.Exist(filepath.Join(root, types.EthClient)) && !fileutil.Exist(filepath.Join(root, types.EthClientSo)) {
-			url := fmt.Sprintf(types.PierEthereumClientUrlMacOS, version, version)
-			err := download.Download(root, url)
-			if err != nil {
-				return err
-			}
-
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && mv eth-client-%s-Darwin %s && chmod +x %s", root, version, types.EthClient, types.EthClient)).Run()
-			if err != nil {
-				return fmt.Errorf("rename eth client error: %s", err)
-			}
-		}
-
-		if !fileutil.Exist(filepath.Join(root, "libwasmer.dylib")) {
-			err := download.Download(root, types.MacOSWasmLibUrl)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func generatePierConfig(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	mode := ctx.String("mode")
-	startType := ctx.String("type")
-	bitxhub := ctx.String("bitxhub")
-	validators := ctx.StringSlice("validators")
-	port := ctx.String("port")
-	peers := ctx.StringSlice("peers")
-	connectors := ctx.StringSlice("connectors")
-	providers := ctx.String("providers")
-	appchainType := ctx.String("appchainType")
-	appchainIP := ctx.String("appchainIP")
+	chainType := ctx.String("appchain")
 	target := ctx.String("target")
-	tls := ctx.String("tls")
-	httpPort := ctx.String("httpPort")
-	pprofPort := ctx.String("pprofPort")
-	apiPort := ctx.String("apiPort")
-	cryptoPath := ctx.String("cryptoPath")
+	configPath := ctx.String("configPath")
 	version := ctx.String("version")
-	appchainAddr := ctx.String("appchainAddr")
-	appchainPortsTmp := ctx.String("appchainPorts")
-	appchainPorts := strings.Replace(appchainPortsTmp, " ", "", -1)
-	appchainContractAddr := ctx.String("contractAddr")
-	method := ctx.String("method")
+	upType := ctx.String("upType")
 
-	appPorts, appchainAddr, appchainIP, err := getAppchainParams(appchainType, appchainIP, appchainPorts, appchainAddr, cryptoPath)
+	repoPath, err := repo.PathRoot()
 	if err != nil {
-		return err
+		return fmt.Errorf("parse repo path error:%w", err)
+	}
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -704,27 +378,42 @@ func generatePierConfig(ctx *cli.Context) error {
 		return err
 	}
 
-	if !AdjustVersion(version, release.Bitxhub) {
-		return fmt.Errorf("unsupport pier verison")
+	if !AdjustVersion(version, release.Pier) {
+		return fmt.Errorf("unsupport Pier verison")
 	}
 
-	// generate key.json need pier binary file
-	pierP := fmt.Sprintf("bin/pier_%s_%s/pier", runtime.GOOS, version)
-	pierPath := filepath.Join(repoRoot, pierP)
-	if !fileutil.Exist(pierPath) {
-		if err := downloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
-			return fmt.Errorf("download pier binary error:%w", err)
-		}
+	if target == "" {
+		target = filepath.Join(repoPath, fmt.Sprintf("pier/.pier_%s", chainType))
 	}
-	if startType == types.TypeDocker && !fileutil.Exist(filepath.Join(repoRoot, fmt.Sprintf("bin/pier_linux_%s/pier", version))) {
-		if err := downloadPierBinary(repoRoot, version, "linux"); err != nil {
-			return fmt.Errorf("download pier binary error:%w", err)
+
+	if _, err := os.Stat(target); os.IsNotExist(err) {
+		if err := os.MkdirAll(target, 0755); err != nil {
+			return err
 		}
 	}
 
-	return InitPierConfig(mode, startType, bitxhub, validators, port, peers, connectors, providers, appchainType, appchainIP, appchainAddr, appPorts, appchainContractAddr, target, tls, httpPort, pprofPort, apiPort, version, pierPath, cryptoPath, method)
+	if configPath == "" {
+		configPath = filepath.Join(repoPath, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
+	}
+
+	if err := pier.DownloadPierBinary(repoPath, version, runtime.GOOS); err != nil {
+		return fmt.Errorf("download pier binary error:%w", err)
+	}
+	pluginSys := runtime.GOOS
+	if upType == types.TypeDocker {
+		pluginSys = types.LinuxSystem
+	}
+	if err := pier.DownloadPierPlugin(repoPath, chainType, version, pluginSys); err != nil {
+		return fmt.Errorf("download pier binary error:%w", err)
+	}
+	binPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)))
+	pluginPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", pluginSys, version)))
+	color.Blue("pier binary path: %s", binPath)
+
+	return pier.GeneratePier(filepath.Join(repoPath, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoPath, target, configPath, chainType, binPath, pluginPath)
 }
 
+// TODO: delete
 func getAppchainParams(chainType, appchainIP, appchainPorts, appchainAddr, cryptoPath string) ([]string, string, string, error) {
 	var appPorts []string
 	switch chainType {
