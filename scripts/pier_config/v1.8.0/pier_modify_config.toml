@@ -31,14 +31,14 @@
     providers = 1
 
 [appchain]
-  appchainConfigPath = /Users/fangbaozhu/.goduck/pier/ethereum
+  appchainConfigPath = REPO/pier/ethereum
   [appchain.ethereum]
     # address of the contract on the appChain
     contractAddr = 0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4
     ethAddr = ws://127.0.0.1:8546
   [appchain.fabric]
     # path of crypto-config
-    cryptoPath = /Users/fangbaozhu/.goduck/crypto-config
+    cryptoPath = REPO/crypto-config
     # binary local: 0.0.0.0
     # docker local: host.docker.internal
     fabricIP = 0.0.0.0
