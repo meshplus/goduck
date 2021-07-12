@@ -6,11 +6,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 
+	"github.com/codeskyblue/go-sh"
 	"github.com/coreos/etcd/pkg/fileutil"
+	"github.com/fatih/color"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -66,6 +70,61 @@ func Initialize(ctx *cli.Context) error {
 
 	if err := configBox.Walk(walkFn); err != nil {
 		return err
+	}
+
+	if err := ModifyConfigInit(repoRoot); err != nil {
+		return err
+	}
+
+	color.Green("Init goduck successfully in %s!\n", repoRoot)
+	return nil
+}
+
+func ModifyConfigInit(repo string) error {
+	var repoTmp string
+	for _, c := range repo {
+		if c == '/' {
+			cm := "\\/"
+			repoTmp += cm
+		} else {
+			repoTmp += string(c)
+		}
+	}
+
+	if runtime.GOOS == types.DarwinSystem {
+		for _, v := range bxhConfigMap {
+			bxhConfigPath := filepath.Join(repo, types.BxhConfigRepo, v, types.BxhModifyConfig)
+			err := sh.Command("/bin/bash", "-c", fmt.Sprintf("sed -i '' \"s/REPO/%s/g\" %s", repoTmp, bxhConfigPath)).Run()
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, v := range pierConfigMap {
+			pierConfigPath := filepath.Join(repo, types.PierConfigRepo, v, types.PierModifyConfig)
+			err := sh.Command("/bin/bash", "-c", fmt.Sprintf("sed -i '' \"s/REPO/%s/g\" %s", repoTmp, pierConfigPath)).Run()
+			if err != nil {
+				return err
+			}
+		}
+	} else if runtime.GOOS == types.LinuxSystem {
+		for _, v := range bxhConfigMap {
+			bxhConfigPath := filepath.Join(repo, types.BxhConfigRepo, v, types.BxhModifyConfig)
+			err := sh.Command("/bin/bash", "-c", fmt.Sprintf("sed -i \"s/REPO/%s/g\" %s", repoTmp, bxhConfigPath)).Run()
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, v := range pierConfigMap {
+			pierConfigPath := filepath.Join(repo, types.PierConfigRepo, v, types.PierModifyConfig)
+			err := sh.Command("/bin/bash", "-c", fmt.Sprintf("sed -i \"s/REPO/%s/g\" %s", repoTmp, pierConfigPath)).Run()
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		color.Red("Unsupported system!")
 	}
 
 	return nil
