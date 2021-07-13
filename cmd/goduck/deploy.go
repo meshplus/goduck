@@ -632,7 +632,7 @@ func pierPrepare(repoRoot, version, target, who, mode, bitxhub, chain, ip string
 			return fmt.Errorf("get pier id: %s", err)
 		}
 		pid := strings.Replace(string(out), "\n", "", -1)
-		err = sh.Command("ssh", who, fmt.Sprintf("sed -i \"s#\"/ip4/0.0.0.0/tcp/%d/p2p/\"#\"/ip4/0.0.0.0/tcp/%d/p2p/%s\"#g\" $HOME/.pier_%s/%s", port, port, pid, chain, repo.PierConfigName)).Run()
+		err = sh.Command("ssh", who, fmt.Sprintf("sed -i \"s#\"/ip4/0.0.0.0/tcp/%s/p2p/\"#\"/ip4/0.0.0.0/tcp/%s/p2p/%s\"#g\" $HOME/.pier_%s/%s", port, port, pid, chain, repo.PierConfigName)).Run()
 		if err != nil {
 			return err
 		}
