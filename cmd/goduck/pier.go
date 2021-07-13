@@ -230,6 +230,17 @@ func pierStart(ctx *cli.Context) error {
 		configPath = filepath.Join(repoRoot, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
 	}
 
+	if err := pier.DownloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
+		return fmt.Errorf("download pier binary error:%w", err)
+	}
+	pluginSys := runtime.GOOS
+	if upType == types.TypeDocker {
+		pluginSys = types.LinuxSystem
+	}
+	if err := pier.DownloadPierPlugin(repoRoot, chainType, version, pluginSys); err != nil {
+		return fmt.Errorf("download pier binary error:%w", err)
+	}
+
 	return pier.StartPier(repoRoot, chainType, pierRepo, upType, configPath, version)
 }
 
