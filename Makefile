@@ -42,11 +42,12 @@ test-coverage:
 
 ## make install: Go install the project
 install:
+	cd cmd/goduck && packr
 	$(GO) install -ldflags '${GO_LDFLAGS}' ./cmd/${APP_NAME}
 	@printf "${GREEN}Build ${APP_NAME} successfully!${NC}\n"
 
 build:
-	cd internal/repo && packr
+	cd cmd/goduck && packr
 	@mkdir -p bin
 	$(GO) build -ldflags '${GO_LDFLAGS}' ./cmd/${APP_NAME}
 	@mv ./${APP_NAME} bin
