@@ -53,9 +53,9 @@ function interchainTransfer() {
   goduck ether contract invoke \
   --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
   --ether_addr http://localhost:8545 \
-  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x9f5cf4b97965ababe19fcf3f1f12bb794a7dc279,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
-  sleep 2
+  sleep 4
   print_blue "3. Query accounts after the first-round invocation"
   queryAccount
 
@@ -63,9 +63,9 @@ function interchainTransfer() {
   goduck ether contract invoke \
   --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
   --ether_addr http://localhost:8547 \
-  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xb132702a7500507411f3bd61ab33d9d350d41a37,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x570C2E736B28F04d621eF108C1D2f3DE06c71208,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
-  sleep 2
+  sleep 4
   print_blue "5. Query accounts after the second-round invocation"
   queryAccount
 }

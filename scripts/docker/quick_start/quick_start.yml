@@ -14,7 +14,7 @@ services:
       - ../bitxhubCerts:/root/.bitxhub/certs
       - ../../bitxhub:/root/.bitxhub/scripts
   ethereum-1:
-    image: meshplus/ethereum:1.0.0
+    image: meshplus/ethereum:1.2.0
     container_name: ethereum-1
     command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
     restart: always
@@ -23,7 +23,7 @@ services:
       - 8545:8545
       - 30303:30303
   ethereum-2:
-    image: meshplus/ethereum:1.0.0
+    image: meshplus/ethereum:1.2.0
     container_name: ethereum-2
     command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
     restart: always
