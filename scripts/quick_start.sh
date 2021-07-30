@@ -211,7 +211,10 @@ function docker-compose-down() {
   print_blue "======> Clean up the demo service...."
   cleanPierInfoFile
   cleanBxhInfoFile
-  docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml down
+
+  if [ -e "${QUICK_PATH_TMP}"/quick_start.yml ]; then
+    docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml down
+  fi
 }
 
 function cleanPierInfoFile() {
