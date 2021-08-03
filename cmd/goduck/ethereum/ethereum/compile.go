@@ -14,7 +14,7 @@ type CompileResult struct {
 }
 
 func compileSolidityCode(codePath string) (*CompileResult, error) {
-	contracts, err := compiler.CompileSolidity("solidity/solc-macos", codePath)
+	contracts, err := compiler.CompileSolidity("solc", codePath)
 	if err != nil {
 		return nil, fmt.Errorf("compile contract: %w", err)
 	}
