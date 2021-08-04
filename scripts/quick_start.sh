@@ -183,7 +183,9 @@ function docker-compose-up() {
     error=false
     docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}" || error=true
   done
-  if [ "${VERSION}" \> "v1.7.0" ]; then
+  version_compare ${VERSION} "v1.7.0"
+  if [[ $versionComPareRes -gt 0 ]]; then
+#  if [ "${VERSION}" \> "v1.7.0" ]; then
     sleep 1
     proposal12ID="${pier1ID}-1"
     docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason || error=true
