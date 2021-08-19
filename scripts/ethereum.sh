@@ -50,7 +50,7 @@ function dockerUp() {
       print_blue "start a new ethereum-node container"
       docker run -d --name ethereum-node \
         -p 8545:8545 -p 8546:8546 -p 30303:30303 \
-        meshplus/ethereum:1.0.0 \
+        meshplus/ethereum:$VERSION \
         --datadir /root/datadir --dev --ws --rpc \
         --rpccorsdomain https://remix.ethereum.org \
         --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" \
@@ -85,6 +85,7 @@ function etherDown() {
 }
 
 MODE=$1
+VERSION=$2
 
 if [ "$MODE" == "binary" ]; then
   binaryUp

@@ -2,6 +2,7 @@
 
 set -e
 source x.sh
+source compare.sh
 
 CURRENT_PATH=$(pwd)
 OPT=$1
@@ -122,9 +123,14 @@ function bitxhub_binary_cluster() {
   cd "${TARGET}"
   print_blue "======> Start bitxhub cluster"
   for ((i = 1; i < $NUM + 1; i = i + 1)); do
-    if [ ! -d node${i}/plugins ]; then
-      mkdir node${i}/plugins
-      cp -r "${BXH_PATH}"/raft.so node${i}/plugins
+    version1=$VERSION
+    version2=v1.11.0
+    version_compare
+    if [[ $versionComPareRes -lt 0 ]]; then
+      if [ ! -d node${i}/plugins ]; then
+        mkdir node${i}/plugins
+        cp -r "${BXH_PATH}"/raft.so node${i}/plugins
+      fi
     fi
     echo "Start bitxhub node${i}"
     nohup "${BXH_PATH}"/bitxhub --repo="${TARGET}"/node${i} start >/dev/null 2>&1 &
@@ -209,7 +215,9 @@ function docker_prepare() {
         pprofP=${PPROFPS[$i - 1]}
         monitorP=${MONITORPS[$i - 1]}
         i_tmp=$(expr $i + 1)
-        version_compare ${VERSION} "v1.8.0"
+        version1=${VERSION}
+        version2="v1.8.0"
+        version_compare
         if [[ $versionComPareRes -lt 0 ]]; then
 #        if [ "${VERSION}" \< "v1.8.0" ]; then
           echo "

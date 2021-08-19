@@ -24,6 +24,7 @@ var pierConfigMap = map[string]string{
 	"v1.8.0":  "v1.8.0",
 	"v1.9.0":  "v1.8.0",
 	"v1.10.0": "v1.8.0",
+	"v1.11.0": "v1.11.0",
 }
 
 var pierCMD = &cli.Command{
@@ -421,8 +422,12 @@ func generatePierConfig(ctx *cli.Context) error {
 	binPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)))
 	pluginPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", pluginSys, version)))
 	color.Blue("pier binary path: %s", binPath)
+	appchainConfigPath := filepath.Join(repoPath, fmt.Sprintf("pier/%s", chainType))
+	if chainType == types.ChainTypeEther {
+		appchainConfigPath = filepath.Join(repoPath, fmt.Sprintf("pier/%s/%s", chainType, ethConfigMap[version]))
+	}
 
-	return pier.GeneratePier(filepath.Join(repoPath, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoPath, target, configPath, chainType, binPath, pluginPath)
+	return pier.GeneratePier(filepath.Join(repoPath, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoPath, target, configPath, chainType, binPath, pluginPath, appchainConfigPath)
 }
 
 // TODO: delete

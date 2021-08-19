@@ -5,7 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/meshplus/goduck/cmd/goduck/ethereum/ethereum"
+	ethereum2 "github.com/meshplus/goduck/cmd/goduck/ethereum"
+
 	"github.com/urfave/cli/v2"
 )
 
@@ -28,17 +29,17 @@ func main() {
 	}
 
 	app.Commands = []*cli.Command{
-		deployCMD(),
-		getVersionCMD(),
 		GetInitCMD(),
-		GetStatusCMD(),
-		ethereum.GetEtherCMD(),
-		keyCMD(),
+		playgroundCMD(),
 		bitxhubCMD(),
 		pierCMD,
-		playgroundCMD(),
+		ethereum2.GetEtherCMD(),
+		deployCMD(),
+		GetStatusCMD(),
 		infoCMD(),
+		keyCMD(),
 		prometheusCMD(),
+		getVersionCMD(),
 	}
 
 	err := app.Run(os.Args)

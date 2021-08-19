@@ -5,8 +5,8 @@ import (
 	"github.com/meshplus/goduck/internal/utils"
 )
 
-func GeneratePier(scriptPath, repoRoot, pierRepo, configPath, appchainType, pierBinPath, pluginPath string) error {
-	args := []string{scriptPath, "-a", appchainType, "-p", pierRepo, "-c", configPath, "-b", pierBinPath, "-g", pluginPath}
+func GeneratePier(scriptPath, repoRoot, pierRepo, configPath, appchainType, pierBinPath, pluginPath, appchainConfigPath string) error {
+	args := []string{scriptPath, "-a", appchainType, "-p", pierRepo, "-c", configPath, "-b", pierBinPath, "-g", pluginPath, "-f", appchainConfigPath}
 	return utils.ExecuteShell(args, repoRoot)
 }
 
