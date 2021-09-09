@@ -3,7 +3,7 @@ pragma solidity >=0.5.6;
 contract Transfer {
     mapping(string => uint64) accountM; // map for accounts
     // change the address of Broker accordingly
-    address BrokerAddr = 0x97135d4d2578dd2347FF5382db77553bE50bff3f;
+    address BrokerAddr = 0x30c5D3aeb4681af4D13384DBc2a717C51cb1cc11;
     Broker broker = Broker(BrokerAddr);
 
     // AccessControl

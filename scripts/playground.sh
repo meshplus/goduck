@@ -209,7 +209,9 @@ function docker_prepare() {
         pprofP=${PPROFPS[$i - 1]}
         monitorP=${MONITORPS[$i - 1]}
         i_tmp=$(expr $i + 1)
-        if [ "${VERSION}" \< "v1.8.0" ]; then
+        version_compare ${VERSION} "v1.8.0"
+        if [[ $versionComPareRes -lt 0 ]]; then
+#        if [ "${VERSION}" \< "v1.8.0" ]; then
           echo "
 bitxhub_node$i:
     restart: always

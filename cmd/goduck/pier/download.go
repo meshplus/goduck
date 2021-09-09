@@ -29,7 +29,7 @@ func DownloadPierBinary(repoPath string, version string, system string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz -C %s --strip-components 1 && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_linux-amd64_%s.tar.gz  && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s", root, version, root, root)).Run()
 			if err != nil {
 				return fmt.Errorf("extract pier binary: %s", err)
 			}
@@ -41,7 +41,7 @@ func DownloadPierBinary(repoPath string, version string, system string) error {
 				return err
 			}
 
-			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz -C %s --strip-components 1 && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root, root)).Run()
+			err = sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xf pier_darwin_x86_64_%s.tar.gz  && install_name_tool -change @rpath/libwasmer.dylib %s/libwasmer.dylib %s/pier", root, version, root, root)).Run()
 			if err != nil {
 				return fmt.Errorf("extract pier binary: %s", err)
 			}

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/pier"
 	"github.com/meshplus/goduck/internal/repo"
@@ -19,10 +18,12 @@ import (
 )
 
 var pierConfigMap = map[string]string{
-	"v1.6.1": "v1.6.1",
-	"v1.7.0": "v1.6.1",
-	"v1.8.0": "v1.8.0",
-	"v1.9.0": "v1.8.0",
+	"v1.6.1":  "v1.6.1",
+	"v1.6.2":  "v1.6.1",
+	"v1.7.0":  "v1.6.1",
+	"v1.8.0":  "v1.8.0",
+	"v1.9.0":  "v1.8.0",
+	"v1.10.0": "v1.8.0",
 }
 
 var pierCMD = &cli.Command{
@@ -53,7 +54,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.1",
+					Value:   "v1.6.2",
 					Usage:   "Pier version",
 				},
 			},
@@ -88,7 +89,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.1",
+					Value:   "v1.6.2",
 					Usage:   "Pier version",
 				},
 			},
@@ -127,7 +128,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.1",
+					Value:   "v1.6.2",
 					Usage:   "Pier version",
 				},
 			},
@@ -181,7 +182,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v1.6.1",
+					Value:   "v1.6.2",
 					Usage:   "Pier version",
 				},
 			},
