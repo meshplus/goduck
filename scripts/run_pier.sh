@@ -1,6 +1,7 @@
 set -e
 
 source x.sh
+source compare.sh
 
 CURRENT_PATH=$(pwd)
 SYSTEM=$(uname -s)
@@ -24,38 +25,10 @@ function printHelp() {
   echo "  run_pier.sh -h (print this message)"
 }
 
-# 1: $1>$2
-# 0: $1=$2
-# -1: $1<$2
-function version_compare() {
-  version1=$1
-  version2=$2
-
-  OLD_IFS="$IFS"
-  IFS="."
-  versionArr1=($version1)
-  versionArr2=($version2)
-  IFS="$OLD_IFS"
-
-  for ((i = 0; i < 3; i++)); do
-    if [ ${#versionArr1[i]} \> ${#versionArr2[i]} ]; then
-      versionComPareRes=1
-    elif [ ${#versionArr1[i]} \< ${#versionArr2[i]} ]; then
-      versionComPareRes=-1
-    else
-      if [ ${versionArr1[i]} \> ${versionArr2[i]} ]; then
-        versionComPareRes=1
-      elif [ ${versionArr1[i]} \< ${versionArr2[i]} ]; then
-        versionComPareRes=-1
-      else
-        versionComPareRes=0
-      fi
-    fi
-  done
-}
-
 function appchain_register_binary() {
-  version_compare ${VERSION} "v1.8.0"
+  version1=${VERSION}
+  version2="v1.8.0"
+  version_compare
   if [[ $versionComPareRes -lt 0 ]]; then
     "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain register \
       --name $1 \
@@ -91,7 +64,9 @@ function pier_binary_rule_deploy() {
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PIER_BIN_PATH}
   fi
 
-  version_compare ${VERSION} "v1.8.0"
+  version1=${VERSION}
+  version2="v1.8.0"
+  version_compare
   if [[ $versionComPareRes -lt 0 ]]; then
 #  if [[ "${VERSION}" < "v1.8.0" ]]; then
     "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}"

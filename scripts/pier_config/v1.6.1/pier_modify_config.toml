@@ -30,7 +30,6 @@
     providers = 1
 
 [appchain]
-  appchainConfigPath = REPO/pier/ethereum
   [appchain.ethereum]
     # address of the contract on the appChain
     contractAddr = 0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4

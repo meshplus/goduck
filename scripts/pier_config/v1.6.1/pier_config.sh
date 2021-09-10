@@ -73,9 +73,6 @@ function readConfig() {
     ;;
   esac
 
-#  APPCHAINTYPE=`sed '/^.*appchainType/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
-  APPCHAINCONFIGPATH=`sed '/^.*appchainConfigPath/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
-
   case $APPCHAINTYPE in
   ethereum)
     CONTRACTADDR=`sed '/^.*contractAddr/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
@@ -132,7 +129,7 @@ function generatePierConfig() {
   else
     print_red "Not supported mode"
   fi
-  cp -r ${APPCHAINCONFIGPATH} ${TARGET}/
+  cp -r ${APPCHAINCONFIGPATH} ${TARGET}/${APPCHAINTYPE}
 }
 
 function rewritePierConfig() {
@@ -194,7 +191,7 @@ function rewritePierConfig() {
 
 # parses opts
 # PIERBINPATH: PIER binary and plug-in binary are in the directory
-while getopts "h?p:b:c:a:g:" opt; do
+while getopts "h?p:b:c:a:g:f:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -214,6 +211,9 @@ while getopts "h?p:b:c:a:g:" opt; do
     ;;
   g)
     PLUGINPATH=$OPTARG
+    ;;
+  f)
+    APPCHAINCONFIGPATH=$OPTARG
     ;;
   esac
 done

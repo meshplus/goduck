@@ -7,6 +7,7 @@ MODE=$1
 BITXHUB_ADDR=$2
 PROMETHEUS=$3
 VERSION=$4
+ETHVERSION=$5
 
 CURRENT_PATH=$(pwd)
 RED='\033[0;31m'
@@ -71,6 +72,8 @@ function docker-compose-up() {
   # rewrite quick_start.yml
   cp $QUICK_PATH/quick_start.yml $QUICK_PATH_TMP/quick_start.yml
   x_replace "s/quickStartVersion/${VERSION}/g" "${QUICK_PATH_TMP}"/quick_start.yml
+
+  x_replace "s/image: meshplus\/ethereum:.*/image: meshplus\/ethereum:${ETHVERSION}/g" "${QUICK_PATH_TMP}"/quick_start.yml
 
   if [ $SYSTEM == "Darwin" ]; then
     IP=$(ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\.")
@@ -183,7 +186,9 @@ function docker-compose-up() {
     error=false
     docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}" || error=true
   done
-  version_compare ${VERSION} "v1.7.0"
+  version1=${VERSION}
+  version2="v1.7.0"
+  version_compare
   if [[ $versionComPareRes -gt 0 ]]; then
 #  if [ "${VERSION}" \> "v1.7.0" ]; then
     sleep 1
