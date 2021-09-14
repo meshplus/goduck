@@ -64,6 +64,7 @@ function dockerUp() {
 
 function etherDown() {
   set +e
+  print_blue "===> stop ethereum in binary..."
   if [ -a "${WORKDIR}"/ethereum.pid ]; then
     list=$(cat "${WORKDIR}"/ethereum.pid)
     for pid in $list; do
@@ -77,10 +78,32 @@ function etherDown() {
     rm "${WORKDIR}"/ethereum.pid
   fi
 
+  print_blue "===> stop ethereum in docker..."
   if [ "$(docker container ls | grep -c ethereum-node)" -ge 1 ]; then
-    print_blue "===> stop ethereum-node..."
-    docker rm -f ethereum-node
+    docker kill ethereum-node
     echo "ethereum docker container stopped"
+  fi
+}
+
+function etherClean() {
+  set +e
+  etherDown
+
+  print_blue "===> clean ethereum in binary..."
+  if [[ ! -z $(ps | grep $HOME/.goduck/ethereum/datadir | grep -v "grep") ]]; then
+    ethPid=$(ps | grep $HOME/.goduck/ethereum/datadir | grep -v "grep")
+    kill $ethPid
+    if [ $? -eq 0 ]; then
+      echo "ethereum pid:$ethPid exit"
+    else
+      print_red "ethereum exit fail, try use kill -9 $ethPid"
+    fi
+  fi
+
+  print_blue "===> clean ethereum in docker..."
+  if [ "$(docker container ls -a | grep -c ethereum-node)" -ge 1 ]; then
+    docker rm ethereum-node
+    echo "ethereum docker container cleaned"
   fi
 }
 
@@ -93,6 +116,8 @@ elif [ "$MODE" == "docker" ]; then
   dockerUp
 elif [ "$MODE" == "down" ]; then
   etherDown
+elif [ "$MODE" == "clean" ]; then
+  etherClean
 else
   printHelp
   exit 1

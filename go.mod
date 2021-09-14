@@ -16,7 +16,7 @@ require (
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.9.18
+	github.com/ethereum/go-ethereum v1.10.6
 	github.com/fatih/color v1.7.0
 	github.com/gobuffalo/packd v1.0.0
 	github.com/gobuffalo/packr v1.30.1
@@ -26,15 +26,18 @@ require (
 	github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
 	github.com/meshplus/bitxhub-kit v1.1.2-0.20210112075018-319e668d6359
 	github.com/meshplus/go-libp2p-cert v0.0.0-20210125114242-7d9ed2eaaccd
+	github.com/meshplus/gosdk v0.1.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pelletier/go-toml v1.8.0
 	github.com/pkg/errors v0.9.1
-	github.com/shirou/gopsutil v2.20.5+incompatible
+	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/viper v1.6.1
-	github.com/stretchr/testify v1.5.1
-	github.com/urfave/cli/v2 v2.2.0
+	github.com/stretchr/testify v1.7.0
+	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
+	github.com/urfave/cli/v2 v2.3.0
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
 	gopkg.in/cheggaaa/pb.v2 v2.0.7 // indirect
 	gopkg.in/fatih/color.v1 v1.7.0 // indirect

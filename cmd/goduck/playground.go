@@ -19,16 +19,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var ethConfigMap = map[string]string{
-	"v1.6.1":  "1.2.0",
-	"v1.6.2":  "1.2.0",
-	"v1.7.0":  "1.2.0",
-	"v1.8.0":  "1.2.0",
-	"v1.9.0":  "1.2.0",
-	"v1.10.0": "1.2.0",
-	"v1.11.0": "1.3.0",
-}
-
 func playgroundCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "playground",
@@ -117,7 +107,7 @@ func dockerUp(ctx *cli.Context) error {
 		return fmt.Errorf("download bitxhub.toml error:%w", err)
 	}
 
-	ethVersion := ethConfigMap[version]
+	ethVersion := EthConfigMap[version]
 	args := []string{types.QuickStartScript, "up"}
 	args = append(args, address.String(), prometheus, version, ethVersion)
 	return utils.ExecuteShell(args, repoRoot)
