@@ -60,5 +60,8 @@ const (
 	FabricRuleUrl   = "https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm"
 	EthereumRuleUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm"
 
+	FabricContractUrl   = "https://raw.githubusercontent.com/meshplus/pier-client-fabric/%s/example/contracts.zip"
+	EthereumContractUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/%s/example/%s.sol"
+
 	BitxhubConfigUrl = "https://raw.githubusercontent.com/meshplus/bitxhub/%s/config/bitxhub.toml"
 )

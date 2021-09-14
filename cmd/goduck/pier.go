@@ -424,7 +424,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	color.Blue("pier binary path: %s", binPath)
 	appchainConfigPath := filepath.Join(repoPath, fmt.Sprintf("pier/%s", chainType))
 	if chainType == types.ChainTypeEther {
-		appchainConfigPath = filepath.Join(repoPath, fmt.Sprintf("pier/%s/%s", chainType, ethConfigMap[version]))
+		appchainConfigPath = filepath.Join(repoPath, fmt.Sprintf("pier/%s/%s", chainType, EthConfigMap[version]))
 	}
 
 	return pier.GeneratePier(filepath.Join(repoPath, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoPath, target, configPath, chainType, binPath, pluginPath, appchainConfigPath)

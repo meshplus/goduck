@@ -1,17 +1,28 @@
-package ethereum
+package main
 
 import (
 	"fmt"
 	"path/filepath"
 
 	"github.com/meshplus/bitxhub-kit/fileutil"
+	"github.com/meshplus/goduck/cmd/goduck/ethereum"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
-func GetEtherCMD() *cli.Command {
+var EthConfigMap = map[string]string{
+	"v1.6.1":  "1.2.0",
+	"v1.6.2":  "1.2.0",
+	"v1.7.0":  "1.2.0",
+	"v1.8.0":  "1.2.0",
+	"v1.9.0":  "1.2.0",
+	"v1.10.0": "1.2.0",
+	"v1.11.0": "1.3.0",
+}
+
+func etherCMD() *cli.Command {
 	return &cli.Command{
 		Name:  "ether",
 		Usage: "Operation about ethereum chain",
@@ -26,6 +37,12 @@ func GetEtherCMD() *cli.Command {
 						Required: false,
 						Value:    types.TypeDocker,
 					},
+					&cli.StringFlag{
+						Name:     "bxh-version",
+						Usage:    "specify bitxhub version (Only for docker. The launched ethereum private chain in docker mod has already deployed the cross-chain contract required for the corresponding version of BitXHub)",
+						Required: false,
+						Value:    "v1.6.2",
+					},
 				},
 				Action: startEther,
 			},
@@ -34,7 +51,12 @@ func GetEtherCMD() *cli.Command {
 				Usage:  "Stop ethereum chain",
 				Action: stopEther,
 			},
-			contractCMD,
+			{
+				Name:   "clean",
+				Usage:  "Clean ethereum chain",
+				Action: cleanEther,
+			},
+			ethereum.ContractCMD,
 		},
 	}
 }
@@ -45,7 +67,10 @@ func startEther(ctx *cli.Context) error {
 		return err
 	}
 
-	if err := StartEthereum(repoRoot, ctx.String("type")); err != nil {
+	typ := ctx.String("type")
+	version := EthConfigMap[ctx.String("bxh-version")]
+
+	if err := StartEthereum(repoRoot, typ, version); err != nil {
 		return err
 	}
 
@@ -62,8 +87,18 @@ func stopEther(ctx *cli.Context) error {
 	if err := StopEthereum(repoRoot); err != nil {
 		return err
 	}
+	return nil
+}
 
-	fmt.Println("Stop ethereum private chain")
+func cleanEther(ctx *cli.Context) error {
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+
+	if err := CleanEthereum(repoRoot); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -75,10 +110,18 @@ func StopEthereum(repoPath string) error {
 	return utils.ExecuteShell([]string{types.EthereumScript, "down"}, repoPath)
 }
 
-func StartEthereum(repoPath, mod string) error {
+func CleanEthereum(repoPath string) error {
 	if !fileutil.Exist(filepath.Join(repoPath, types.EthereumScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	return utils.ExecuteShell([]string{types.EthereumScript, mod}, repoPath)
+	return utils.ExecuteShell([]string{types.EthereumScript, "clean"}, repoPath)
+}
+
+func StartEthereum(repoPath, mod, version string) error {
+	if !fileutil.Exist(filepath.Join(repoPath, types.EthereumScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
+	return utils.ExecuteShell([]string{types.EthereumScript, mod, version}, repoPath)
 }

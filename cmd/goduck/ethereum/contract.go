@@ -1,258 +1,152 @@
 package ethereum
 
 import (
-	"bytes"
-	"context"
-	"crypto/ecdsa"
 	"fmt"
-	"io/ioutil"
-	"reflect"
-	"strings"
-	"time"
+	"path/filepath"
 
-	"github.com/Rican7/retry"
-	"github.com/Rican7/retry/strategy"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/meshplus/bitxhub-kit/fileutil"
+	"github.com/meshplus/goduck/internal/download"
+	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
 )
 
-var contractCMD = &cli.Command{
+var ethContract = []string{
+	"broker",
+	"transfer",
+	"data_swapper",
+}
+
+var ContractCMD = &cli.Command{
 	Name:  "contract",
-	Usage: "operation about solidity contract",
+	Usage: "Operation about solidity contract",
 	Subcommands: []*cli.Command{
 		{
 			Name:  "deploy",
-			Usage: "deploy solidity contract to ethereum chain",
+			Usage: "Deploy solidity contract to ethereum chain",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "ether_addr",
-					Usage:    "the address of ethereum chain",
+					Name:     "address",
+					Usage:    "specify the address of ethereum chain",
 					Value:    "http://localhost:8545",
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:     "key_path",
-					Usage:    "the ethereum account private key path",
-					Required: true,
+					Name:  "key-path",
+					Usage: "specify the ethereum account private key path",
 				},
 				&cli.StringFlag{
-					Name:     "code_path",
-					Usage:    "the path of solidity contract",
+					Name:  "psd-path",
+					Usage: "specify ethereum account password path",
+				},
+				&cli.StringFlag{
+					Name:     "code-path",
+					Usage:    "specify the path of solidity contract (If there are multiple contracts, separate their paths with \",\")",
 					Required: true,
 				},
 			},
-			Action: deploy,
+			ArgsUsage: "\n\t command: goduck ether contract deploy [args(optional)]",
+			Action: func(ctx *cli.Context) error {
+				config := Config{
+					EtherAddr:    ctx.String("address"),
+					KeyPath:      ctx.String("key-path"),
+					PasswordPath: ctx.String("psd-path"),
+				}
+
+				codePath := ctx.String("code-path")
+				args := ctx.Args()
+
+				return Deploy(config, codePath, args.First())
+			},
 		},
 		{
 			Name:  "invoke",
-			Usage: "invoke solidity contract on ethereum chain",
+			Usage: "Invoke solidity contract on ethereum chain",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "ether_addr",
-					Usage:    "the address of ethereum chain",
+					Name:     "address",
+					Usage:    "specify the address of ethereum chain",
 					Value:    "http://localhost:8545",
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:     "key_path",
-					Usage:    "the ethereum account private key path",
-					Required: true,
+					Name:  "key-path",
+					Usage: "specify the ethereum account private key path",
 				},
 				&cli.StringFlag{
-					Name:     "abi_path",
-					Usage:    "the path of solidity contract abi file",
+					Name:  "psd-path",
+					Usage: "specify ethereum account password path",
+				},
+				&cli.StringFlag{
+					Name:     "abi-path",
+					Usage:    "specify the path of solidity contract abi file",
 					Required: true,
 				},
 			},
-			Action: invoke,
+			ArgsUsage: "\n\t command: goduck ether contract invoke [contract_address] [function] [args(optional)]",
+			Action: func(ctx *cli.Context) error {
+				config := Config{
+					EtherAddr:    ctx.String("address"),
+					KeyPath:      ctx.String("key-path"),
+					PasswordPath: ctx.String("psd-path"),
+				}
+
+				abiPath := ctx.String("abi-path")
+
+				if ctx.NArg() < 2 {
+					return fmt.Errorf("args must be (dst_addr function args[optional])")
+				}
+
+				args := ctx.Args().Slice()
+				if ctx.NArg() == 2 {
+					args = append(args, "")
+				}
+				dstAddr := args[0]
+				function := args[1]
+				argAbi := args[2]
+
+				return Invoke(config, abiPath, dstAddr, function, argAbi)
+			},
+		},
+		{
+			Name:  "download",
+			Usage: "download the default cross-chain contract on ethereum chain",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "version",
+					Usage:    "specify bitxhub version",
+					Value:    "v1.6.2",
+					Required: false,
+				},
+			},
+			Action: downloadContract,
 		},
 	},
 }
 
-func deploy(ctx *cli.Context) error {
-	etherAddr := ctx.String("ether_addr")
-	keyPath := ctx.String("key_path")
-	codePath := ctx.String("code_path")
+func downloadContract(ctx *cli.Context) error {
+	version := ctx.String("version")
 
-	etherCli, privateKey, err := helper(etherAddr, keyPath)
+	repoPath, err := repo.PathRoot()
 	if err != nil {
-		return err
+		return fmt.Errorf("parse repo path error:%w", err)
+	}
+	ethPath := filepath.Join(repoPath, types.ChainTypeEther)
+	if !fileutil.Exist(ethPath) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
-	// compile solidity first
-	compileResult, err := compileSolidityCode(codePath)
-	if err != nil {
-		return err
-	}
-
-	if len(compileResult.Abi) == 0 || len(compileResult.Bins) == 0 || len(compileResult.Types) == 0 {
-		return fmt.Errorf("empty contract")
-	}
-	// deploy a contract
-	auth := bind.NewKeyedTransactor(privateKey)
-	for i, bin := range compileResult.Bins {
-		if bin == "0x" {
-			continue
-		}
-		parsed, err := abi.JSON(strings.NewReader(compileResult.Abi[i]))
-		if err != nil {
-			return err
-		}
-
-		code := strings.TrimPrefix(strings.TrimSpace(bin), "0x")
-		addr, tx, _, err := bind.DeployContract(auth, parsed, common.FromHex(code), etherCli)
-		if err != nil {
-			return err
-		}
-		var r *types.Receipt
-		if err := retry.Retry(func(attempt uint) error {
-			r, err = etherCli.TransactionReceipt(context.Background(), tx.Hash())
+	for _, contract := range ethContract {
+		path := filepath.Join(ethPath, "contract", version, fmt.Sprintf("%s.sol", contract))
+		if !fileutil.Exist(path) {
+			url := fmt.Sprintf(types.EthereumContractUrl, version, contract)
+			err := download.Download(path, url)
 			if err != nil {
 				return err
 			}
-
-			return nil
-		}, strategy.Wait(1*time.Second)); err != nil {
-			return err
 		}
-
-		if r.Status == types.ReceiptStatusFailed {
-			return fmt.Errorf("deploy contract failed, tx hash is: %s", r.TxHash.Hex())
-		}
-
-		fmt.Printf("\n======= %s =======\n", compileResult.Types[i])
-		fmt.Printf("Deployed contract address is %s\n", addr.Hex())
-		fmt.Printf("Contract JSON ABI\n%s\n", compileResult.Abi[i])
+		fmt.Printf("Download ethereum contract successfully in %s\n", path)
 	}
 
 	return nil
-}
-
-func invoke(ctx *cli.Context) error {
-	etherAddr := ctx.String("ether_addr")
-	keyPath := ctx.String("key_path")
-	abiPath := ctx.String("abi_path")
-
-	if ctx.NArg() < 2 {
-		return fmt.Errorf("invoke contract must include address and function")
-	}
-
-	args := ctx.Args().Slice()
-	if ctx.NArg() == 2 {
-		args = append(args, "")
-	}
-	dstAddr := args[0]
-	function := args[1]
-	argAbi := args[2]
-
-	file, err := ioutil.ReadFile(abiPath)
-	if err != nil {
-		return err
-	}
-
-	etherCli, privateKey, err := helper(etherAddr, keyPath)
-	if err != nil {
-		return err
-	}
-
-	ab, err := abi.JSON(bytes.NewReader(file))
-	if err != nil {
-		return err
-	}
-
-	etherSession := &EtherSession{
-		privateKey: privateKey,
-		etherCli:   etherCli,
-		ctx:        context.Background(),
-		ab:         ab,
-	}
-
-	// prepare for invoke parameters
-	var argx []interface{}
-	if len(argAbi) != 0 {
-		argSplits := strings.Split(argAbi, ",")
-		var argArr [][]byte
-		for _, arg := range argSplits {
-			argArr = append(argArr, []byte(arg))
-		}
-
-		argx, err = ABIUnmarshal(ab, argArr, function)
-		if err != nil {
-			return err
-		}
-	}
-
-	packed, err := ab.Pack(function, argx...)
-	if err != nil {
-		return err
-	}
-
-	invokerAddr := crypto.PubkeyToAddress(privateKey.PublicKey)
-	to := common.HexToAddress(dstAddr)
-
-	if ab.Methods[function].IsConstant() {
-		// for read only eth calls
-		result, err := etherSession.ethCall(&invokerAddr, &to, function, packed)
-		if err != nil {
-			return err
-		}
-
-		if result == nil {
-			fmt.Printf("\n======= invoke function %s =======\n", function)
-			fmt.Println("no result")
-			return nil
-		}
-
-		str := ""
-		for _, r := range result {
-			if r != nil {
-				if reflect.TypeOf(r).String() == "[32]uint8" {
-					v, ok := r.([32]byte)
-					if ok {
-						r = string(v[:])
-					}
-				}
-			}
-			str = fmt.Sprintf("%s,%v", str, r)
-		}
-
-		str = strings.Trim(str, ",")
-		fmt.Printf("\n======= invoke function %s =======\n", function)
-		fmt.Printf("call result: %s\n", str)
-		return nil
-	}
-
-	// for write only eth transaction
-	signedTx, err := etherSession.ethTx(&invokerAddr, &to, packed)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("\n======= invoke function %s =======\n", function)
-	fmt.Printf("\n=============== Transaction hash is ==============\n%s\n", signedTx.Hash().Hex())
-	return nil
-}
-
-func helper(etherAddr, keyPath string) (*ethclient.Client, *ecdsa.PrivateKey, error) {
-	etherCli, err := ethclient.Dial(etherAddr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	keyByte, err := ioutil.ReadFile(keyPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	unlockedKey, err := keystore.DecryptKey(keyByte, "")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return etherCli, unlockedKey.PrivateKey, nil
 }

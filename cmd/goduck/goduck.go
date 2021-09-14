@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	ethereum2 "github.com/meshplus/goduck/cmd/goduck/ethereum"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,8 +31,10 @@ func main() {
 		playgroundCMD(),
 		bitxhubCMD(),
 		pierCMD,
-		ethereum2.GetEtherCMD(),
 		deployCMD(),
+		etherCMD(),
+		fabricCMD,
+		hpcCMD,
 		GetStatusCMD(),
 		infoCMD(),
 		keyCMD(),

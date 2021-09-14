@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"uint64","name":"input1","type":"uint64"},{"internalType":"uint64","name":"input2","type":"uint64"}],"name":"multiply","outputs":[{"internalType":"uint64","name":"res1","type":"uint64"},{"internalType":"uint64","name":"res2","type":"uint64"}],"stateMutability":"pure","type":"function"}]
