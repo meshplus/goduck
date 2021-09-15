@@ -131,13 +131,12 @@ func downloadContract(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	ethPath := filepath.Join(repoPath, types.ChainTypeEther)
-	if !fileutil.Exist(ethPath) {
+	if !fileutil.Exist(repoPath) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
 	for _, contract := range ethContract {
-		path := filepath.Join(ethPath, "contract", version, fmt.Sprintf("%s.sol", contract))
+		path := filepath.Join(repoPath, types.ChainTypeEther, "contract", version, fmt.Sprintf("%s.sol", contract))
 		if !fileutil.Exist(path) {
 			url := fmt.Sprintf(types.EthereumContractUrl, version, contract)
 			err := download.Download(path, url)

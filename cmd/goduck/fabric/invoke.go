@@ -9,7 +9,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
-func Invoke(configPath, ccID, function, arg string) error {
+func Invoke(configPath, ccID, function, arg string, isInvoke bool) error {
 	s := strings.Split(strings.TrimSpace(arg), ",")
 	var args [][]byte
 	for _, v := range s {
@@ -26,7 +26,13 @@ func Invoke(configPath, ccID, function, arg string) error {
 		Fcn:         function,
 		Args:        args,
 	}
-	response, err := fabCli.Execute(request)
+
+	var response channel.Response
+	if isInvoke {
+		response, err = fabCli.Execute(request)
+	} else {
+		response, err = fabCli.Query(request)
+	}
 	if err != nil {
 		fmt.Printf("invoke fail: %s\n", err)
 	} else {
