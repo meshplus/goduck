@@ -5,8 +5,9 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	//"github.com/meshplus/gosdk/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/meshplus/bitxhub-kit/hexutil"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/pkg/errors"
 )
 
@@ -60,7 +61,7 @@ func getMethod(ab abi.ABI, method string) (abi.Method, error) {
 	return abi.Method{}, fmt.Errorf("method %s is not existed", method)
 }
 
-func UnpackOutput(abi abi.ABI, method string, receipt string) ([]interface{}, error) {
+func UnpackOutput(abi abi.ABI, method string, receipt string, chainTyp string) ([]interface{}, error) {
 	m, err := getMethod(abi, method)
 	if err != nil {
 		return nil, fmt.Errorf("get method %w", err)
@@ -70,7 +71,11 @@ func UnpackOutput(abi abi.ABI, method string, receipt string) ([]interface{}, er
 		return nil, nil
 	}
 
-	res, err := abi.Unpack(method, []byte(receipt))
+	receiptData := []byte(receipt)
+	if chainTyp == types.ChainTypeHpc {
+		receiptData = hexutil.Decode(receipt)
+	}
+	res, err := abi.Unpack(method, receiptData)
 	if err != nil {
 		return nil, fmt.Errorf("unpack result %w", err)
 	}
