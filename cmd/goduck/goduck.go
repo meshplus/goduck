@@ -35,6 +35,7 @@ func main() {
 		etherCMD(),
 		fabricCMD(),
 		hpcCMD,
+		mqCMD,
 		GetStatusCMD(),
 		infoCMD(),
 		keyCMD(),

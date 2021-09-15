@@ -1,0 +1,2 @@
+[{"constant":false,"inputs":[],"name":"get","outputs":[{"name":"","type":"int32"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]
+[{"constant":false,"inputs":[],"name":"getHash","outputs":[{"name":"","type":"bytes32"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]

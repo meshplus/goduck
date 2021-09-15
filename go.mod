@@ -49,3 +49,6 @@ require (
 replace github.com/go-kit/kit => github.com/go-kit/kit v0.8.0
 
 replace github.com/meshplus/bitxhub => github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
+
+// todo(fbz): replace it with the official warehouse
+replace github.com/meshplus/crypto-standard => github.com/dawn-to-dusk/crypto-standard v0.1.2-0.20210915031756-9c6750095d70

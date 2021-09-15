@@ -16,12 +16,12 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	types1 "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/solidity"
+	"github.com/meshplus/goduck/internal/types"
 )
 
 type EtherSession struct {
@@ -52,7 +52,7 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 	}
 
 	// unpack result for display
-	result, err := solidity.UnpackOutput(es.ab, function, string(output))
+	result, err := solidity.UnpackOutput(es.ab, function, string(output), types.ChainTypeEther)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 	return result, nil
 }
 
-func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*types.Transaction, error) {
+func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*types1.Transaction, error) {
 	// for write only transaction
 	signedTx, err := es.buildTx(invokerAddr, to, packed)
 	if err != nil {
@@ -73,7 +73,7 @@ func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*
 	return signedTx, nil
 }
 
-func (es *EtherSession) buildTx(from, dstAddr *common.Address, input []byte) (*types.Transaction, error) {
+func (es *EtherSession) buildTx(from, dstAddr *common.Address, input []byte) (*types1.Transaction, error) {
 	nonce, err := es.etherCli.PendingNonceAt(es.ctx, *from)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve account nonce: %v", err)
@@ -91,8 +91,8 @@ func (es *EtherSession) buildTx(from, dstAddr *common.Address, input []byte) (*t
 	}
 
 	// Create the transaction, sign it and schedule it for execution
-	rawTx := types.NewTransaction(nonce, *dstAddr, new(big.Int), gasLimit, gasPrice, input)
-	signer := types.HomesteadSigner{}
+	rawTx := types1.NewTransaction(nonce, *dstAddr, new(big.Int), gasLimit, gasPrice, input)
+	signer := types1.HomesteadSigner{}
 	signature, err := crypto.Sign(signer.Hash(rawTx).Bytes(), es.privateKey)
 	if err != nil {
 		return nil, err

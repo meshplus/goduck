@@ -12,6 +12,7 @@ const (
 	DarwinSystem   = "darwin"
 
 	ChainTypeEther  = "ethereum"
+	ChainTypeHpc    = "hyperchain"
 	ChainTypeFabric = "fabric"
 
 	BitxhubTarName             = "bitxhub_%s_x86_64_%s.tar.gz"
