@@ -44,6 +44,18 @@ func fabricCMD() *cli.Command {
 					return fabric.Stop(repoRoot)
 				},
 			},
+			{
+				Name:  "clean",
+				Usage: "Clean a fabric network",
+				Action: func(ctx *cli.Context) error {
+					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+					if err != nil {
+						return err
+					}
+
+					return fabric.Clean(repoRoot)
+				},
+			},
 			fabric.ContractCMD,
 		},
 	}

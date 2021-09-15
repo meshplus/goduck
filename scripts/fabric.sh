@@ -82,6 +82,36 @@ function networkDown() {
   ./byfn.sh down
 }
 
+function networkClean() {
+  print_blue "===> stop fabric ..."
+  networkDown
+
+  print_blue "===> clean contract images ..."
+  if [[ -n `docker ps -a |grep example.com-broker | awk '{print $1}'` ]]; then
+    docker rm  `docker ps -a |grep example.com-broker | awk '{print $1}'`
+  fi
+
+  if [[ -n `docker ps -a |grep example.com-transfer | awk '{print $1}'` ]]; then
+    docker rm  `docker ps -a |grep example.com-transfer | awk '{print $1}'`
+  fi
+
+  if [[ `docker ps -a |grep example.com-data_swapper | awk '{print $1}'` ]]; then
+    docker rm  `docker ps -a |grep example.com-data_swapper | awk '{print $1}'`
+  fi
+
+  if [[ `docker images |grep example.com-broker | awk '{print $1}'` ]]; then
+    docker rmi `docker images |grep example.com-broker | awk '{print $1}'`
+  fi
+
+  if [[ `docker images |grep example.com-transfer | awk '{print $1}'` ]]; then
+    docker rmi `docker images |grep example.com-transfer | awk '{print $1}'`
+  fi
+
+  if [[ `docker images |grep example.com-data_swapper | awk '{print $1}'` ]]; then
+    docker rmi `docker images |grep example.com-data_swapper | awk '{print $1}'`
+  fi
+}
+
 function networkRestart() {
   prepare
 
@@ -99,6 +129,8 @@ if [ "$MODE" == "up" ]; then
   networkUp
 elif [ "$MODE" == "down" ]; then
   networkDown
+elif [ "$MODE" == "clean" ]; then
+  networkClean
 elif [ "$MODE" == "restart" ]; then
   networkRestart
 else

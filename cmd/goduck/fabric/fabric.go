@@ -31,3 +31,10 @@ func Stop(repoRoot string) error {
 
 	return utils.ExecuteShell(args, repoRoot)
 }
+
+// clean a fabric network
+func Clean(repoRoot string) error {
+	args := []string{filepath.Join(repoRoot, types.FabricScript), "clean"}
+
+	return utils.ExecuteShell(args, repoRoot)
+}
