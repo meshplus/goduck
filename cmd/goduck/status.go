@@ -22,11 +22,22 @@ var processesNames = []string{
 	"pier_fabric",
 }
 
+var processesAppchainNames = []string{
+	".goduck/ethereum/datadir",
+}
+
 var containerNames = []string{
 	"bitxhub_solo",
 	"bitxhub_node",
 	"pier-ethereum",
 	"pier-fabric",
+	"ethereum-node",
+	"cli",
+	"peer0.org1.example.com",
+	"peer1.org1.example.com",
+	"orderer.example.com",
+	"peer1.org2.example.com",
+	"peer0.org2.example.com",
 }
 
 var modes = []string{
@@ -174,7 +185,29 @@ func existProcess(table [][]string) ([][]string, error) {
 	for _, pname := range processesNames {
 		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps | grep %s | grep start | grep -v grep | awk '{print $1}'", pname)).Output()
 		if err != nil {
-			return nil, fmt.Errorf("get cid error: %w", err)
+			return nil, fmt.Errorf("get pid error: %w", err)
+		}
+		pidOutStr := string(pidOut)
+
+		if pidOutStr != "" {
+			processesIDs := strings.Split(pidOutStr, "\n")
+			for i, pid := range processesIDs {
+				if pid != "" {
+					params, err := getProcessParam(pid, fmt.Sprintf("%s_%d", pname, i+1))
+					if err != nil {
+						return table, err
+					}
+
+					table = append(table, params)
+				}
+			}
+		}
+	}
+
+	for _, pname := range processesAppchainNames {
+		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps | grep %s | grep -v grep | awk '{print $1}'", pname)).Output()
+		if err != nil {
+			return nil, fmt.Errorf("get pid error: %w", err)
 		}
 		pidOutStr := string(pidOut)
 
@@ -194,7 +227,6 @@ func existProcess(table [][]string) ([][]string, error) {
 	}
 
 	return table, nil
-
 }
 
 func getProcessParam(pidStr, pName string) ([]string, error) {
