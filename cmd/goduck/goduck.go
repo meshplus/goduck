@@ -33,7 +33,7 @@ func main() {
 		pierCMD,
 		deployCMD(),
 		etherCMD(),
-		fabricCMD,
+		fabricCMD(),
 		hpcCMD,
 		GetStatusCMD(),
 		infoCMD(),
