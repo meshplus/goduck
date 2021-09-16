@@ -11,22 +11,22 @@ pierVersion=$8
 
 if [ "${pierVersion}" = "v1.6.1" ] || [ "${pierVersion}" = "v1.6.2" ] || [ "${pierVersion}" = "v1.7.0" ]; then
   pier --repo /root/.pier appchain register \
-    --name $2 \
-    --type $3 \
-    --desc $4 \
-    --version $5 \
-    --validators $6 \
-    --consensusType $7
+    --name $appchainName \
+    --type $appchainType \
+    --desc $appchainDesc \
+    --version $appchainVersion \
+    --validators $appchainValidators \
+    --consensusType $appchainConsensus
 else
   pier --repo /root/.pier appchain method register \
     --admin-key /root/.pier/key.json \
-    --method $1 \
+    --method $methodName \
     --doc-addr /ipfs/QmQVxzUqN2Yv2UHUQXYwH8dSNkM8ReJ9qPqwJsf8zzoNUi \
     --doc-hash QmQVxzUqN2Yv2UHUQXYwH8dSNkM8ReJ9qPqwJsf8zzoNUi \
-    --name $2 \
-    --type $3 \
-    --desc $4 \
-    --version $5 \
-    --validators $6 \
-    --consensus $7
+    --name $appchainName \
+    --type $appchainType \
+    --desc $appchainDesc \
+    --version $appchainVersion \
+    --validators $appchainValidators \
+    --consensus $appchainConsensus
 fi
