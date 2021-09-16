@@ -3,6 +3,12 @@
 set -e
 
 WORKDIR=ethereum
+SYSTEM=$(uname -s)
+if [ $SYSTEM == "Linux" ]; then
+  SYSTEM="linux"
+elif [ $SYSTEM == "Darwin" ]; then
+  SYSTEM="darwin"
+fi
 
 RED='\033[0;31m'
 BLUE='\033[0;34m'
@@ -33,19 +39,19 @@ function binaryUp() {
   tar xf datadir.tar.gz
 
   print_blue "start geth with datadir in ${WORKDIR}/datadir"
-  nohup geth --datadir $HOME/.goduck/ethereum/datadir --dev --ws --rpc \
-      --rpccorsdomain https://remix.ethereum.org \
-      --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
-      --rpcapi "eth,web3,personal,net,miner,admin,debug" >/dev/null 2>&1 &
+  nohup $HOME/.goduck/bin/geth_${SYSTEM}_1.9.6/geth --datadir $HOME/.goduck/ethereum/datadir --dev --ws --rpc \
+    --rpccorsdomain https://remix.ethereum.org \
+    --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
+    --rpcapi "eth,web3,personal,net,miner,admin,debug" >/dev/null 2>&1 &
   echo $! >ethereum.pid
 }
 
 function dockerUp() {
   if [ ! "$(docker ps -q -f name=ethereum-node)" ]; then
     if [ "$(docker ps -aq -f status=exited -f name=ethereum-node)" ]; then
-        # restart your container
-        print_blue "restart your ethereum-node container"
-        docker restart ethereum-node
+      # restart your container
+      print_blue "restart your ethereum-node container"
+      docker restart ethereum-node
     else
       print_blue "start a new ethereum-node container"
       docker run -d --name ethereum-node \
