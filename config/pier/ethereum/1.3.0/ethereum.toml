@@ -7,5 +7,5 @@ password = "password"
 min_confirm = 1
 
 [contract_abi]
-0x5ff1B3309A9e71Ac6944CEc887AA66a31dc5A691="data_swapper.abi"
-0x30b7DF1b3bEc59Fd1b28B4b311df5bEeEc090af1="transfer.abi"
+0x6db07a8b0f23367dc65c7DAD91da4F6bfD97D674="data_swapper.abi"
+0x668a209Dc6562707469374B8235e37b8eC25db08="transfer.abi"
