@@ -20,7 +20,6 @@ function print_red() {
 # sed -i 's/a/b/g' bob.txt => x_replace 's/a/b/g' bob.txt
 function x_replace() {
   system=$(uname)
-  echo $system
   if [ "${system}" = "Linux" ]; then
     sed -i "$@"
   else

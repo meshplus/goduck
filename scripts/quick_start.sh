@@ -2,6 +2,7 @@
 
 set -e
 source x.sh
+source compare.sh
 
 MODE=$1
 BITXHUB_ADDR=$2
@@ -17,7 +18,7 @@ QUICK_PATH="${CURRENT_PATH}/docker/quick_start"
 QUICK_PATH_TMP="${QUICK_PATH}/.quick_start"
 QUICK_BXH_CONFIG_PATH="${QUICK_PATH}/bxhConfig/${VERSION}"
 PROM_PATH="${CURRENT_PATH}/docker/prometheus"
-ETH_PATH="${CURRENT_PATH}/pier/ethereum"
+ETH_PATH="${CURRENT_PATH}/pier/ethereum/${ETHVERSION}"
 PLUGIN_PATH="${CURRENT_PATH}/bin/pier_linux_${VERSION}/ethereum-client"
 BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
 PIER_SCRIPTS_PATH="${CURRENT_PATH}"/docker/pier
@@ -54,7 +55,7 @@ function docker-compose-up() {
   # rewrite bitxhub.toml
   cp $QUICK_BXH_CONFIG_PATH/bitxhub.toml $QUICK_PATH_TMP/bitxhub.toml
   x_replace "s/solo = false/solo = true/g" "${QUICK_PATH_TMP}"/bitxhub.toml
-  x_replace "s/raft.so/solo.so/g" "${QUICK_PATH_TMP}"/bitxhub.toml
+  x_replace "s/raft/solo/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   x_replace "s/address = .*/address = \"$BITXHUB_ADDR\"/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   x_replace "s/dider = .*/dider = \"$BITXHUB_ADDR\"/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   delete_line_start=$(sed -n "/genesis.admins/=" "${QUICK_PATH_TMP}"/bitxhub.toml | head -n 2 | tail -n 1)
@@ -62,9 +63,15 @@ function docker-compose-up() {
   x_replace "${delete_line_start},${delete_line_end}d" "${QUICK_PATH_TMP}"/bitxhub.toml
 
   # rewrite ethereum.toml
+  if [ -d $QUICK_PATH_TMP/ethereum1 ]; then
+    rm -r $QUICK_PATH_TMP/ethereum1
+  fi
   cp -r $ETH_PATH $QUICK_PATH_TMP/ethereum1
   x_replace "s/{{.AppchainAddr}}/ws:\/\/host.docker.internal:8546/" $QUICK_PATH_TMP/ethereum1/ethereum.toml
   x_replace "s/{{.AppchainContractAddr}}/0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4/" $QUICK_PATH_TMP/ethereum1/ethereum.toml
+  if [ -d $QUICK_PATH_TMP/ethereum2 ]; then
+    rm -r $QUICK_PATH_TMP/ethereum2
+  fi
   cp -r $ETH_PATH $QUICK_PATH_TMP/ethereum2
   x_replace "s/{{.AppchainAddr}}/ws:\/\/host.docker.internal:8548/" $QUICK_PATH_TMP/ethereum2/ethereum.toml
   x_replace "s/{{.AppchainContractAddr}}/0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4/" $QUICK_PATH_TMP/ethereum2/ethereum.toml
@@ -190,7 +197,7 @@ function docker-compose-up() {
   version2="v1.7.0"
   version_compare
   if [[ $versionComPareRes -gt 0 ]]; then
-#  if [ "${VERSION}" \> "v1.7.0" ]; then
+    #  if [ "${VERSION}" \> "v1.7.0" ]; then
     sleep 1
     proposal12ID="${pier1ID}-1"
     docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason || error=true
@@ -275,12 +282,12 @@ function docker-compose-stop() {
 function queryAccount() {
   print_blue "Query Alice account in ethereum-1 appchain"
   goduck ether contract invoke \
-    --key_path ./docker/quick_start/account.key --ether_addr http://localhost:8545 \
-    --abi_path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+    --key-path ./docker/quick_start/account.key --address http://localhost:8545 \
+    --abi-path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
   print_blue "Query Alice account in ethereum-2 appchain"
   goduck ether contract invoke \
-    --key_path ./docker/quick_start/account.key --ether_addr http://localhost:8547 \
-    --abi_path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+    --key-path ./docker/quick_start/account.key --address http://localhost:8547 \
+    --abi-path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
 }
 
 function interchainTransfer() {
@@ -289,8 +296,8 @@ function interchainTransfer() {
 
   print_blue "2. Send 1 coin from Alice in ethereum-1 to Alice in ethereum-2"
   goduck ether contract invoke \
-    --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
-    --ether_addr http://localhost:8545 \
+    --key-path ./docker/quick_start/account.key --abi-path ./docker/quick_start/transfer.abi \
+    --address http://localhost:8545 \
     0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
   sleep 4
@@ -299,8 +306,8 @@ function interchainTransfer() {
 
   print_blue "4. Send 1 coin from Alice in ethereum-2 to Alice in ethereum-1"
   goduck ether contract invoke \
-    --key_path ./docker/quick_start/account.key --abi_path ./docker/quick_start/transfer.abi \
-    --ether_addr http://localhost:8547 \
+    --key-path ./docker/quick_start/account.key --abi-path ./docker/quick_start/transfer.abi \
+    --address http://localhost:8547 \
     0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x570C2E736B28F04d621eF108C1D2f3DE06c71208,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
 
   sleep 4

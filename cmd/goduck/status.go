@@ -32,6 +32,8 @@ var containerNames = []string{
 	"pier-ethereum",
 	"pier-fabric",
 	"ethereum-node",
+	"ethereum-1",
+	"ethereum-2",
 	"cli",
 	"peer0.org1.example.com",
 	"peer1.org1.example.com",
@@ -263,8 +265,8 @@ func getProcessParam(pidStr, pName string) ([]string, error) {
 
 		slice, _ := process.CmdlineSlice()
 		args = strings.Join(slice, " ")
-		if len(strings.Join(slice, " ")) > 1000 {
-			args = args[:1000] + "..."
+		if len(strings.Join(slice, " ")) > 70 {
+			args = args[:70] + "..."
 		}
 	} else {
 		status = "exited"
@@ -329,15 +331,12 @@ func getContainerParam(cid string, mycli *client.Client, ctx context.Context) ([
 	}
 
 	pos1 := strings.LastIndex(info.RepoTags[0], "/")
-	pos2 := strings.Index(info.RepoTags[0], "-")
-	if pos2 == -1 {
-		pos2 = len(info.RepoTags[0])
-	}
+	pos2 := len(info.RepoTags[0])
 	component := info.RepoTags[0][pos1+1 : pos2]
 
 	args := strings.Join(containerInfo.Args, " ")
-	if len(strings.Join(containerInfo.Args, " ")) > 1000 {
-		args = args[:1000] + "..."
+	if len(strings.Join(containerInfo.Args, " ")) > 70 {
+		args = args[:70] + "..."
 	}
 	return []string{
 		containerInfo.Name[1:],

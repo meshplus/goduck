@@ -9,30 +9,7 @@ appchainValidators=$6
 appchainConsensus=$7
 pierVersion=$8
 
-OLD_IFS="$IFS"
-  IFS="."
-  versionArr1=($pierVersion)
-  versionArr2=("v1.8.0")
-  IFS="$OLD_IFS"
-
-  for ((i = 0; i < 3; i++)); do
-    if [ ${#versionArr1[i]} \> ${#versionArr2[i]} ]; then
-      versionComPareRes=1
-    elif [ ${#versionArr1[i]} \< ${#versionArr2[i]} ]; then
-      versionComPareRes=-1
-    else
-      if [ ${versionArr1[i]} \> ${versionArr2[i]} ]; then
-        versionComPareRes=1
-      elif [ ${versionArr1[i]} \< ${versionArr2[i]} ]; then
-        versionComPareRes=-1
-      else
-        versionComPareRes=0
-      fi
-    fi
-  done
-
-  if [[ $versionComPareRes -lt 0 ]]; then
-#if [ "${pierVersion}" \< "v1.8.0" ]; then
+if [ "${pierVersion}" = "v1.6.1" ] || [ "${pierVersion}" = "v1.6.2" ] || [ "${pierVersion}" = "v1.7.0" ]; then
   pier --repo /root/.pier appchain register \
     --name $2 \
     --type $3 \

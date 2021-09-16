@@ -6,13 +6,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	crypto2 "github.com/meshplus/bitxhub-kit/crypto"
-	libp2pcert "github.com/meshplus/go-libp2p-cert"
-
+	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/goduck/cmd/goduck/bitxhub"
-
 	"github.com/meshplus/goduck/cmd/goduck/pier"
-
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -85,14 +81,11 @@ func dockerUp(ctx *cli.Context) error {
 	}
 
 	//get bitxhub addr
-	keyData, err := ioutil.ReadFile(filepath.Join(repoRoot, "docker/quick_start/bitxhubCerts/key.priv"))
+	privKey, err := asym.RestorePrivateKey(filepath.Join(repoRoot, "docker/quick_start/adminKey.json"), "bitxhub")
 	if err != nil {
-		return fmt.Errorf("read key.priv error:%w", err)
+		return err
 	}
-	privKey, err := libp2pcert.ParsePrivateKey(keyData, crypto2.Secp256k1)
-	if err != nil {
-		return fmt.Errorf("ParsePrivateKey error:%w", err)
-	}
+
 	address, err := privKey.PublicKey().Address()
 	if err != nil {
 		return fmt.Errorf("get address error:%w", err)

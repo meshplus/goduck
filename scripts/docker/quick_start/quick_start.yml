@@ -13,6 +13,7 @@ services:
       - ./bitxhub.toml:/root/.bitxhub/bitxhub.toml
       - ../bitxhubCerts:/root/.bitxhub/certs
       - ../../bitxhub:/root/.bitxhub/scripts
+      - ../adminKey.json:/root/.bitxhub/key.json
   ethereum-1:
     image: meshplus/ethereum:1.2.0
     container_name: ethereum-1
