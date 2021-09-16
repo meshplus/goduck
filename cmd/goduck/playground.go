@@ -49,8 +49,16 @@ func playgroundCMD() *cli.Command {
 				Action: dockerDown,
 			},
 			{
-				Name:   "transfer",
-				Usage:  "Conduct cross-chain transactions",
+				Name:  "transfer",
+				Usage: "Conduct cross-chain transactions",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Aliases:  []string{"version", "v"},
+						Usage:    "version of the demo interchain system",
+						Value:    "v1.6.1",
+						Required: false,
+					},
+				},
 				Action: transfer,
 			},
 		},
@@ -127,11 +135,13 @@ func dockerStop(ctx *cli.Context) error {
 }
 
 func transfer(ctx *cli.Context) error {
+	version := ctx.String("version")
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
-	args := []string{types.QuickStartScript, "transfer"}
+	ethVersion := EthConfigMap[version]
+	args := []string{types.QuickStartScript, "transfer", ethVersion}
 	return utils.ExecuteShell(args, repoRoot)
 }

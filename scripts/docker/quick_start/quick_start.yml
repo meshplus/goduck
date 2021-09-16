@@ -44,6 +44,7 @@ services:
     volumes:
       - ethereum-path1:/root/.pier/ethereum
       - plugin-path:/root/.pier/plugins/appchain_plugin
+      - ../key1.json:/root/.pier/key.json
       - ../../pier:/root/.pier/scripts
     command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
       sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&
@@ -64,7 +65,7 @@ services:
     volumes:
       - ethereum-path2:/root/.pier/ethereum
       - plugin-path:/root/.pier/plugins/appchain_plugin
-      - ../key.json:/root/.pier/key.json
+      - ../key2.json:/root/.pier/key.json
       - ../../pier:/root/.pier/scripts
     command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
       sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&

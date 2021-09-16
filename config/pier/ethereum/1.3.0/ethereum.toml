@@ -1,10 +1,10 @@
 [ether]
-addr = "ws://host.docker.internal:8546"
+addr = "{{.AppchainAddr}}"
 name = "ether"
-contract_address = "0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4"
+contract_address = "{{.AppchainContractAddr}}"
 key_path = "account.key"
 password = "password"
-min_confirm = 1
+min_confirm = 0
 
 [contract_abi]
 0x6db07a8b0f23367dc65c7DAD91da4F6bfD97D674="data_swapper.abi"

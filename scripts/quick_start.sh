@@ -3,6 +3,7 @@
 set -e
 source x.sh
 source compare.sh
+source retry.sh
 
 MODE=$1
 BITXHUB_ADDR=$2
@@ -58,6 +59,7 @@ function docker-compose-up() {
   x_replace "s/raft/solo/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   x_replace "s/address = .*/address = \"$BITXHUB_ADDR\"/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   x_replace "s/dider = .*/dider = \"$BITXHUB_ADDR\"/g" "${QUICK_PATH_TMP}"/bitxhub.toml
+  x_replace "s/bvm_gas_price = .*/bvm_gas_price = 0/g" "${QUICK_PATH_TMP}"/bitxhub.toml
   delete_line_start=$(sed -n "/genesis.admins/=" "${QUICK_PATH_TMP}"/bitxhub.toml | head -n 2 | tail -n 1)
   delete_line_end=$(sed -n '/weight/=' "${QUICK_PATH_TMP}"/bitxhub.toml | head -n 4 | tail -n 1)
   x_replace "${delete_line_start},${delete_line_end}d" "${QUICK_PATH_TMP}"/bitxhub.toml
@@ -136,81 +138,40 @@ function docker-compose-up() {
   # register appchain
   print_blue "======> Register appchain...."
   if [ "${VERSION}" == "v1.8.0" ]; then
-    docker exec $bitxhubCID bitxhub client did init || error=true
-    while [ ${error} == true ]; do
-      error=false
-      docker exec $bitxhubCID bitxhub client did init || error=true
-    done
+    command_retry "docker exec $bitxhubCID bitxhub client did init"
   fi
 
-  docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" || error=true
-  done
+  if [ "${VERSION}" == "v1.11.0" ]; then
+    command_retry "docker exec $bitxhubCID bitxhub client tx send --key /root/.bitxhub/key.json --to 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4 --amount 100000000000000000"
+    command_retry "docker exec $bitxhubCID bitxhub client tx send --key /root/.bitxhub/key.json --to 0x4768E44fB5e85E1D86D403D767cC5898703B2e78 --amount 100000000000000000"
+  fi
 
-  docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" || error=true
-  done
+  command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+  command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
 
-  pier1ID=$(docker exec $pier1CID /root/.pier/scripts/getPierId.sh) || error=true
-  while [ ${error} == true ]; do
-    error=false
-    pier1ID=$(docker exec $pier1CID /root/.pier/scripts/getPierId.sh) || error=true
-  done
+  pier1ID=$(echo $(command_retry "docker exec $pier1CID /root/.pier/scripts/getPierId.sh") | awk -F " " '{print $NF}')
   proposal11ID="${pier1ID}-0"
+  command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal11ID approve reason"
 
-  docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal11ID approve reason || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal11ID approve reason || error=true
-  done
-
-  pier2ID=$(docker exec $pier2CID /root/.pier/scripts/getPierId.sh) || error=true
-  while [ ${error} == true ]; do
-    error=false
-    pier2ID=$(docker exec $pier2CID /root/.pier/scripts/getPierId.sh) || error=true
-  done
-
+  pier2ID=$(echo $(command_retry "docker exec $pier2CID /root/.pier/scripts/getPierId.sh") | awk -F " " '{print $NF}')
   proposal21ID="${pier2ID}-0"
-  docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal21ID approve reason || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal21ID approve reason || error=true
-  done
+  command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal21ID approve reason"
 
   # deploy rule
   print_blue "======> Deploy rule...."
-  docker exec $pier1CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain1 "${VERSION}" || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $pier1CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain1 "${VERSION}" || error=true
-  done
-  docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}" || error=true
-  while [ ${error} == true ]; do
-    error=false
-    docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}" || error=true
-  done
+  command_retry "docker exec $pier1CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain1 "${VERSION}""
+  command_retry "docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}""
+
   version1=${VERSION}
   version2="v1.7.0"
   version_compare
   if [[ $versionComPareRes -gt 0 ]]; then
     #  if [ "${VERSION}" \> "v1.7.0" ]; then
-    sleep 1
     proposal12ID="${pier1ID}-1"
-    docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason || error=true
-    while [ ${error} == true ]; do
-      error=false
-      docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason || error=true
-    done
+    command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason"
+
     proposal22ID="${pier2ID}-1"
-    docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal22ID approve reason || error=true
-    while [ ${error} == true ]; do
-      error=false
-      docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal22ID approve reason || error=true
-    done
+    command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal22ID approve reason"
   fi
 
   if [ "${PROMETHEUS}" == "true" ]; then
@@ -283,36 +244,58 @@ function queryAccount() {
   print_blue "Query Alice account in ethereum-1 appchain"
   goduck ether contract invoke \
     --key-path ./docker/quick_start/account.key --address http://localhost:8545 \
-    --abi-path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+    --abi-path=./pier/ethereum/$1/transfer.abi  0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
   print_blue "Query Alice account in ethereum-2 appchain"
   goduck ether contract invoke \
     --key-path ./docker/quick_start/account.key --address http://localhost:8547 \
-    --abi-path=./docker/quick_start/transfer.abi 0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
+    --abi-path=./pier/ethereum/$1/transfer.abi  0x668a209Dc6562707469374B8235e37b8eC25db08 getBalance Alice
 }
 
 function interchainTransfer() {
   print_blue "1. Query original accounts in appchains"
-  queryAccount
+  queryAccount $1
 
   print_blue "2. Send 1 coin from Alice in ethereum-1 to Alice in ethereum-2"
-  goduck ether contract invoke \
-    --key-path ./docker/quick_start/account.key --abi-path ./docker/quick_start/transfer.abi \
-    --address http://localhost:8545 \
-    0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  version1=$1
+  version2="1.3.0"
+  version_compare
+  if [[ $versionComPareRes -lt 0 ]]; then
+    goduck ether contract invoke \
+      --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+      --address http://localhost:8545 \
+     0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x4768E44fB5e85E1D86D403D767cC5898703B2e78,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  else
+    goduck ether contract invoke \
+      --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+      --address http://localhost:8545 \
+      0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain2:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  fi
+
 
   sleep 4
   print_blue "3. Query accounts after the first-round invocation"
-  queryAccount
+  queryAccount $1
 
   print_blue "4. Send 1 coin from Alice in ethereum-2 to Alice in ethereum-1"
-  goduck ether contract invoke \
-    --key-path ./docker/quick_start/account.key --abi-path ./docker/quick_start/transfer.abi \
+  version1=$1
+  version2="1.3.0"
+  version_compare
+  if [[ $versionComPareRes -lt 0 ]]; then
+    #  if [ "${VERSION}" \< "v1.3.0" ]; then
+    goduck ether contract invoke \
+    --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
     --address http://localhost:8547 \
-    0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x570C2E736B28F04d621eF108C1D2f3DE06c71208,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  else
+    goduck ether contract invoke \
+      --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+      --address http://localhost:8547 \
+      0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain1:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+  fi
 
   sleep 4
   print_blue "5. Query accounts after the second-round invocation"
-  queryAccount
+  queryAccount $1
 }
 
 if [ "$MODE" == "up" ]; then
@@ -322,7 +305,7 @@ elif [ "$MODE" == "down" ]; then
 elif [ "$MODE" == "stop" ]; then
   docker-compose-stop
 elif [ "$MODE" == "transfer" ]; then
-  interchainTransfer
+  interchainTransfer $2
 else
   printHelp
   exit 1
