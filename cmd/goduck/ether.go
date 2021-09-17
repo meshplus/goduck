@@ -70,6 +70,13 @@ func startEther(ctx *cli.Context) error {
 	typ := ctx.String("type")
 	version := EthConfigMap[ctx.String("bxh-version")]
 
+	if typ == types.TypeBinary {
+		err := ethereum.DownloadGethBinary(repoRoot)
+		if err != nil {
+			return fmt.Errorf("download binary error:%w", err)
+		}
+	}
+
 	if err := StartEthereum(repoRoot, typ, version); err != nil {
 		return err
 	}

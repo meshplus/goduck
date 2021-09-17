@@ -58,6 +58,9 @@ const (
 	PierEthereumClientUrlLinux = "https://github.com/meshplus/pier-client-ethereum/releases/download/%s/eth-client-%s-Linux"
 	PierEthereumClientUrlMacOS = "https://github.com/meshplus/pier-client-ethereum/releases/download/%s/eth-client-%s-Darwin"
 
+	GethUrl     = "https://gethstore.blob.core.windows.net/builds/geth-%s-amd64-1.9.6-bd059680.tar.gz"
+	GethTarName = "geth-%s-amd64-1.9.6-bd059680.tar.gz"
+
 	FabricRuleUrl   = "https://raw.githubusercontent.com/meshplus/pier-client-fabric/master/config/validating.wasm"
 	EthereumRuleUrl = "https://raw.githubusercontent.com/meshplus/pier-client-ethereum/master/config/validating.wasm"
 
