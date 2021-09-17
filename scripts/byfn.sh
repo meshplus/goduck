@@ -138,12 +138,14 @@ function checkPrereqs() {
     echo "$LOCAL_VERSION" | grep -q $UNSUPPORTED_VERSION
     if [ $? -eq 0 ]; then
       echo "ERROR! Local Fabric binary version of $LOCAL_VERSION does not match this newer version of BYFN and is unsupported. Either move to a later version of Fabric or checkout an earlier version of fabric-samples."
+      cd ../../ && rm -rf ./fabric-samples
       exit 1
     fi
 
     echo "$DOCKER_IMAGE_VERSION" | grep -q $UNSUPPORTED_VERSION
     if [ $? -eq 0 ]; then
       echo "ERROR! Fabric Docker image version of $DOCKER_IMAGE_VERSION does not match this newer version of BYFN and is unsupported. Either move to a later version of Fabric or checkout an earlier version of fabric-samples."
+      cd ../../ && rm -rf ./fabric-samples
       exit 1
     fi
   done
@@ -176,6 +178,7 @@ function networkUp() {
   docker ps -a
   if [ $? -ne 0 ]; then
     echo "ERROR !!!! Unable to start network"
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
 
@@ -195,6 +198,7 @@ function networkUp() {
   docker exec cli scripts/script.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT $VERBOSE $NO_CHAINCODE
   if [ $? -ne 0 ]; then
     echo "ERROR !!!! Test failed"
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
 }
@@ -207,6 +211,7 @@ function upgradeNetwork() {
     docker inspect -f '{{.Config.Volumes}}' orderer.example.com | grep -q '/var/hyperledger/production/orderer'
     if [ $? -ne 0 ]; then
       echo "ERROR !!!! This network does not appear to start with fabric-samples >= v1.3.x?"
+      cd ../../ && rm -rf ./fabric-samples
       exit 1
     fi
 
@@ -264,6 +269,7 @@ function upgradeNetwork() {
     docker exec cli sh -c "SYS_CHANNEL=$CH_NAME && scripts/upgrade_to_v14.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT $VERBOSE"    
     if [ $? -ne 0 ]; then
       echo "ERROR !!!! Test failed"
+      cd ../../ && rm -rf ./fabric-samples
       exit 1
     fi
   else
@@ -348,6 +354,7 @@ function generateCerts() {
   which cryptogen
   if [ "$?" -ne 0 ]; then
     echo "cryptogen tool not found. exiting"
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
   echo
@@ -364,6 +371,7 @@ function generateCerts() {
   set +x
   if [ $res -ne 0 ]; then
     echo "Failed to generate certificates..."
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
   echo
@@ -413,6 +421,7 @@ function generateChannelArtifacts() {
   which configtxgen
   if [ "$?" -ne 0 ]; then
     echo "configtxgen tool not found. exiting"
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
 
@@ -432,12 +441,14 @@ function generateChannelArtifacts() {
   else
     set +x
     echo "unrecognized CONSESUS_TYPE='$CONSENSUS_TYPE'. exiting"
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
   res=$?
   set +x
   if [ $res -ne 0 ]; then
     echo "Failed to generate orderer genesis block..."
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
   echo
@@ -450,6 +461,7 @@ function generateChannelArtifacts() {
   set +x
   if [ $res -ne 0 ]; then
     echo "Failed to generate channel configuration transaction..."
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
 
@@ -463,6 +475,7 @@ function generateChannelArtifacts() {
   set +x
   if [ $res -ne 0 ]; then
     echo "Failed to generate anchor peer update for Org1MSP..."
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
 
@@ -477,6 +490,7 @@ function generateChannelArtifacts() {
   set +x
   if [ $res -ne 0 ]; then
     echo "Failed to generate anchor peer update for Org2MSP..."
+    cd ../../ && rm -rf ./fabric-samples
     exit 1
   fi
   echo
