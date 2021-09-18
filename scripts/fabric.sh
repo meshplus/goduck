@@ -55,6 +55,7 @@ function networkUp() {
   prepare
 
   cd "${FABRIC_SAMPLE_PATH}"/first-network
+  cp "${CURRENT_PATH}"/byfn.sh ./byfn.sh
   # choose to regenerate crypto-config or not
   if [ -z "${CRYPTO_CONFIG_PATH}" ]; then
     print_blue "fabric crypto-config not specified, use new generated crypto-config..."
@@ -68,11 +69,10 @@ function networkUp() {
     cp -r "${CRYPTO_CONFIG_PATH}" ./crypto-config
   fi
 
-  cp "${CURRENT_PATH}"/byfn.sh ./byfn.sh
   ./byfn.sh up -n
 
-  rm -rf "${CURRENT_PATH}"/crypto-config
-  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/crypto-config
+  rm -rf "${CURRENT_PATH}"/fabric/crypto-config
+  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/fabric/crypto-config
 }
 
 function networkDown() {
