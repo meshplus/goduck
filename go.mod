@@ -21,6 +21,7 @@ require (
 	github.com/gobuffalo/packd v1.0.0
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/hyperledger/fabric v2.0.1+incompatible
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
 	github.com/libp2p/go-libp2p-core v0.5.7-0.20200520175250-264788628f5a
 	github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04

@@ -43,7 +43,12 @@ var ContractCMD = &cli.Command{
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:     "code-path",
+					Name:     "gopath",
+					Usage:    "specify GOPATH for chaincode install command. If not set, GOPATH is taken from the environment",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "ccp",
 					Usage:    "specify chaincode path",
 					Required: true,
 				},
@@ -51,6 +56,12 @@ var ContractCMD = &cli.Command{
 					Name:     "ccid",
 					Usage:    "specify chaincode id",
 					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "mspid",
+					Usage:    "specify msp id",
+					Required: false,
+					Value:    "Org2MSP",
 				},
 				&cli.StringFlag{
 					Name:     "version",
@@ -109,7 +120,7 @@ func installChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		configPath = filepath.Join(repoRoot, "config.yaml")
+		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
 	codePath := ctx.String("code-path")
@@ -140,13 +151,15 @@ func deployChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		configPath = filepath.Join(repoRoot, "config.yaml")
+		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
-	codePath := ctx.String("code-path")
+	gopath := ctx.String("gopath")
+	ccp := ctx.String("ccp")
 	ccid := ctx.String("ccid")
+	mspid := ctx.String("mspid")
 	version := ctx.String("version")
-	return Deploy(configPath, ccid, codePath, version)
+	return Deploy(configPath, gopath, ccp, ccid, mspid, version)
 }
 
 func invokeChaincode(ctx *cli.Context) error {
@@ -156,7 +169,7 @@ func invokeChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		configPath = filepath.Join(repoRoot, "config.yaml")
+		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
 	args := ctx.Args().Slice()
@@ -174,7 +187,7 @@ func queryChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		configPath = filepath.Join(repoRoot, "config.yaml")
+		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
 	args := ctx.Args().Slice()

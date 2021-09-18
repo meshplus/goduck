@@ -71,8 +71,8 @@ function networkUp() {
 
   ./byfn.sh up -n
 
-  rm -rf "${CURRENT_PATH}"/crypto-config
-  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/crypto-config
+  rm -rf "${CURRENT_PATH}"/fabric/crypto-config
+  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/fabric/crypto-config
 }
 
 function networkDown() {
