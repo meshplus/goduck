@@ -16,11 +16,10 @@ require (
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.6
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/fatih/color v1.7.0
 	github.com/gobuffalo/packd v1.0.0
 	github.com/gobuffalo/packr v1.30.1
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hyperledger/fabric v2.0.1+incompatible
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
 	github.com/libp2p/go-libp2p-core v0.5.7-0.20200520175250-264788628f5a
