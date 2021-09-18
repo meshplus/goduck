@@ -172,12 +172,12 @@ func invokeChaincode(ctx *cli.Context) error {
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
-	args := ctx.Args().Slice()
-	if len(args) < 2 {
+	args := ctx.Args()
+	if args.Len() < 2 {
 		return fmt.Errorf("args must be (chaincode_id function args[optional])")
 	}
 
-	return Invoke(configPath, args[0], args[1], args[2], true)
+	return Invoke(configPath, args.Get(0), args.Get(1), args.Get(2), true)
 }
 
 func queryChaincode(ctx *cli.Context) error {
@@ -190,12 +190,12 @@ func queryChaincode(ctx *cli.Context) error {
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
-	args := ctx.Args().Slice()
-	if len(args) < 2 {
+	args := ctx.Args()
+	if args.Len() < 2 {
 		return fmt.Errorf("args must be (chaincode_id function args[optional])")
 	}
 
-	return Invoke(configPath, args[0], args[1], args[2], false)
+	return Invoke(configPath, args.Get(0), args.Get(1), args.Get(2), false)
 }
 
 func downloadContract(ctx *cli.Context) error {
