@@ -322,8 +322,8 @@ function bitxhub_docker_cluster() {
 function bitxhub_down() {
   set +e
   print_blue "======> Stop bitxhub"
-  while [ $(ps | grep bitxhub | grep start | grep -v grep | awk '{print $1}' | sed -n "1p") ]; do
-    pid=$(ps | grep bitxhub | grep start | grep -v grep | awk '{print $1}' | sed -n "1p")
+  while [ $(ps aux | grep bitxhub | grep start | grep -v grep | awk '{print $2}' | sed -n "1p") ]; do
+    pid=$(ps aux | grep bitxhub | grep start | grep -v grep | awk '{print $2}' | sed -n "1p")
     kill "$pid"
     if [ $? -eq 0 ]; then
       echo "node pid:$pid exit"
@@ -341,6 +341,8 @@ function bitxhub_down() {
     docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub-solo.yaml stop
     echo "bitxhub docker solo stop"
   fi
+
+  cleanBxhInfoFile
 }
 
 function bitxhub_up() {
@@ -384,8 +386,6 @@ function bitxhub_clean() {
   set +e
 
   bitxhub_down
-
-  cleanBxhInfoFile
 
   print_blue "======> Clean bitxhub"
   if [ "$(docker ps -a | grep -c bitxhub_node)" -ge 1 ]; then

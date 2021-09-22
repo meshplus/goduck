@@ -228,14 +228,14 @@ function pier_down() {
       fi
     done
   fi
+
+  cleanPierInfoFile
 }
 
 function pier_clean() {
   set +e
 
   pier_down
-
-  cleanPierInfoFile
 
   print_blue "======> Clean $APPCHAINTYPE pier in docker"
   if [ "$(docker ps -a -q -f name=pier-$APPCHAINTYPE)" ]; then

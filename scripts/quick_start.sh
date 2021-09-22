@@ -237,7 +237,9 @@ function cleanBxhInfoFile() {
 
 function docker-compose-stop() {
   print_blue "======> Stop the demo cluster...."
-  docker-compose -f ./docker/quick_start/quick_start.yml stop
+  if [ -e "${QUICK_PATH_TMP}"/quick_start.yml ]; then
+    docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml stop
+  fi
 }
 
 function queryAccount() {
