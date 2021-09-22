@@ -256,7 +256,6 @@ bitxhub_node$i:
       - ${bitxhubRepoTmp}\/node$i/key.json:/root/.bitxhub/key.json
       - ${bitxhubRepoTmp}\/node$i/certs:/root/.bitxhub/certs
     ports:
-      - \"$jsonrpcP:$jsonrpcP\"
       - \"$grpcP:$grpcP\"
       - \"$gatewayP:$gatewayP\"
       - \"$pprofP:$pprofP\"
@@ -287,7 +286,7 @@ bitxhub_node$i:
       pprofP=${PPROFPS[$i - 1]}
       monitorP=${MONITORPS[$i - 1]}
 
-      if [ "${VERSION}" != "v1.6.1" ]; then
+      if [ "${VERSION}" != "v1.6.1" ] && [ "${VERSION}" != "v1.6.2" ]; then
         x_replace "s/\".*:788$i\"/\"$jsonrpcP:$jsonrpcP\"/" "${CONFIG_PATH}"/"${DOCKER_COMPOSE_FILE}"
       fi
 
@@ -322,15 +321,23 @@ function bitxhub_docker_cluster() {
 function bitxhub_down() {
   set +e
   print_blue "======> Stop bitxhub"
-  while [ $(ps aux | grep bitxhub | grep start | grep -v grep | awk '{print $2}' | sed -n "1p") ]; do
-    pid=$(ps aux | grep bitxhub | grep start | grep -v grep | awk '{print $2}' | sed -n "1p")
-    kill "$pid"
-    if [ $? -eq 0 ]; then
-      echo "node pid:$pid exit"
-    else
-      print_red "program exit fail, try use kill -9 $pid"
-    fi
-  done
+  BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.pid ]; then
+    for (( i = 1; ; i++ )); do
+      pid=$(cat "${BITXHUB_CONFIG_PATH}"/bitxhub.pid | sed -n $i"p")
+      if [ -z $pid ]; then
+        break
+      fi
+
+      kill "$pid"
+      if [ $? -eq 0 ]; then
+        echo "node pid:$pid exit"
+      else
+        print_red "program exit fail, try use kill -9 $pid"
+      fi
+    done
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub.pid
+  fi
 
   if [ "$(docker ps | grep -c bitxhub_node)" -ge 1 ]; then
     docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub.yaml stop
