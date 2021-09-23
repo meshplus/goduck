@@ -15,7 +15,9 @@ const (
 	ChainTypeHpc    = "hyperchain"
 	ChainTypeFabric = "fabric"
 
-	BitxhubTarName             = "bitxhub_%s_x86_64_%s.tar.gz"
+	BitxhubTarNameMacOS        = "bitxhub_darwin_x86_64_%s.tar.gz"
+	BitxhubTarNameLinux        = "bitxhub_linux-amd64_%s.tar.gz"
+	BitxhubTarName             = ""
 	BitxhubConfigName          = "bitxhub.toml"
 	BxhConfigRepo              = "bxh_config"
 	BitxhubConfigScript        = "bxh_config.sh"

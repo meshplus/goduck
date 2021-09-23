@@ -46,7 +46,12 @@ func DownloadBitxhubBinary(repoPath string, version string) error {
 
 func ExtractBitxhubBinary(repoPath string, version string) error {
 	path := filepath.Join(repoPath, "bin", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version))
-	file := fmt.Sprintf(types.BitxhubTarName, runtime.GOOS, version)
+	var file string
+	if runtime.GOOS == "linux" {
+		file = fmt.Sprintf(types.BitxhubTarNameLinux, version)
+	} else if runtime.GOOS == "darwin" {
+		file = fmt.Sprintf(types.BitxhubTarNameMacOS, version)
+	}
 
 	if !fileutil.Exist(filepath.Join(path, "bitxhub")) {
 		err := sh.Command("/bin/bash", "-c", fmt.Sprintf("cd %s && tar xzf %s", path, file)).Run()
