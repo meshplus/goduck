@@ -15,8 +15,8 @@ type dmallMQ struct {
 	mq  *rpc.MqClient
 }
 
-func Register(address, queue string) error {
-	dmq, err := New()
+func Register(configPath, address, queue string) error {
+	dmq, err := New(configPath)
 	if err != nil {
 		return fmt.Errorf("create mq client: %w", err)
 	}
@@ -37,8 +37,8 @@ func Register(address, queue string) error {
 	return nil
 }
 
-func Unregister(exchange, queue string) error {
-	dmq, err := New()
+func Unregister(configPath, exchange, queue string) error {
+	dmq, err := New(configPath)
 	if err != nil {
 		return fmt.Errorf("create mq client: %w", err)
 	}
@@ -58,7 +58,7 @@ func Unregister(exchange, queue string) error {
 	return nil
 }
 
-func New() (*dmallMQ, error) {
+func New(configPath string) (*dmallMQ, error) {
 	accountJson := `{"address":"0xefb945a2c6f4d2f8b7f3fcc28450c0ca34b98ae0","algo":"0x02","encrypted":"9ae36b184d9a00f07e93c829346282cfb25ffb05d67f14b710f1f3675321d254d5af0c356f906ad4","version":"1.0","privateKeyEncrypted":true}`
 
 	key, err := account.NewAccountFromAccountJSON(accountJson, "dmall")
@@ -66,12 +66,15 @@ func New() (*dmallMQ, error) {
 		return nil, err
 	}
 
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return nil, err
+	if configPath == "" {
+		repoRoot, err := repo.PathRoot()
+		if err != nil {
+			return nil, err
+		}
+		configPath = filepath.Join(repoRoot, "hyperchain")
 	}
 
-	rpcCli := rpc.NewRPCWithPath(filepath.Join(repoRoot, "hyperchain"))
+	rpcCli := rpc.NewRPCWithPath(configPath)
 	mq := rpcCli.GetMqClient()
 
 	return &dmallMQ{
