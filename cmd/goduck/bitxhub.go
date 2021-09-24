@@ -24,11 +24,10 @@ type Release struct {
 
 var bxhConfigMap = map[string]string{
 	"v1.6.1":  "v1.6.1",
-	"v1.6.2":  "v1.6.1",
+	"v1.6.2":  "v1.6.2", // same to 1.6.1
 	"v1.7.0":  "v1.7.0",
 	"v1.8.0":  "v1.8.0",
 	"v1.9.0":  "v1.9.0",
-	"v1.10.0": "v1.10.0",
 	"v1.11.0": "v1.11.0",
 }
 
@@ -140,10 +139,20 @@ func startBitXHub(ctx *cli.Context) error {
 
 	if configPath == "" {
 		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+	} else {
+		configPath, err = filepath.Abs(configPath)
+		if err != nil {
+			return fmt.Errorf("get absolute config path: %w", err)
+		}
 	}
 
 	if target == "" {
 		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
+	} else {
+		target, err = filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("get absolute target path: %w", err)
+		}
 	}
 
 	if typ == types.TypeBinary {
@@ -210,6 +219,11 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 
 	if target == "" {
 		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
+	} else {
+		target, err = filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("get absolute target path: %w", err)
+		}
 	}
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
@@ -220,6 +234,11 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 
 	if configPath == "" {
 		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+	} else {
+		configPath, err = filepath.Abs(configPath)
+		if err != nil {
+			return fmt.Errorf("get absolute config path: %w", err)
+		}
 	}
 
 	err = bitxhub.DownloadBitxhubBinary(repoPath, version)

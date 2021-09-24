@@ -57,7 +57,7 @@ function prepare() {
     x_replace "s|\${CONFIG_PATH}|${CURRENT_PATH}|g" config.yaml
   fi
 
-  if [ ! -d crypto-config ]; then
+  if [ ! -d fabric/crypto-config ]; then
     print_red "===> Please provide the 'crypto-config' of your fabric network"
     exit 1
   fi

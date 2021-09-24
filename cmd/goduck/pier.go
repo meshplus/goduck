@@ -19,11 +19,10 @@ import (
 
 var pierConfigMap = map[string]string{
 	"v1.6.1":  "v1.6.1",
-	"v1.6.2":  "v1.6.1",
-	"v1.7.0":  "v1.6.1",
+	"v1.6.2":  "v1.6.2", // v1.6.1
+	"v1.7.0":  "v1.7.0", // v1.6.1
 	"v1.8.0":  "v1.8.0",
-	"v1.9.0":  "v1.8.0",
-	"v1.10.0": "v1.8.0",
+	"v1.9.0":  "v1.9.0", // v1.8.0
 	"v1.11.0": "v1.11.0",
 }
 
@@ -220,6 +219,11 @@ func pierStart(ctx *cli.Context) error {
 
 	if pierRepo == "" {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	} else {
+		pierRepo, err = filepath.Abs(pierRepo)
+		if err != nil {
+			return fmt.Errorf("get absolute pier repo path: %w", err)
+		}
 	}
 
 	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
@@ -230,6 +234,11 @@ func pierStart(ctx *cli.Context) error {
 
 	if configPath == "" {
 		configPath = filepath.Join(repoRoot, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
+	} else {
+		configPath, err = filepath.Abs(configPath)
+		if err != nil {
+			return fmt.Errorf("get absolute config path: %w", err)
+		}
 	}
 
 	if err := pier.DownloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
@@ -275,6 +284,11 @@ func pierRegister(ctx *cli.Context) error {
 
 	if pierRepo == "" {
 		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	} else {
+		pierRepo, err = filepath.Abs(pierRepo)
+		if err != nil {
+			return fmt.Errorf("get absolute pier repo path: %w", err)
+		}
 	}
 
 	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {

@@ -185,7 +185,7 @@ func dockerStatus(port string) ([]string, error) {
 
 func existProcess(table [][]string) ([][]string, error) {
 	for _, pname := range processesNames {
-		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps | grep %s | grep start | grep -v grep | awk '{print $1}'", pname)).Output()
+		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps aux | grep %s | grep start | grep -v grep | awk '{print $2}'", pname)).Output()
 		if err != nil {
 			return nil, fmt.Errorf("get pid error: %w", err)
 		}
@@ -207,7 +207,7 @@ func existProcess(table [][]string) ([][]string, error) {
 	}
 
 	for _, pname := range processesAppchainNames {
-		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps | grep %s | grep -v grep | awk '{print $1}'", pname)).Output()
+		pidOut, err := sh.Command("/bin/bash", "-c", fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", pname)).Output()
 		if err != nil {
 			return nil, fmt.Errorf("get pid error: %w", err)
 		}

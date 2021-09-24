@@ -5,6 +5,7 @@ source compare.sh
 
 CURRENT_PATH=$(pwd)
 SYSTEM=$(uname -s)
+CONFIG_PATH="${CURRENT_PATH}"/bitxhub
 if [ $SYSTEM == "Linux" ]; then
   SYSTEM="linux"
 elif [ $SYSTEM == "Darwin" ]; then
@@ -68,7 +69,7 @@ function pier_binary_rule_deploy() {
   version2="v1.8.0"
   version_compare
   if [[ $versionComPareRes -lt 0 ]]; then
-#  if [[ "${VERSION}" < "v1.8.0" ]]; then
+    #  if [[ "${VERSION}" < "v1.8.0" ]]; then
     "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}"
   else
     deployret=$("${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" rule deploy --path "${RULEREPO}" --method "${METHOD}" --admin-key "${PIERREPO}/key.json")
@@ -88,10 +89,6 @@ function pier_docker_up() {
 
   print_blue "======> Start pier of ${APPCHAINTYPE}-${VERSION} in ${UPTYPE}..."
   if [ ! "$(docker ps -q -f name=pier-${APPCHAINTYPE})" ]; then
-    if [ "$(docker ps -aq -f name=pier-${APPCHAINTYPE})" ]; then
-      print_red "pier-${APPCHAINTYPE} container already exists, please clean them first"
-      exit 1
-    fi
 
     print_blue "======> Start a new pier-${APPCHAINTYPE}"
 
@@ -105,7 +102,8 @@ function pier_docker_up() {
     pierRepoTmp=$(echo "${PIERREPO}" | sed 's/\//\\\//g')
     x_replace "s/pier-fabric-repo/${pierRepoTmp}/g" "${startPierContainer}"
 
-    docker-compose -f ${PIERREPO}/scripts/docker-compose-pier.yaml up -d
+    cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier.yaml
+    docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml up -d
   else
     print_red "pier-${APPCHAINTYPE} container already running, please stop them first"
     exit 1
@@ -206,28 +204,29 @@ function pier_down() {
   set +e
 
   print_blue "======> Kill $APPCHAINTYPE pier in binary"
-  while [ $(ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}' | sed -n "1p") ]; do
-    pid=$(ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}' | sed -n "1p")
-    kill "$pid"
-    if [ $? -eq 0 ]; then
-      echo "pier-$APPCHAINTYPE pid:$pid exit"
-    else
-      print_red "pier exit fail, try use kill -9 $pid"
-    fi
-  done
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
+    for ((i = 1; ; i++)); do
+      pid=$(cat "${PIER_CONFIG_PATH}"/pier-ethereum.pid | sed -n $i"p")
+      if [ -z $pid ]; then
+        break
+      fi
 
-  print_blue "======> Kill $APPCHAINTYPE pier in docker"
-  list=$(docker ps | grep pier | grep $APPCHAINTYPE | grep start | grep -v grep | awk '{print $1}')
-  if [ $list ]; then
-    for cid in $list; do
-      docker kill "$cid"
+      kill "$pid"
       if [ $? -eq 0 ]; then
-        echo "pier-$APPCHAINTYPE container id:$cid exit"
+        echo "pier-$APPCHAINTYPE pid:$pid exit"
       else
-        print_red "pier exit fail"
+        print_red "pier exit fail, try use kill -9 $pid"
       fi
     done
   fi
+
+  print_blue "======> Kill $APPCHAINTYPE pier in docker"
+  if [ "$(docker ps | grep -c pier-$APPCHAINTYPE)" -ge 1 ]; then
+    docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml stop
+    echo "pier-$APPCHAINTYPE docker stop"
+  fi
+
+  cleanPierInfoFile
 }
 
 function pier_clean() {
@@ -235,11 +234,10 @@ function pier_clean() {
 
   pier_down
 
-  cleanPierInfoFile
-
   print_blue "======> Clean $APPCHAINTYPE pier in docker"
-  if [ "$(docker ps -a -q -f name=pier-$APPCHAINTYPE)" ]; then
-    docker rm pier-$APPCHAINTYPE
+  if [ "$(docker ps | grep -c pier-$APPCHAINTYPE)" -ge 1 ]; then
+    docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml rm -f
+    echo "pier-$APPCHAINTYPE docker clean"
   fi
 
   print_blue "======> Clean $APPCHAINTYPE pier config"
