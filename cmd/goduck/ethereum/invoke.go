@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -58,6 +59,19 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 	}
 
 	return result, nil
+}
+
+
+func (es *EtherSession) getTrustMeta(height int64) (string, error) {
+	header, err := es.etherCli.HeaderByNumber(context.Background(), big.NewInt(height))
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(header)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (es *EtherSession) ethTx(invokerAddr, to *common.Address, packed []byte) (*types1.Transaction, error) {
