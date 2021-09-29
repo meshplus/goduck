@@ -1,9 +1,11 @@
 package ethereum
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
@@ -109,6 +111,24 @@ var ContractCMD = &cli.Command{
 			},
 		},
 		{
+			Name:  "trust",
+			Usage: "get trust meta",
+			Flags: []cli.Flag{
+				&cli.Int64Flag{
+					Name:     "height",
+					Usage:    "block height",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "address",
+					Usage:    "the address of ethereum chain",
+					Value:    "http://localhost:8545",
+					Required: false,
+				},
+			},
+			Action: getTrustMeta,
+		},
+		{
 			Name:  "download",
 			Usage: "download the default cross-chain contract on ethereum chain",
 			Flags: []cli.Flag{
@@ -147,5 +167,25 @@ func downloadContract(ctx *cli.Context) error {
 		fmt.Printf("Download ethereum contract successfully in %s\n", path)
 	}
 
+	return nil
+}
+func getTrustMeta(ctx *cli.Context) error {
+	height := ctx.Int64("height")
+	etherAddr := ctx.String("address")
+
+	etherCli, err := ethclient.Dial(etherAddr)
+	if err != nil {
+		return err
+	}
+
+	etherSession := &EtherSession{
+		etherCli:   etherCli,
+		ctx:        context.Background(),
+	}
+	trustMeta, err := etherSession.getTrustMeta(height)
+	if err != nil {
+		return err
+	}
+	fmt.Println(trustMeta)
 	return nil
 }
