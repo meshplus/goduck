@@ -16,9 +16,10 @@ import (
 	types1 "github.com/ethereum/go-ethereum/core/types"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/solidity"
+	"github.com/urfave/cli/v2"
 )
 
-func Deploy(config Config, codePath, argContract string) error {
+func Deploy(config Config, codePath string, argContract cli.Args) error {
 	repoRoot, err := repo.PathRoot()
 	if err != nil {
 		return err
@@ -55,10 +56,9 @@ func Deploy(config Config, codePath, argContract string) error {
 
 		// prepare for constructor parameters
 		var argx []interface{}
-		if len(argContract) != 0 {
-			argSplits := strings.Split(argContract, ",")
+		if argContract.Present() {
 			var argArr [][]byte
-			for _, arg := range argSplits {
+			for _, arg := range argContract.Slice() {
 				argArr = append(argArr, []byte(arg))
 			}
 			argx, err = solidity.ABIUnmarshal(parsed, argArr, "")

@@ -58,7 +58,7 @@ var ContractCMD = &cli.Command{
 				codePath := ctx.String("code-path")
 				args := ctx.Args()
 
-				return Deploy(config, codePath, args.First())
+				return Deploy(config, codePath, args)
 			},
 		},
 		{
@@ -179,8 +179,8 @@ func getTrustMeta(ctx *cli.Context) error {
 	}
 
 	etherSession := &EtherSession{
-		etherCli:   etherCli,
-		ctx:        context.Background(),
+		etherCli: etherCli,
+		ctx:      context.Background(),
 	}
 	trustMeta, err := etherSession.getTrustMeta(height)
 	if err != nil {
