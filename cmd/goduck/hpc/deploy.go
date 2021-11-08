@@ -8,6 +8,7 @@ import (
 	"github.com/meshplus/gosdk/hvm"
 	"github.com/meshplus/gosdk/rpc"
 	"github.com/meshplus/gosdk/utils/java"
+	"github.com/pkg/errors"
 	"github.com/ttacon/chalk"
 )
 
@@ -91,10 +92,18 @@ func (h *Hyperchain) deployContractWithCode(code []byte, local bool) (string, *r
 		return "", nil, err
 	}
 
-	// dd, err := json.Marshal(compileResult)
-	// fmt.Println(string(dd))
-	// deploy
-	tranDeploy := rpc.NewTransaction(h.key.GetAddress().String()).Deploy(compileResult.Bin[0])
+	bin := ""
+	// filter non-abstract contract
+	for _, i := range compileResult.Bin {
+		if len(common.HexToString(i)) > 1 {
+			bin = i
+			break
+		}
+	}
+	if bin == "" {
+		return "", nil, errors.New("cannot found non-abstract contract")
+	}
+	tranDeploy := rpc.NewTransaction(h.key.GetAddress().String()).Deploy(bin)
 	tranDeploy.Sign(h.key)
 	txDeploy, err := h.api.DeployContract(tranDeploy)
 	if err != nil {
