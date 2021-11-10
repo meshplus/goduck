@@ -45,12 +45,14 @@ var hpcDeployCMD = cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		configPath := ctx.String("config-path")
-
 		codePath := ctx.String("code-path")
 		typ := ctx.String("type")
 		local := ctx.Bool("local")
-
-		return hpc.Deploy(configPath, codePath, typ, local)
+		args := ""
+		if ctx.NArg() > 0 {
+			args = ctx.Args().Get(0)
+		}
+		return hpc.Deploy(configPath, codePath, typ, local, args)
 	},
 }
 
