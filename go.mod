@@ -27,7 +27,7 @@ require (
 	github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
 	github.com/meshplus/bitxhub-kit v1.1.2-0.20210112075018-319e668d6359
 	github.com/meshplus/go-libp2p-cert v0.0.0-20210125114242-7d9ed2eaaccd
-	github.com/meshplus/gosdk v0.1.3
+	github.com/meshplus/gosdk v0.1.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect

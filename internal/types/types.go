@@ -35,6 +35,7 @@ const (
 	InfoScript                 = "info.sh"
 	Prometheus                 = "prometheus.sh"
 	LogScript                  = "log.sh"
+	VersionScript              = "version.sh"
 	TlsCerts                   = "certs"
 	TmpPath                    = "tmp"
 	FabricConfig               = "config.yaml"

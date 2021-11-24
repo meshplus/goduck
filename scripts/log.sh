@@ -12,7 +12,7 @@ elif [ $SYSTEM == "Darwin" ]; then
   SYSTEM="darwin"
 fi
 
-function showBxhAll() {
+function showBxhAllBinary() {
   if [ $N = "-1" ]; then
     tail -n +1 $REPO_PATH/logs/bitxhub.log
   else
@@ -20,7 +20,16 @@ function showBxhAll() {
   fi
 }
 
-function showBxhNet() {
+function showBxhAllDocker() {
+  CID=$(docker container ls | grep meshplus/bitxhub | awk '{print $1}' | head -n $NUM | tail -n 1)
+  if [ $N = "-1" ]; then
+    docker logs --tail -1 $CID
+  else
+    docker logs --tail $N $CID
+  fi
+}
+
+function showBxhNetBinary() {
   if [ $N = "-1" ]; then
     tail -n +1 $REPO_PATH/logs/bitxhub.log | grep "module=p2p" || true
   else
@@ -28,7 +37,16 @@ function showBxhNet() {
   fi
 }
 
-function showBxhOrder() {
+function showBxhNetDocker() {
+  CID=$(docker container ls | grep meshplus/bitxhub | awk '{print $1}' | head -n $NUM | tail -n 1)
+  if [ $N = "-1" ]; then
+    docker logs --tail -1 $CID | grep "p2p" || true
+  else
+    docker logs --tail $N $CID | grep "p2p" || true
+  fi
+}
+
+function showBxhOrderBinary() {
   if [ $N = "-1" ]; then
     tail -n +1 $REPO_PATH/logs/bitxhub.log | grep "module=order" || true
   else
@@ -36,7 +54,16 @@ function showBxhOrder() {
   fi
 }
 
-function showPierLog() {
+function showBxhOrderDocker() {
+  CID=$(docker container ls | grep meshplus/bitxhub | awk '{print $1}' | head -n $NUM | tail -n 1)
+  if [ $N = "-1" ]; then
+    docker logs --tail -1 $CID | grep "order" || true
+  else
+    docker logs --tail $N $CID | grep "order" || true
+  fi
+}
+
+function showPierLogBinary() {
   if [ $N = "-1" ]; then
     tail -n +1 $REPO_PATH/logs/pier.log
   else
@@ -44,18 +71,46 @@ function showPierLog() {
   fi
 }
 
+function showPierLogDocker() {
+  CID=$(docker container ls | grep pier-${APPCHAIN} | awk '{print $1}'| head -n $NUM | tail -n 1)
+  if [ $N = "-1" ]; then
+    docker logs --tail -1 $CID
+  else
+    docker logs --tail $N $CID
+  fi
+}
+
 MODE=$1
-REPO_PATH=$2
-N=$3
+UP_TYPE=$2
+REPO_PATH=$3
+N=$4
+NUM=$5
+APPCHAIN=$6
 
 if [ "$MODE" == "bxhAll" ]; then
-  showBxhAll
+  if [ "$UP_TYPE" == "binary" ]; then
+    showBxhAllBinary
+  else
+    showBxhAllDocker
+  fi
 elif [ "$MODE" == "bxhNet" ]; then
-  showBxhNet
+  if [ "$UP_TYPE" == "binary" ]; then
+    showBxhNetBinary
+  else
+    showBxhNetDocker
+  fi
 elif [ "$MODE" == "bxhOrder" ]; then
-  showBxhOrder
+  if [ "$UP_TYPE" == "binary" ]; then
+    showBxhOrderBinary
+  else
+    showBxhOrderDocker
+  fi
 elif [ "$MODE" == "pierLog" ]; then
-  showPierLog
+  if [ "$UP_TYPE" == "binary" ]; then
+    showPierLogBinary
+  else
+    showPierLogDocker
+  fi
 else
   printHelp
   exit 1
