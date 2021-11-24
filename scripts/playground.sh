@@ -87,9 +87,14 @@ function binary_prepare() {
 function bitxhub_binary_solo() {
   binary_prepare
   cd "${TARGET}"
-  if [ ! -d nodeSolo/plugins ]; then
-    mkdir "${TARGET}"/nodeSolo/plugins
-    cp -r "${BXH_PATH}"/solo.so nodeSolo/plugins
+  version1=$VERSION
+  version2=v1.11.0
+  version_compare
+  if [[ $versionComPareRes -lt 0 ]]; then
+    if [ ! -d nodeSolo/plugins ]; then
+      mkdir "${TARGET}"/nodeSolo/plugins
+      cp -r "${BXH_PATH}"/solo.so nodeSolo/plugins
+    fi
   fi
   print_blue "======> Start bitxhub solo by binary"
   nohup "${BXH_PATH}"/bitxhub --repo "${TARGET}"/nodeSolo start >/dev/null 2>&1 &
