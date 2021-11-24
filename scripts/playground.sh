@@ -100,6 +100,7 @@ function bitxhub_binary_solo() {
   nohup "${BXH_PATH}"/bitxhub --repo "${TARGET}"/nodeSolo start >/dev/null 2>&1 &
   PID=$!
   echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+  "${BXH_PATH}"/bitxhub version >"${CONFIG_PATH}"/bitxhub-binary.version
   echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
@@ -114,8 +115,10 @@ function bitxhub_docker_solo() {
   docker-compose -f "${CONFIG_PATH}"/docker-compose-bitxhub-solo.yaml up -d
 
   echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+  sleep 1
   CID=$(docker container ls | grep bitxhub-solo)
   echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
+  docker exec ${CID:0:12} bitxhub version >"${CONFIG_PATH}"/bitxhub-docker.version
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
     print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
@@ -147,6 +150,7 @@ function bitxhub_binary_cluster() {
     echo ${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
     echo ${PID} >>"${CONFIG_PATH}"/bitxhub.pid
   done
+  "${BXH_PATH}"/bitxhub version >"${CONFIG_PATH}"/bitxhub-binary.version
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
   if [ ${VERSION} == "v1.8.0" ]; then
     print_blue "Note: To register the appchain, you need to execute the \"bitxhub client did init\" command."
@@ -313,8 +317,10 @@ function bitxhub_docker_cluster() {
 
   for ((i = 1; i < $NUM + 1; i = i + 1)); do
     echo v${VERSION} >>"${CONFIG_PATH}"/bitxhub.version
+    sleep 1
     CID=$(docker container ls | grep bitxhub_node$i)
     echo ${CID:0:12} >>"${CONFIG_PATH}"/bitxhub.cid
+    docker exec ${CID:0:12} bitxhub version >"${CONFIG_PATH}"/bitxhub-docker.version
   done
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup BitXHub node."
@@ -429,6 +435,12 @@ function cleanBxhInfoFile() {
   fi
   if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub.version ]; then
     rm "${BITXHUB_CONFIG_PATH}"/bitxhub.version
+  fi
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub-docker.version ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub-docker.version
+  fi
+  if [ -e "${BITXHUB_CONFIG_PATH}"/bitxhub-binary.version ]; then
+    rm "${BITXHUB_CONFIG_PATH}"/bitxhub-binary.version
   fi
 }
 

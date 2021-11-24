@@ -25,9 +25,20 @@ func logCMD() *cli.Command {
 						Usage: "Print all log of BitXHub node",
 						Flags: []cli.Flag{
 							&cli.StringFlag{
+								Name:  "type",
+								Value: types.TypeBinary,
+								Usage: "configuration type, one of binary or docker",
+							},
+							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1",
-								Required: true,
+								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Required: false,
+							},
+							&cli.IntFlag{
+								Name:     "num",
+								Usage:    "Specify the sequence num of the node, only for docker",
+								Value:    1,
+								Required: false,
 							},
 							&cli.IntFlag{
 								Name:     "n",
@@ -43,9 +54,20 @@ func logCMD() *cli.Command {
 						Usage: "Print all log of BitXHub node",
 						Flags: []cli.Flag{
 							&cli.StringFlag{
+								Name:  "type",
+								Value: types.TypeBinary,
+								Usage: "configuration type, one of binary or docker",
+							},
+							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1",
-								Required: true,
+								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Required: false,
+							},
+							&cli.IntFlag{
+								Name:     "num",
+								Usage:    "Specify the sequence num of the node, only for docker",
+								Value:    1,
+								Required: false,
 							},
 							&cli.IntFlag{
 								Name:     "n",
@@ -61,9 +83,20 @@ func logCMD() *cli.Command {
 						Usage: "Print all log of BitXHub node",
 						Flags: []cli.Flag{
 							&cli.StringFlag{
+								Name:  "type",
+								Value: types.TypeBinary,
+								Usage: "configuration type, one of binary or docker",
+							},
+							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1",
-								Required: true,
+								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Required: false,
+							},
+							&cli.IntFlag{
+								Name:     "num",
+								Usage:    "Specify the sequence num of the node, only for docker",
+								Value:    1,
+								Required: false,
 							},
 							&cli.IntFlag{
 								Name:     "n",
@@ -81,9 +114,25 @@ func logCMD() *cli.Command {
 				Usage: "Print log of Pier",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
+						Name:  "type",
+						Value: types.TypeBinary,
+						Usage: "configuration type, one of binary or docker",
+					},
+					&cli.StringFlag{
 						Name:     "repo",
-						Usage:    "Specify Pier repo, e.g. $HOME/.goduck/pier/.pier_ethereum",
-						Required: true,
+						Usage:    "Specify Pier repo, e.g. $HOME/.goduck/pier/.pier_ethereum, only for binary",
+						Required: false,
+					},
+					&cli.IntFlag{
+						Name:     "num",
+						Usage:    "Specify the sequence num of the pier, only for docker",
+						Value:    1,
+						Required: false,
+					},
+					&cli.StringFlag{
+						Name:  "appchain",
+						Usage: "Specify appchain type, one of ethereum or fabric, only for docker",
+						Value: types.ChainTypeEther,
 					},
 					&cli.IntFlag{
 						Name:     "n",
@@ -103,15 +152,21 @@ func bxhAll(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
+	typ := ctx.String("type")
 	target := ctx.String("repo")
+	num := ctx.Int("num")
 	n := ctx.Int("n")
+
+	if typ == types.TypeBinary && target == "" {
+		return fmt.Errorf("repo can not be nil")
+	}
 
 	path, err := filepath.Abs(target)
 	if err != nil {
 		return fmt.Errorf("get absolute target path: %w", err)
 	}
 
-	args := []string{types.LogScript, "bxhAll", path, strconv.Itoa(n)}
+	args := []string{types.LogScript, "bxhAll", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
 	if err := utils.ExecuteShell(args, repoPath); err != nil {
 		return err
 	}
@@ -124,15 +179,21 @@ func bxhNet(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
+	typ := ctx.String("type")
 	target := ctx.String("repo")
+	num := ctx.Int("num")
 	n := ctx.Int("n")
+
+	if typ == types.TypeBinary && target == "" {
+		return fmt.Errorf("repo can not be nil")
+	}
 
 	path, err := filepath.Abs(target)
 	if err != nil {
 		return fmt.Errorf("get absolute target path: %w", err)
 	}
 
-	args := []string{types.LogScript, "bxhNet", path, strconv.Itoa(n)}
+	args := []string{types.LogScript, "bxhNet", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
 	if err := utils.ExecuteShell(args, repoPath); err != nil {
 		return err
 	}
@@ -145,15 +206,21 @@ func bxhOrder(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
+	typ := ctx.String("type")
 	target := ctx.String("repo")
+	num := ctx.Int("num")
 	n := ctx.Int("n")
+
+	if typ == types.TypeBinary && target == "" {
+		return fmt.Errorf("repo can not be nil")
+	}
 
 	path, err := filepath.Abs(target)
 	if err != nil {
 		return fmt.Errorf("get absolute target path: %w", err)
 	}
 
-	args := []string{types.LogScript, "bxhOrder", path, strconv.Itoa(n)}
+	args := []string{types.LogScript, "bxhOrder", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
 	if err := utils.ExecuteShell(args, repoPath); err != nil {
 		return err
 	}
@@ -166,15 +233,22 @@ func pierLog(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
+	typ := ctx.String("type")
 	target := ctx.String("repo")
+	num := ctx.Int("num")
+	appchain := ctx.String("appchain")
 	n := ctx.Int("n")
+
+	if typ == types.TypeBinary && target == "" {
+		return fmt.Errorf("repo can not be nil")
+	}
 
 	path, err := filepath.Abs(target)
 	if err != nil {
 		return fmt.Errorf("get absolute target path: %w", err)
 	}
 
-	args := []string{types.LogScript, "pierLog", path, strconv.Itoa(n)}
+	args := []string{types.LogScript, "pierLog", typ, path, strconv.Itoa(n), strconv.Itoa(num), appchain}
 	if err := utils.ExecuteShell(args, repoPath); err != nil {
 		return err
 	}

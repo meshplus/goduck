@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/meshplus/goduck/internal/repo"
-
 	"github.com/meshplus/goduck"
+	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
+	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,6 +26,35 @@ func getVersionCMD() *cli.Command {
 				Name:   "goduck",
 				Usage:  "Goduck version",
 				Action: goduckVersion,
+			},
+			{
+				Name:  "bitxhub",
+				Usage: "BitXHub version",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "upType",
+						Usage: "Specify the startup type, one of binary or docker",
+						Value: types.TypeBinary,
+					},
+				},
+				Action: bxhVersion,
+			},
+			{
+				Name:  "pier",
+				Usage: "Pier version",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "appchain",
+						Usage: "Specify appchain type, one of ethereum or fabric",
+						Value: types.ChainTypeEther,
+					},
+					&cli.StringFlag{
+						Name:  "upType",
+						Usage: "Specify the startup type, one of binary or docker",
+						Value: types.TypeBinary,
+					},
+				},
+				Action: pierVersion,
 			},
 		},
 	}
@@ -46,6 +76,35 @@ func allVersion(ctx *cli.Context) error {
 
 func goduckVersion(ctx *cli.Context) error {
 	printVersion()
+
+	return nil
+}
+
+func bxhVersion(ctx *cli.Context) error {
+	upType := ctx.String("upType")
+	repoPath, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+	args := []string{types.VersionScript, "bxh", upType}
+	if err := utils.ExecuteShell(args, repoPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func pierVersion(ctx *cli.Context) error {
+	appchain := ctx.String("appchain")
+	upType := ctx.String("upType")
+	repoPath, err := repo.PathRootWithDefault(ctx.String("repo"))
+	if err != nil {
+		return err
+	}
+	args := []string{types.VersionScript, "pier", upType, appchain}
+	if err := utils.ExecuteShell(args, repoPath); err != nil {
+		return err
+	}
 
 	return nil
 }

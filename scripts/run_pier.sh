@@ -104,6 +104,11 @@ function pier_docker_up() {
 
     cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier.yaml
     docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml up -d
+    sleep 1
+    CID=`docker ps | grep pier-${APPCHAINTYPE} | awk '{print $1}'`
+    echo $CID >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}.cid
+    echo $(docker exec $CID pier id) >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.addr
+    docker exec $CID pier version >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.version
   else
     print_red "pier-${APPCHAINTYPE} container already running, please stop them first"
     exit 1
@@ -120,6 +125,7 @@ function pier_binary_up() {
   PID=$!
   echo ${PID} >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}.pid
   echo $("${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" id) >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-binary.addr
+  "${PIER_BIN_PATH}"/pier version >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-binary.version
 
   print_blue "You can use the \"goduck status list\" command to check the status of the startup pier."
 }
@@ -286,11 +292,17 @@ function cleanPierInfoFile() {
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr
   fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.version ]; then
+      rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.version
+    fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.pid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric.pid
   fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.version ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.version
   fi
 
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.cid ]; then
@@ -299,10 +311,15 @@ function cleanPierInfoFile() {
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr
   fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr
+  fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.cid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric.cid
   fi
-
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
+  fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
   fi

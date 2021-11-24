@@ -22,6 +22,7 @@ PROM_PATH="${CURRENT_PATH}/docker/prometheus"
 ETH_PATH="${CURRENT_PATH}/pier/ethereum/${ETHVERSION}"
 PLUGIN_PATH="${CURRENT_PATH}/bin/pier_linux_${VERSION}/ethereum-client"
 BITXHUB_CONFIG_PATH="${CURRENT_PATH}"/bitxhub
+PIER_CONFIG_PATH="${CURRENT_PATH}"/pier
 PIER_SCRIPTS_PATH="${CURRENT_PATH}"/docker/pier
 BITXHUB_SCRIPTS_PATH="${CURRENT_PATH}"/docker/bitxhub
 SYSTEM=$(uname -s)
@@ -132,6 +133,8 @@ function docker-compose-up() {
   bitxhubCID=$(docker ps -qf name="bitxhub_solo")
   pier1CID=$(docker ps -qf name="pier-ethereum-1")
   pier2CID=$(docker ps -qf name="pier-ethereum-2")
+  docker exec $bitxhubCID bitxhub version >"${BITXHUB_CONFIG_PATH}"/bitxhub-docker.version
+  docker exec $pier1CID pier version >"${PIER_CONFIG_PATH}"/pier-ethereum-docker.version
 
   error=false
 
