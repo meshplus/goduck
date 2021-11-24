@@ -40,6 +40,7 @@ func main() {
 		infoCMD(),
 		keyCMD(),
 		prometheusCMD(),
+		logCMD(),
 		getVersionCMD(),
 	}
 
