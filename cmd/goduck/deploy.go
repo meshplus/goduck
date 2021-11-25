@@ -6,14 +6,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/fatih/color"
 	"github.com/meshplus/bitxhub-kit/fileutil"
+	"github.com/meshplus/goduck/cmd/goduck/bitxhub"
 	"github.com/meshplus/goduck/internal/download"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
+	"github.com/meshplus/goduck/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,25 +29,19 @@ func deployCMD() *cli.Command {
 				Name:  "bitxhub",
 				Usage: "Deploy BitXHub to remote server",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "tls",
-						Value: false,
-						Usage: "whether to enable TLS, only useful for v1.4.0+",
-					},
 					&cli.StringFlag{
-						Name:     "ips",
-						Usage:    "servers ip, e.g. 188.0.0.1,188.0.0.2,188.0.0.3,.188.0.0.4",
+						Name:     "target",
+						Usage:    "Specify the directory to where to put the generated configuration files",
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "username",
-						Usage:    "server username",
-						Required: true,
+						Name:  "configPath",
+						Usage: "Specify the configuration file path for the configuration to be modified, default: $repo/bxh_config/$version/bxh_modify_config.toml",
 					},
 					&cli.StringFlag{
-						Name:     "version",
-						Usage:    "BitXHub version",
-						Required: true,
+						Aliases: []string{"version", "v"},
+						Value:   "v1.11.0",
+						Usage:   "BitXHub version",
 					},
 				},
 				Action: deployBitXHub,
@@ -169,16 +166,21 @@ func deployCMD() *cli.Command {
 }
 
 func deployBitXHub(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	tls := ctx.Bool("tls")
-	username := ctx.String("username")
+	target := ctx.String("target")
+	configPath := ctx.String("configPath")
 	version := ctx.String("version")
 
-	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	// 1. check goduck init
+	repoPath, err := repo.PathRoot()
+	if err != nil {
+		return fmt.Errorf("parse repo path error:%w", err)
+	}
+	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
+	// 2. check versiojn
+	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -192,112 +194,32 @@ func deployBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
-	dir, err := ioutil.TempDir("", "bitxhub")
+	// 3. get args and bin
+	if configPath == "" {
+		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+	} else {
+		configPath, err = filepath.Abs(configPath)
+		if err != nil {
+			return fmt.Errorf("get absolute config path: %w", err)
+		}
+	}
+
+	err = bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
 	if err != nil {
-		return err
+		return fmt.Errorf("download %s binary error:%w", runtime.GOOS, err)
 	}
 
-	ips := strings.Split(ctx.String("ips"), ",")
-
-	generator := NewBitXHubConfigGenerator("binary", "cluster", dir, len(ips), ips, tls, version)
-
-	if err := generator.InitConfig(); err != nil {
-		return err
-	}
-
-	binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/bitxhub_linux_%s", version))
-
-	err = os.MkdirAll(binPath, os.ModePerm)
+	// the remote system is usually Linux
+	err = bitxhub.DownloadBitxhubBinary(repoPath, version, types.LinuxSystem)
 	if err != nil {
-		return err
+		return fmt.Errorf("download %s binary error:%w", types.LinuxSystem, err)
 	}
 
-	filename := fmt.Sprintf("bitxhub_linux-amd64_%s.tar.gz", version)
-	filePath := filepath.Join(binPath, filename)
-
-	if !fileutil.Exist(filePath) {
-		url := fmt.Sprintf("https://github.com/meshplus/bitxhub/releases/download/%s/bitxhub_linux-amd64_%s.tar.gz", version, version)
-		err = download.Download(binPath, url)
-		if err != nil {
-			return err
-		}
-	}
-
-	for idx, ip := range ips {
-		color.Blue("====> Operating at node%d\n", idx+1)
-		who := fmt.Sprintf("%s@%s", username, ip)
-		target := fmt.Sprintf("%s:~/", who)
-
-		err = sh.Command("ssh", who, fmt.Sprintf("mkdir -p ~/.bitxhub/node%d", idx+1)).
-			Command("scp", filePath, target).Run()
-		if err != nil {
-			return err
-		}
-
-		err = sh.Command("scp", "-r",
-			fmt.Sprintf("%s/node%d", dir, idx+1),
-			fmt.Sprintf("%s%s", target, ".bitxhub")).
-			Run()
-		if err != nil {
-			return err
-		}
-
-		err = sh.
-			Command("ssh", who, fmt.Sprintf("tar xzf %s -C ~/.bitxhub && mkdir -p .bitxhub/node%d/plugins && cp .bitxhub/raft.so .bitxhub/node%d/plugins", filename, idx+1, idx+1)).Run()
-		if err != nil {
-			return err
-		}
-	}
-
-	color.Blue("====> Run\n")
-	for idx, ip := range ips {
-		who := fmt.Sprintf("%s@%s", username, ip)
-
-		err = sh.Command("ssh", who,
-			fmt.Sprintf("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/.bitxhub && cd ~/.bitxhub && nohup ./bitxhub --repo=node%d start >/dev/null 2>&1 &", idx+1)).Start()
-		if err != nil {
-			return err
-		}
-
-		err = sh.Command("ssh", who,
-			fmt.Sprintf("sleep 3 && NODE=`lsof -i:6001%d | grep LISTEN` && NODE=${NODE#* } && echo ${NODE%%%% *} > ~/.bitxhub/bitxhub%d.PID", idx+1, idx+1)).Start()
-		if err != nil {
-			color.Red("Start BitXHub node%d fail\n", idx+1)
-			return err
-		} else {
-			color.Blue("Start BitXHub node%d end\n", idx+1)
-		}
-	}
-
-	color.Blue("====> Check\n")
-	fmt.Println("You need to wait more than 5 seconds for each node")
-	for idx, ip := range ips {
-		who := fmt.Sprintf("%s@%s", username, ip)
-
-		out, err := sh.Command("ssh", who, fmt.Sprintf("sleep 5 && cat ~/.bitxhub/bitxhub%d.PID", idx+1)).Output()
-		if err != nil {
-			return err
-		}
-
-		pid := strings.Replace(string(out), "\n", "", -1)
-
-		if pid != "" {
-			out, err = sh.Command("ssh", who, fmt.Sprintf("if [[ -n `ps aux | grep %s | grep -v grep | grep node%d` ]]; then echo successful; else echo fail; fi", pid, idx+1)).Output()
-			if err != nil {
-				return err
-			}
-
-			res := strings.Replace(string(out), "\n", "", -1)
-			if res == "successful" {
-				color.Green("Start BitXHub node%d successful\n", idx+1)
-			} else {
-				color.Red("Start BitXHub node%d fail\n", idx+1)
-			}
-		} else {
-			color.Red("Start BitXHub node%d fail\n", idx+1)
-		}
-	}
-	return nil
+	// 4. execute
+	args := make([]string, 0)
+	args = append(args, filepath.Join(repoPath, types.DeployBxhScript), "up")
+	args = append(args, version, configPath, target)
+	return utils.ExecuteShell(args, repoPath)
 }
 
 func deployPier(ctx *cli.Context) error {

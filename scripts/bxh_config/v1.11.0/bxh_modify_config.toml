@@ -34,6 +34,7 @@
   ca_cert_path = REPO/bitxhub/certs/ca.cert
   [[bitxhub.node1]]
     node_host = host1
+    p2p_port = 4001
     jsonrpc_port = 8881
     grpc_port = 60011
     gateway_port = 9091
@@ -41,6 +42,7 @@
     monitor_port = 40011
   [[bitxhub.node2]]
     node_host = host1
+    p2p_port = 4002
     jsonrpc_port = 8882
     grpc_port = 60012
     gateway_port = 9092
@@ -48,6 +50,7 @@
     monitor_port = 40012
   [[bitxhub.node3]]
     node_host = host1
+    p2p_port = 4003
     jsonrpc_port = 8883
     grpc_port = 60013
     gateway_port = 9093
@@ -55,6 +58,7 @@
     monitor_port = 40013
   [[bitxhub.node4]]
     node_host = host1
+    p2p_port = 4004
     jsonrpc_port = 8884
     grpc_port = 60014
     gateway_port = 9094

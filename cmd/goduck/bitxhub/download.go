@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/codeskyblue/go-sh"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -12,8 +11,8 @@ import (
 	"github.com/meshplus/goduck/internal/types"
 )
 
-func DownloadBitxhubBinary(repoPath string, version string) error {
-	path := fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)
+func DownloadBitxhubBinary(repoPath string, version string, system string) error {
+	path := fmt.Sprintf("bitxhub_%s_%s", system, version)
 	root := filepath.Join(repoPath, "bin", path)
 	if !fileutil.Exist(root) {
 		err := os.MkdirAll(root, 0755)
@@ -22,7 +21,7 @@ func DownloadBitxhubBinary(repoPath string, version string) error {
 		}
 	}
 
-	if runtime.GOOS == "linux" {
+	if system == types.LinuxSystem {
 		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 			url := fmt.Sprintf(types.BitxhubUrlLinux, version, version)
 			err := download.Download(root, url)
@@ -31,7 +30,7 @@ func DownloadBitxhubBinary(repoPath string, version string) error {
 			}
 		}
 	}
-	if runtime.GOOS == "darwin" {
+	if system == types.DarwinSystem {
 		if !fileutil.Exist(filepath.Join(root, "bitxhub")) {
 			url := fmt.Sprintf(types.BitxhubUrlMacOS, version, version)
 			err := download.Download(root, url)
@@ -44,12 +43,12 @@ func DownloadBitxhubBinary(repoPath string, version string) error {
 	return nil
 }
 
-func ExtractBitxhubBinary(repoPath string, version string) error {
-	path := filepath.Join(repoPath, "bin", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version))
+func ExtractBitxhubBinary(repoPath string, version string, system string) error {
+	path := filepath.Join(repoPath, "bin", fmt.Sprintf("bitxhub_%s_%s", system, version))
 	var file string
-	if runtime.GOOS == "linux" {
+	if system == types.LinuxSystem {
 		file = fmt.Sprintf(types.BitxhubTarNameLinux, version)
-	} else if runtime.GOOS == "darwin" {
+	} else if system == types.DarwinSystem {
 		file = fmt.Sprintf(types.BitxhubTarNameMacOS, version)
 	}
 
