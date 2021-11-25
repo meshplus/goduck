@@ -115,6 +115,7 @@ func startBitXHub(ctx *cli.Context) error {
 	target := ctx.String("target")
 	version := ctx.String("version")
 
+	// 1. check goduck init
 	repoPath, err := repo.PathRoot()
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
@@ -123,6 +124,7 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
+	// 2. check version
 	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
 	if err != nil {
 		return err
@@ -137,6 +139,7 @@ func startBitXHub(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport BitXHub verison")
 	}
 
+	// 3. get args and bin
 	if configPath == "" {
 		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	} else {
@@ -156,12 +159,13 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	if typ == types.TypeBinary {
-		err := bitxhub.DownloadBitxhubBinary(repoPath, version)
+		err := bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
 		if err != nil {
 			return fmt.Errorf("download binary error:%w", err)
 		}
 	}
 
+	// 4. execute
 	args := make([]string, 0)
 	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
 	args = append(args, version, typ, configPath, target)
@@ -241,11 +245,11 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		}
 	}
 
-	err = bitxhub.DownloadBitxhubBinary(repoPath, version)
+	err = bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("download binary error:%w", err)
 	}
-	err = bitxhub.ExtractBitxhubBinary(repoPath, version)
+	err = bitxhub.ExtractBitxhubBinary(repoPath, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("extract binary error:%w", err)
 	}

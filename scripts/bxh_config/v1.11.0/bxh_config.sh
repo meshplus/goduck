@@ -58,6 +58,7 @@ function readConfig() {
   CACERTPATH=`sed '/^.*ca_cert_path/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   CONSENSUSTYPE=`sed '/^.*consensus_type/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
+  P2PP=`sed '/^.*p2p_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   JSONRPCP=`sed '/^.*jsonrpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GRPCP=`sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
   GATEWAYP=`sed '/^.*gateway_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
@@ -65,6 +66,10 @@ function readConfig() {
   MONITORP=`sed '/^.*monitor_port/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
 
   NODEHOST=`sed '/^.*node_host/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH}`
+
+  for a in $P2PP ; do
+    P2PPS+=($a)
+  done
 
   for a in $JSONRPCP ; do
     JSONRPCPS+=($a)
@@ -98,7 +103,9 @@ function readConfig() {
     host_lable=${host_lables[$i]}
     host_lable_start=`sed -n "/$host_lable/=" ${CONFIGPATH} | head -n 1` #要求配置文件中第一个配置项是关于host的配置
     host_ip=`sed -n "$host_lable_start,/ip/p" ${CONFIGPATH} | tail -n 1 | sed 's/[[:space:]]//g;s/ip=//g'`
+    host_user=`sed -n "$host_lable_start,/user/p" ${CONFIGPATH} | tail -n 1 | sed 's/[[:space:]]//g;s/user=//g'`
     IPS+=($host_ip)
+    USERS+=($host_user)
   done
 }
 
@@ -244,13 +251,14 @@ function rewriteNodeConfig() {
     for (( i = 1; i <= ${NUM}; i++ )); do
       account=${addr_array[$i-1]}
       ip=${IPS[$i-1]}
+      p2p_port=${P2PPS[$i-1]}
       pid=${pid_array[$i-1]}
 
       # 要求配置项顺序一定
       a_line=`sed -n "/account = \".*\"/=" ${TARGET}/$2/network.toml | head -n $i | tail -n 1`
       x_replace "$a_line s/account = \".*\"/account = \"$account\"/" ${TARGET}/$2/network.toml
       host_line=`expr $a_line + 1`
-      x_replace "$host_line s/hosts = .*/hosts = [\"\/\ip4\/$ip\/tcp\/400$i\/p2p\/\"]/" ${TARGET}/$2/network.toml
+      x_replace "$host_line s/hosts = .*/hosts = [\"\/\ip4\/$ip\/tcp\/$p2p_port\/p2p\/\"]/" ${TARGET}/$2/network.toml
       id_line=`expr $a_line + 2`
       x_replace "$id_line s/id = .*/id = $i/" ${TARGET}/$2/network.toml
       pid_line=`expr $a_line + 3`

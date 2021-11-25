@@ -36,6 +36,8 @@ const (
 	Prometheus                 = "prometheus.sh"
 	LogScript                  = "log.sh"
 	VersionScript              = "version.sh"
+	DeployBxhScript            = "deploy_bitxhub.sh"
+	DeployPierScript           = "deploy_pier.sh"
 	TlsCerts                   = "certs"
 	TmpPath                    = "tmp"
 	FabricConfig               = "config.yaml"
