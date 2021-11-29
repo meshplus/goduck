@@ -1,7 +1,7 @@
 version: "3"
 services:
   prom:
-    image: prom/prometheus:v2.0.0
+    image: prom/prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
@@ -13,8 +13,3 @@ services:
       - 3000:3000
     depends_on:
       - prom
-    environment:
-      - GF_AUTH_PROXY_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_DISABLE_LOGIN_FORM=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
