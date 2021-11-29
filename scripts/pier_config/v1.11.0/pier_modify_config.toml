@@ -1,16 +1,25 @@
+[hosts]
+  [[hosts.host]]
+    host_lable = host1 # (自定义)主机标签
+    ip = 172.16.30.83
+    # 主机用户名
+    user = fbz
+    # 主机ssh密钥文件名(config/cert/host目录下)
+    key = host1
 [pier]
+  pier_host = host1
   method = appchain
   # whether to overwrite the configuration files if them already exist
   rewrite = true
-  httpPort = 44544
-  pprofPort = 44550
-  apiPort = 8080
+  httpPort = 44574
+  pprofPort = 44570
+  apiPort = 8070
   # whether to enable TLS
   tls = false
   # direct, relay or union
   mode = relay
   [pier.relay]
-    bitxhubAddr = localhost:60011
+    bitxhubAddr = 172.16.30.83:60071
     bitxhubValidators = [
         "0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013",
         "0x79a1215469FaB6f9c63c1816b45183AD3624bE34",

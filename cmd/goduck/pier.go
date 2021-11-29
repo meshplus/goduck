@@ -40,7 +40,7 @@ var pierCMD = &cli.Command{
 					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
-					Name:  "pierRepo",
+					Name:  "target",
 					Usage: "Specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
 				},
 				&cli.StringFlag{
@@ -70,7 +70,7 @@ var pierCMD = &cli.Command{
 					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
-					Name:  "pierRepo",
+					Name:  "target",
 					Usage: "Specify the startup path of the pier (default:$repo/pier/.pier_$chainType)",
 				},
 				&cli.StringFlag{
@@ -105,7 +105,7 @@ var pierCMD = &cli.Command{
 					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
-					Name:  "pierRepo",
+					Name:  "target",
 					Usage: "Specify the startup path of the pier, only useful for binary (default:$repo/pier/.pier_$chainType)",
 				},
 				&cli.StringFlag{
@@ -168,7 +168,7 @@ var pierCMD = &cli.Command{
 					Value: types.ChainTypeEther,
 				},
 				&cli.StringFlag{
-					Name:  "pierRepo",
+					Name:  "target",
 					Usage: "Specify the directory to where to put the generated configuration files, default: $repo/pier/.pier_$APPCHAINTYPE/",
 				},
 				&cli.StringFlag{
@@ -193,7 +193,7 @@ var pierCMD = &cli.Command{
 
 func pierStart(ctx *cli.Context) error {
 	chainType := ctx.String("appchain")
-	pierRepo := ctx.String("pierRepo")
+	target := ctx.String("target")
 	upType := ctx.String("upType")
 	configPath := ctx.String("configPath")
 	version := ctx.String("version")
@@ -217,17 +217,17 @@ func pierStart(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	if pierRepo == "" {
-		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	if target == "" {
+		target = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	} else {
-		pierRepo, err = filepath.Abs(pierRepo)
+		target, err = filepath.Abs(target)
 		if err != nil {
 			return fmt.Errorf("get absolute pier repo path: %w", err)
 		}
 	}
 
-	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
-		if err := os.MkdirAll(pierRepo, 0755); err != nil {
+	if upType == types.TypeBinary && !fileutil.Exist(target) {
+		if err := os.MkdirAll(target, 0755); err != nil {
 			return err
 		}
 	}
@@ -252,14 +252,14 @@ func pierStart(ctx *cli.Context) error {
 		return fmt.Errorf("download pier binary error:%w", err)
 	}
 
-	return pier.StartPier(repoRoot, chainType, pierRepo, upType, configPath, version)
+	return pier.StartPier(repoRoot, chainType, target, upType, configPath, version)
 }
 
 func pierRegister(ctx *cli.Context) error {
 	chainType := ctx.String("appchain")
+	target := ctx.String("target")
 	upType := ctx.String("upType")
 	method := ctx.String("method")
-	pierRepo := ctx.String("pierRepo")
 	version := ctx.String("version")
 	cid := ctx.String("cid")
 
@@ -282,17 +282,17 @@ func pierRegister(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	if pierRepo == "" {
-		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	if target == "" {
+		target = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	} else {
-		pierRepo, err = filepath.Abs(pierRepo)
+		target, err = filepath.Abs(target)
 		if err != nil {
 			return fmt.Errorf("get absolute pier repo path: %w", err)
 		}
 	}
 
-	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
-		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	if upType == types.TypeBinary && !fileutil.Exist(target) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", target)
 	}
 
 	if upType == types.TypeDocker && cid == "" {
@@ -307,13 +307,13 @@ func pierRegister(ctx *cli.Context) error {
 		color.Blue("pier binary path: %s", binPath)
 	}
 
-	return pier.RegisterPier(repoRoot, pierRepo, chainType, upType, method, version, cid)
+	return pier.RegisterPier(repoRoot, target, chainType, upType, method, version, cid)
 	//return pier.RegisterPier(repoRoot, chainType, cryptoPath, pierUpType, version, tls, http, pport, aport, overwrite, appchainIP, appchainAddr, appchainPorts, appchainContractAddr, pierRepo, adminKey, method)
 }
 
 func pierRuleDeploy(ctx *cli.Context) error {
 	chainType := ctx.String("appchain")
-	pierRepo := ctx.String("pierRepo")
+	target := ctx.String("target")
 	ruleRepo := ctx.String("ruleRepo")
 	upType := ctx.String("upType")
 	method := ctx.String("method")
@@ -339,12 +339,17 @@ func pierRuleDeploy(ctx *cli.Context) error {
 		return fmt.Errorf("unsupport pier verison")
 	}
 
-	if pierRepo == "" {
-		pierRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	if target == "" {
+		target = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
+	} else {
+		target, err = filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("get absolute pier repo path: %w", err)
+		}
 	}
 
-	if upType == types.TypeBinary && !fileutil.Exist(pierRepo) {
-		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", pierRepo)
+	if upType == types.TypeBinary && !fileutil.Exist(target) {
+		return fmt.Errorf("the pier startup path(%s) does not have a startup binary", target)
 	}
 
 	if upType == types.TypeDocker && cid == "" {
@@ -355,7 +360,7 @@ func pierRuleDeploy(ctx *cli.Context) error {
 		ruleRepo = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s/%s/validating.wasm", chainType, chainType))
 	}
 
-	return pier.DeployRule(repoRoot, chainType, pierRepo, ruleRepo, upType, method, version, cid)
+	return pier.DeployRule(repoRoot, chainType, target, ruleRepo, upType, method, version, cid)
 }
 
 func pierStop(ctx *cli.Context) error {
@@ -411,6 +416,11 @@ func generatePierConfig(ctx *cli.Context) error {
 
 	if target == "" {
 		target = filepath.Join(repoPath, fmt.Sprintf("pier/.pier_%s", chainType))
+	} else {
+		target, err = filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("get absolute target path: %w", err)
+		}
 	}
 
 	if _, err := os.Stat(target); os.IsNotExist(err) {
