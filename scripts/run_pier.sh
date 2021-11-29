@@ -190,7 +190,7 @@ function pier_up() {
   # generate config
   goduck pier config \
     --appchain "${APPCHAINTYPE}" \
-    --pierRepo "${PIERREPO}" \
+    --target "${PIERREPO}" \
     --configPath "${CONFIGPATH}" \
     --upType "${UPTYPE}" \
     --version "${VERSION}"

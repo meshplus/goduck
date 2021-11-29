@@ -144,7 +144,7 @@ function rewritePierConfig() {
   x_replace "s/type.*= \".*\"/type = \"$MODE\"/" ${TARGET}/pier.toml
   case $MODE in
   relay)
-    x_replace "s/addrs.*= [.*]/addrs = [$BITXHUBADDR]/" ${TARGET}/pier.toml
+    x_replace "s/addrs.*=.*/addrs = [\"$BITXHUBADDR\"]/" ${TARGET}/pier.toml
     x_replace "s/validators.*= .*/validators = $VALIDATORS/" ${TARGET}/pier.toml
     ;;
   direct)

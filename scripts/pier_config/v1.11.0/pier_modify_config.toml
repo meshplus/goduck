@@ -1,8 +1,17 @@
+[hosts]
+  [[hosts.host]]
+    host_lable = host1 # (自定义)主机标签
+    ip = 127.0.0.1
+    # 主机用户名
+    user = xxx
+    # 主机ssh密钥文件名(config/cert/host目录下)
+    key = host1
 [pier]
+  pier_host = host1
   method = appchain
   # whether to overwrite the configuration files if them already exist
   rewrite = true
-  httpPort = 44544
+  httpPort = 44554
   pprofPort = 44550
   apiPort = 8080
   # whether to enable TLS

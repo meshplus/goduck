@@ -86,7 +86,7 @@ function docker-compose-up() {
   x_replace "s/image: meshplus\/ethereum:.*/image: meshplus\/ethereum:${ETHVERSION}/g" "${QUICK_PATH_TMP}"/quick_start.yml
 
   if [ $SYSTEM == "Darwin" ]; then
-    IP=$(ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\.")
+    IP=$(ifconfig -a | grep -e "inet[^6]" | sed -e "s/.*inet[^6][^0-9]*\([0-9.]*\)[^0-9]*.*/\1/" | grep -v "^127\." | head -n 1)
   elif [ $SYSTEM == "Linux" ]; then
     IP=$(ip -4 route list | grep docker0 | awk '{print $9}')
   else

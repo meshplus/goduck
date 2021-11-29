@@ -41,7 +41,7 @@ function printHelp() {
 }
 
 function readHostConfig() {
-  print_blue "==========> read host config"
+  print_blue "read host config"
   GRPCP=`sed '/^.*grpc_port/!d;s/.*=//;s/[[:space:]]//g' ${MODIFY_CONFIG_PATH}`
   for a in $GRPCP ; do
     GRPCPS+=($a)
@@ -112,7 +112,7 @@ function check(){
 
 function deploy() {
   prepareConfig
-  print_green "==========> prepare config successful"
+  print_green "==========> Prepare config successful"
   print_blue "==========> Deploying bitxhub($VERSION)"
   readHostConfig
   for (( i = 1; i <= ${NUM}; i++ )); do
@@ -124,7 +124,7 @@ function deploy() {
 
     # 传bin文件
     scp ${BIN_PATH}/${BIN_FILE} $FULL_TARGET
-    # 传配置文件
+    # 解压bin
     ssh $WHO "if [[ -d ${TARGET}/.bitxhub ]]; then tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.bitxhub; else mkdir ${TARGET}/.bitxhub && tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.bitxhub; fi; "
   done
 
@@ -134,6 +134,7 @@ function deploy() {
     WHO=$user@$ip
     FULL_TARGET=$WHO:$TARGET
     echo "Operating at node$i: $user@$ip "
+    # 传配置文件
     scp -r ${BXH_DEPLOY_PATH}/node$i $FULL_TARGET/.bitxhub/
   done
 
@@ -150,7 +151,7 @@ function deploy() {
 
     grpc_port=${GRPCPS[$i-1]}
     error=false
-    NODE=`ssh fbz@172.16.30.83 "sleep 3 ; lsof -i:$grpc_port | grep LISTEN"` || error=true
+    NODE=`ssh $WHO "sleep 3 ; lsof -i:$grpc_port | grep LISTEN"` || error=true
     NODE=${NODE#* } || error=true
     nodePid=`echo ${NODE} | awk '{print $1}'` || error=true
     echo $nodePid > ${BXH_DEPLOY_PATH}/bitxhub$i.PID || error=true
