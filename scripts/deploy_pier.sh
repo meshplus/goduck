@@ -75,6 +75,8 @@ function prepareConfig() {
 
 function deploy() {
   prepareConfig
+  chmod +x ${BIN_PATH}/${PLUGIN_BIN_FILE}
+  cp ${BIN_PATH}/${PLUGIN_BIN_FILE} ${PIER_DEPLOY_PATH}/plugins/appchain_plugin
   print_green "==========> Prepare config successful"
   print_blue "==========> Deploying pier-$CHAINTYPE($VERSION)"
   readHostConfig
@@ -85,19 +87,19 @@ function deploy() {
   print_blue "Operating at pier-$CHAINTYPE: $WHO "
   # 传bin文件
   scp ${BIN_PATH}/${BIN_FILE} $FULL_TARGET
+  # 传配置文件
+    scp -r ${PIER_DEPLOY_PATH} $FULL_TARGET/.pier_$CHAINTYPE
 
   # 解压bin
-  ssh $WHO "if [[ -d ${TARGET}/.pier-$CHAINTYPE ]]; then tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.pier-$CHAINTYPE; else mkdir ${TARGET}/.pier-$CHAINTYPE && tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.pier-$CHAINTYPE; fi; "
-  # 传配置文件
-  scp -r ${PIER_DEPLOY_PATH} $FULL_TARGET/.pier_$CHAINTYPE
-  scp ${BIN_PATH}/${PLUGIN_BIN_FILE} $FULL_TARGET/.pier-$CHAINTYPE/appchain_plugin
+  ssh $WHO "if [[ -d ${TARGET}/.pier_$CHAINTYPE ]]; then tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.pier_$CHAINTYPE; else mkdir ${TARGET}/.pier_$CHAINTYPE && tar xzf ${TARGET}/${BIN_FILE} -C ${TARGET}/.pier_$CHAINTYPE; fi; "
+  #scp ${BIN_PATH}/${PLUGIN_BIN_FILE} $FULL_TARGET/.pier_$CHAINTYPE/appchain_plugin
   # 配置插件
-  sleep 3
-  ssh $WHO "mv $TARGET/.pier-$CHAINTYPE/$CHAINTYPE-client $TARGET/.pier_$CHAINTYPE/plugins/appchain_plugin; chmod +x $TARGET/.pier_$CHAINTYPE/plugins/appchain_plugin"
+#  sleep 3
+#  ssh $WHO "mv $TARGET/.pier_$CHAINTYPE/$CHAINTYPE-client $TARGET/.pier_$CHAINTYPE/plugins/appchain_plugin; chmod +x $TARGET/.pier_$CHAINTYPE/plugins/appchain_plugin"
 
   print_blue "Runing pier-$CHAINTYPE"
   # 启动
-  ssh $WHO "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${TARGET}/.pier-$CHAINTYPE; cd ${TARGET}/.pier-$CHAINTYPE; nohup ./pier --repo ${TARGET}/.pier_$CHAINTYPE start >/dev/null 2>&1 &"
+  ssh $WHO "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${TARGET}/.pier_$CHAINTYPE; cd ${TARGET}/.pier_$CHAINTYPE; nohup ./pier --repo ${TARGET}/.pier_$CHAINTYPE start >/dev/null 2>&1 &"
 
   print_blue "Checking pier-$CHAINTYPE"
   error=false
