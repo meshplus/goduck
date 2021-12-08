@@ -24,7 +24,7 @@ type Release struct {
 
 var bxhConfigMap = map[string]string{
 	"v1.6.1":  "v1.6.1",
-	"v1.6.2":  "v1.6.2", // same to 1.6.1
+	"v1.6.5":  "v1.6.5", // same to 1.6.1
 	"v1.7.0":  "v1.7.0",
 	"v1.8.0":  "v1.8.0",
 	"v1.9.0":  "v1.9.0",
@@ -56,7 +56,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.2",
+						Value:   "v1.6.5",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -86,7 +86,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v1.6.2",
+						Value:   "v1.6.5",
 						Usage:   "BitXHub version",
 					},
 				},
