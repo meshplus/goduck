@@ -78,16 +78,16 @@ func deployBitXHub(ctx *cli.Context) error {
 	version := ctx.String("version")
 
 	// 1. check goduck init
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
 	// 2. check versiojn
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func deployBitXHub(ctx *cli.Context) error {
 
 	// 3. get args and bin
 	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	} else {
 		configPath, err = filepath.Abs(configPath)
 		if err != nil {
@@ -111,22 +111,22 @@ func deployBitXHub(ctx *cli.Context) error {
 		}
 	}
 
-	err = bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
+	err = bitxhub.DownloadBitxhubBinary(repoRoot, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("download %s binary error:%w", runtime.GOOS, err)
 	}
 
 	// the remote system is usually Linux
-	err = bitxhub.DownloadBitxhubBinary(repoPath, version, types.LinuxSystem)
+	err = bitxhub.DownloadBitxhubBinary(repoRoot, version, types.LinuxSystem)
 	if err != nil {
 		return fmt.Errorf("download %s binary error:%w", types.LinuxSystem, err)
 	}
 
 	// 4. execute
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.DeployBxhScript), "up")
+	args = append(args, filepath.Join(repoRoot, types.DeployBxhScript), "up")
 	args = append(args, version, configPath, target)
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func deployPier(ctx *cli.Context) error {
@@ -136,16 +136,16 @@ func deployPier(ctx *cli.Context) error {
 	version := ctx.String("version")
 
 	// 1. check goduck init
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
 	// 2. check versiojn
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func deployPier(ctx *cli.Context) error {
 
 	// 3. get args and bin
 	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("pier_config/%s/%s", pierConfigMap[version], types.PierModifyConfig))
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("pier_config/%s/%s", pierConfigMap[version], types.PierModifyConfig))
 	} else {
 		configPath, err = filepath.Abs(configPath)
 		if err != nil {
@@ -169,26 +169,26 @@ func deployPier(ctx *cli.Context) error {
 		}
 	}
 
-	err = pier.DownloadPierBinary(repoPath, version, runtime.GOOS)
+	err = pier.DownloadPierBinary(repoRoot, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("download %s binary error:%w", runtime.GOOS, err)
 	}
 
 	// the remote system is usually Linux
-	err = pier.DownloadPierBinary(repoPath, version, types.LinuxSystem)
+	err = pier.DownloadPierBinary(repoRoot, version, types.LinuxSystem)
 	if err != nil {
 		return fmt.Errorf("download %s binary error:%w", types.LinuxSystem, err)
 	}
 
-	if err := pier.DownloadPierPlugin(repoPath, appchain, version, types.LinuxSystem); err != nil {
+	if err := pier.DownloadPierPlugin(repoRoot, appchain, version, types.LinuxSystem); err != nil {
 		return fmt.Errorf("download pier binary error:%w", err)
 	}
 
 	// 4. execute
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.DeployPierScript), "up")
+	args = append(args, filepath.Join(repoRoot, types.DeployPierScript), "up")
 	args = append(args, appchain, version, configPath, target)
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 //func pierCheck(who string, chain string, pprof string) error {

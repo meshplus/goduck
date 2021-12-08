@@ -97,17 +97,17 @@ func bitxhubCMD() *cli.Command {
 }
 
 func stopBitXHub(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "down")
+	args = append(args, filepath.Join(repoRoot, types.PlaygroundScript), "down")
 
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func startBitXHub(ctx *cli.Context) error {
@@ -117,16 +117,16 @@ func startBitXHub(ctx *cli.Context) error {
 	version := ctx.String("version")
 
 	// 1. check goduck init
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
 	// 2. check version
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func startBitXHub(ctx *cli.Context) error {
 
 	// 3. get args and bin
 	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	} else {
 		configPath, err = filepath.Abs(configPath)
 		if err != nil {
@@ -151,7 +151,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	if target == "" {
-		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
+		target = filepath.Join(repoRoot, fmt.Sprintf("bitxhub/.bitxhub"))
 	} else {
 		target, err = filepath.Abs(target)
 		if err != nil {
@@ -160,7 +160,7 @@ func startBitXHub(ctx *cli.Context) error {
 	}
 
 	if typ == types.TypeBinary {
-		err := bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
+		err := bitxhub.DownloadBitxhubBinary(repoRoot, version, runtime.GOOS)
 		if err != nil {
 			return fmt.Errorf("download binary error:%w", err)
 		}
@@ -168,9 +168,9 @@ func startBitXHub(ctx *cli.Context) error {
 
 	// 4. execute
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "up")
+	args = append(args, filepath.Join(repoRoot, types.PlaygroundScript), "up")
 	args = append(args, version, typ, configPath, target)
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func AdjustVersion(version string, release []string) bool {
@@ -183,16 +183,16 @@ func AdjustVersion(version string, release []string) bool {
 }
 
 func cleanBitXHub(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.PlaygroundScript), "clean")
-	return utils.ExecuteShell(args, repoPath)
+	args = append(args, filepath.Join(repoRoot, types.PlaygroundScript), "clean")
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func generateBitXHubConfig(ctx *cli.Context) error {
@@ -200,15 +200,15 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	configPath := ctx.String("configPath")
 	version := ctx.String("version")
 
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.PlaygroundScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	}
 
 	if target == "" {
-		target = filepath.Join(repoPath, fmt.Sprintf("bitxhub/.bitxhub"))
+		target = filepath.Join(repoRoot, fmt.Sprintf("bitxhub/.bitxhub"))
 	} else {
 		target, err = filepath.Abs(target)
 		if err != nil {
@@ -238,7 +238,7 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 	}
 
 	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("bxh_config/%s/%s", bxhConfigMap[version], types.BxhModifyConfig))
 	} else {
 		configPath, err = filepath.Abs(configPath)
 		if err != nil {
@@ -246,19 +246,19 @@ func generateBitXHubConfig(ctx *cli.Context) error {
 		}
 	}
 
-	err = bitxhub.DownloadBitxhubBinary(repoPath, version, runtime.GOOS)
+	err = bitxhub.DownloadBitxhubBinary(repoRoot, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("download binary error:%w", err)
 	}
-	err = bitxhub.ExtractBitxhubBinary(repoPath, version, runtime.GOOS)
+	err = bitxhub.ExtractBitxhubBinary(repoRoot, version, runtime.GOOS)
 	if err != nil {
 		return fmt.Errorf("extract binary error:%w", err)
 	}
-	binPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)))
+	binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/%s", fmt.Sprintf("bitxhub_%s_%s", runtime.GOOS, version)))
 	fmt.Println(binPath)
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.BxhConfigRepo, bxhConfigMap[version], types.BitxhubConfigScript))
+	args = append(args, filepath.Join(repoRoot, types.BxhConfigRepo, bxhConfigMap[version], types.BitxhubConfigScript))
 	args = append(args, "-t", target, "-b", binPath, "-p", configPath)
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }

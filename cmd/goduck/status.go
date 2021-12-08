@@ -74,7 +74,7 @@ func GetStatusCMD() *cli.Command {
 }
 
 func showStatus(ctx *cli.Context) error {
-	repoRoot, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func showStatus(ctx *cli.Context) error {
 func showComponentStatus(ctx *cli.Context) error {
 	port := ctx.String("port")
 
-	repoRoot, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}

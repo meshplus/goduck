@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -25,6 +28,9 @@ func infoCMD() *cli.Command {
 					if err != nil {
 						return err
 					}
+					if !fileutil.Exist(repoRoot) {
+						return fmt.Errorf("please `goduck init` first")
+					}
 					return showBxhInfo(repoRoot)
 				},
 			},
@@ -35,6 +41,9 @@ func infoCMD() *cli.Command {
 					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 					if err != nil {
 						return err
+					}
+					if !fileutil.Exist(repoRoot) {
+						return fmt.Errorf("please `goduck init` first")
 					}
 					return showPierInfo(repoRoot)
 				},
@@ -47,6 +56,9 @@ func showInfo(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
+	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
 	if err := showBxhInfo(repoRoot); err != nil {

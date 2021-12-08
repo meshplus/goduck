@@ -203,8 +203,11 @@ func pierStart(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
-	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, types.ReleaseJson))
 	if err != nil {
 		return err
 	}
@@ -268,6 +271,9 @@ func pierRegister(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
@@ -325,6 +331,9 @@ func pierRuleDeploy(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
@@ -371,6 +380,9 @@ func pierStop(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
 	return pier.StopPier(repoRoot, chainType)
 }
@@ -381,6 +393,9 @@ func pierClean(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
+	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
 	return pier.CleanPier(repoRoot, chainType)
@@ -393,15 +408,15 @@ func generatePierConfig(ctx *cli.Context) error {
 	version := ctx.String("version")
 	upType := ctx.String("upType")
 
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return fmt.Errorf("parse repo path error:%w", err)
 	}
-	if !fileutil.Exist(filepath.Join(repoPath, types.PlaygroundScript)) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(repoPath, "release.json"))
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -416,7 +431,7 @@ func generatePierConfig(ctx *cli.Context) error {
 	}
 
 	if target == "" {
-		target = filepath.Join(repoPath, fmt.Sprintf("pier/.pier_%s", chainType))
+		target = filepath.Join(repoRoot, fmt.Sprintf("pier/.pier_%s", chainType))
 	} else {
 		target, err = filepath.Abs(target)
 		if err != nil {
@@ -431,28 +446,28 @@ func generatePierConfig(ctx *cli.Context) error {
 	}
 
 	if configPath == "" {
-		configPath = filepath.Join(repoPath, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
+		configPath = filepath.Join(repoRoot, fmt.Sprintf("%s/%s/%s", types.PierConfigRepo, pierConfigMap[version], types.PierModifyConfig))
 	}
 
-	if err := pier.DownloadPierBinary(repoPath, version, runtime.GOOS); err != nil {
+	if err := pier.DownloadPierBinary(repoRoot, version, runtime.GOOS); err != nil {
 		return fmt.Errorf("download pier binary error:%w", err)
 	}
 	pluginSys := runtime.GOOS
 	if upType == types.TypeDocker {
 		pluginSys = types.LinuxSystem
 	}
-	if err := pier.DownloadPierPlugin(repoPath, chainType, version, pluginSys); err != nil {
+	if err := pier.DownloadPierPlugin(repoRoot, chainType, version, pluginSys); err != nil {
 		return fmt.Errorf("download pier binary error:%w", err)
 	}
-	binPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)))
-	pluginPath := filepath.Join(repoPath, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", pluginSys, version)))
+	binPath := filepath.Join(repoRoot, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", runtime.GOOS, version)))
+	pluginPath := filepath.Join(repoRoot, fmt.Sprintf("bin/%s", fmt.Sprintf("pier_%s_%s", pluginSys, version)))
 	color.Blue("pier binary path: %s", binPath)
-	appchainConfigPath := filepath.Join(repoPath, fmt.Sprintf("pier/%s", chainType))
+	appchainConfigPath := filepath.Join(repoRoot, fmt.Sprintf("pier/%s", chainType))
 	if chainType == types.ChainTypeEther {
-		appchainConfigPath = filepath.Join(repoPath, fmt.Sprintf("pier/%s/%s", chainType, EthConfigMap[version]))
+		appchainConfigPath = filepath.Join(repoRoot, fmt.Sprintf("pier/%s/%s", chainType, EthConfigMap[version]))
 	}
 
-	return pier.GeneratePier(filepath.Join(repoPath, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoPath, target, configPath, chainType, binPath, pluginPath, appchainConfigPath)
+	return pier.GeneratePier(filepath.Join(repoRoot, types.PierConfigRepo, pierConfigMap[version], types.PierConfigScript), repoRoot, target, configPath, chainType, binPath, pluginPath, appchainConfigPath)
 }
 
 // TODO: delete

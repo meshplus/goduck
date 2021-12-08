@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -31,7 +32,7 @@ func logCMD() *cli.Command {
 							},
 							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
 							&cli.IntFlag{
@@ -60,7 +61,7 @@ func logCMD() *cli.Command {
 							},
 							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
 							&cli.IntFlag{
@@ -89,7 +90,7 @@ func logCMD() *cli.Command {
 							},
 							&cli.StringFlag{
 								Name:     "repo",
-								Usage:    "Specify BitXHub node repo, e.g. $HOME/.goduck/bitxhub/.bitxhub/node1, only for binary",
+								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
 							&cli.IntFlag{
@@ -120,7 +121,7 @@ func logCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:     "repo",
-						Usage:    "Specify Pier repo, e.g. $HOME/.goduck/pier/.pier_ethereum, only for binary",
+						Usage:    "Specify Pier repo, e.g. $repo/pier/.pier_ethereum, only for binary",
 						Required: false,
 					},
 					&cli.IntFlag{
@@ -148,10 +149,14 @@ func logCMD() *cli.Command {
 }
 
 func bxhAll(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	typ := ctx.String("type")
 	target := ctx.String("repo")
 	num := ctx.Int("num")
@@ -167,7 +172,7 @@ func bxhAll(ctx *cli.Context) error {
 	}
 
 	args := []string{types.LogScript, "bxhAll", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 
@@ -175,10 +180,14 @@ func bxhAll(ctx *cli.Context) error {
 }
 
 func bxhNet(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	typ := ctx.String("type")
 	target := ctx.String("repo")
 	num := ctx.Int("num")
@@ -194,7 +203,7 @@ func bxhNet(ctx *cli.Context) error {
 	}
 
 	args := []string{types.LogScript, "bxhNet", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 
@@ -202,10 +211,14 @@ func bxhNet(ctx *cli.Context) error {
 }
 
 func bxhOrder(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	typ := ctx.String("type")
 	target := ctx.String("repo")
 	num := ctx.Int("num")
@@ -221,7 +234,7 @@ func bxhOrder(ctx *cli.Context) error {
 	}
 
 	args := []string{types.LogScript, "bxhOrder", typ, path, strconv.Itoa(n), strconv.Itoa(num)}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 
@@ -229,10 +242,14 @@ func bxhOrder(ctx *cli.Context) error {
 }
 
 func pierLog(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	typ := ctx.String("type")
 	target := ctx.String("repo")
 	num := ctx.Int("num")
@@ -249,7 +266,7 @@ func pierLog(ctx *cli.Context) error {
 	}
 
 	args := []string{types.LogScript, "pierLog", typ, path, strconv.Itoa(n), strconv.Itoa(num), appchain}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 

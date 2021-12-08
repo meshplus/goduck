@@ -1,8 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/fabric"
 	"github.com/meshplus/goduck/internal/repo"
+	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,6 +31,9 @@ func fabricCMD() *cli.Command {
 					if err != nil {
 						return err
 					}
+					if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+						return fmt.Errorf("please `goduck init` first")
+					}
 
 					cryptoConfigPath := ctx.String("crypto-config")
 
@@ -40,6 +48,9 @@ func fabricCMD() *cli.Command {
 					if err != nil {
 						return err
 					}
+					if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+						return fmt.Errorf("please `goduck init` first")
+					}
 
 					return fabric.Stop(repoRoot)
 				},
@@ -51,6 +62,9 @@ func fabricCMD() *cli.Command {
 					repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 					if err != nil {
 						return err
+					}
+					if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+						return fmt.Errorf("please `goduck init` first")
 					}
 
 					return fabric.Clean(repoRoot)

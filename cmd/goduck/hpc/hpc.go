@@ -24,15 +24,8 @@ type Hyperchain struct {
 	contractAddr string
 }
 
-func New(configPath, repoRoot string) (*Hyperchain, error) {
-	defaultConfigPath := filepath.Join(repoRoot, "hyperchain")
-
-	var hpcPath string
-	if len(configPath) == 0 {
-		hpcPath = defaultConfigPath
-	} else {
-		hpcPath = configPath
-	}
+func New(configPath string) (*Hyperchain, error) {
+	hpcPath := configPath
 
 	keyPath := filepath.Join(hpcPath, "hpc.account")
 	accountData, err := ioutil.ReadFile(keyPath)

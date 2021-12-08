@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/bitxhub"
 	"github.com/meshplus/goduck/cmd/goduck/pier"
 	"github.com/meshplus/goduck/internal/repo"
@@ -73,6 +74,9 @@ func dockerUp(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.QuickStartScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
 	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
@@ -119,6 +123,9 @@ func dockerDown(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.QuickStartScript)) {
+		return fmt.Errorf("please `goduck init` first")
+	}
 
 	args := []string{types.QuickStartScript, "down"}
 	return utils.ExecuteShell(args, repoRoot)
@@ -128,6 +135,9 @@ func dockerStop(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
+	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.QuickStartScript)) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
 	args := []string{types.QuickStartScript, "stop"}
@@ -139,6 +149,9 @@ func transfer(ctx *cli.Context) error {
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
+	}
+	if !fileutil.Exist(filepath.Join(repoRoot, types.QuickStartScript)) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 
 	ethVersion := EthConfigMap[version]

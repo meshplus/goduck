@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
@@ -61,11 +62,15 @@ func getVersionCMD() *cli.Command {
 }
 
 func allVersion(ctx *cli.Context) error {
-	root, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadFile(filepath.Join(root, "release.json"))
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(repoRoot, "release.json"))
 	if err != nil {
 		return err
 	}
@@ -82,12 +87,16 @@ func goduckVersion(ctx *cli.Context) error {
 
 func bxhVersion(ctx *cli.Context) error {
 	upType := ctx.String("upType")
-	repoPath, err := repo.PathRootWithDefault(ctx.String("repo"))
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	args := []string{types.VersionScript, "bxh", upType}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 
@@ -97,12 +106,16 @@ func bxhVersion(ctx *cli.Context) error {
 func pierVersion(ctx *cli.Context) error {
 	appchain := ctx.String("appchain")
 	upType := ctx.String("upType")
-	repoPath, err := repo.PathRootWithDefault(ctx.String("repo"))
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
+	}
+
 	args := []string{types.VersionScript, "pier", upType, appchain}
-	if err := utils.ExecuteShell(args, repoPath); err != nil {
+	if err := utils.ExecuteShell(args, repoRoot); err != nil {
 		return err
 	}
 

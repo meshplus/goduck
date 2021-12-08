@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/goduck/internal/utils"
@@ -53,42 +54,51 @@ func prometheusCMD() *cli.Command {
 
 func startProm(ctx *cli.Context) error {
 	addrs := strings.Fields(ctx.String("addrs"))
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
+	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.Prometheus), "up")
+	args = append(args, filepath.Join(repoRoot, types.Prometheus), "up")
 
 	for i := 0; i < len(addrs); i++ {
 		args = append(args, addrs[i])
 	}
 
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func stopProm(ctx *cli.Context) error {
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
+	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.Prometheus), "down")
-	return utils.ExecuteShell(args, repoPath)
+	args = append(args, filepath.Join(repoRoot, types.Prometheus), "down")
+	return utils.ExecuteShell(args, repoRoot)
 }
 
 func restartProm(ctx *cli.Context) error {
 	addrs := strings.Fields(ctx.String("addrs"))
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
+	}
+	if !fileutil.Exist(repoRoot) {
+		return fmt.Errorf("please `goduck init` first")
 	}
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoPath, types.Prometheus), "restart")
+	args = append(args, filepath.Join(repoRoot, types.Prometheus), "restart")
 
 	for i := 0; i < len(addrs); i++ {
 		args = append(args, addrs[i])
 	}
 
-	return utils.ExecuteShell(args, repoPath)
+	return utils.ExecuteShell(args, repoRoot)
 }
