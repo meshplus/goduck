@@ -28,7 +28,7 @@ var hpcDeployCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:     "code-path",
@@ -76,7 +76,7 @@ var hpcUpdateCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:  "code-path",
@@ -126,7 +126,7 @@ var hpcInvokeCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:  "abi-path",
