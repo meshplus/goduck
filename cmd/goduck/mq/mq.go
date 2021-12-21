@@ -2,9 +2,7 @@ package mq
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/gosdk/account"
 	"github.com/meshplus/gosdk/common"
 	"github.com/meshplus/gosdk/rpc"
@@ -64,14 +62,6 @@ func New(configPath string) (*dmallMQ, error) {
 	key, err := account.NewAccountFromAccountJSON(accountJson, "dmall")
 	if err != nil {
 		return nil, err
-	}
-
-	if configPath == "" {
-		repoRoot, err := repo.PathRoot()
-		if err != nil {
-			return nil, err
-		}
-		configPath = filepath.Join(repoRoot, "hyperchain")
 	}
 
 	rpcCli := rpc.NewRPCWithPath(configPath)

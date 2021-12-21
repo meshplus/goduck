@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/solidity"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/meshplus/gosdk/hvm"
@@ -21,12 +20,7 @@ const (
 )
 
 func Invoke(configPath, abiPath, typ, address, function, args string) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	hpc, err := New(configPath, repoRoot)
+	hpc, err := New(configPath)
 	if err != nil {
 		return err
 	}

@@ -104,7 +104,7 @@ var ContractCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:     "version",
 					Usage:    "specify bitxhub version",
-					Value:    "v1.6.2",
+					Value:    "v1.6.5",
 					Required: false,
 				},
 			},
@@ -119,6 +119,9 @@ func installChaincode(ctx *cli.Context) error {
 		repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 		if err != nil {
 			return err
+		}
+		if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+			return fmt.Errorf("please `goduck init` first")
 		}
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
@@ -151,6 +154,9 @@ func deployChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+			return fmt.Errorf("please `goduck init` first")
+		}
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
@@ -168,6 +174,9 @@ func invokeChaincode(ctx *cli.Context) error {
 		repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 		if err != nil {
 			return err
+		}
+		if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+			return fmt.Errorf("please `goduck init` first")
 		}
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
@@ -187,6 +196,9 @@ func queryChaincode(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
+			return fmt.Errorf("please `goduck init` first")
+		}
 		configPath = filepath.Join(repoRoot, types.ChainTypeFabric, "config.yaml")
 	}
 
@@ -201,15 +213,15 @@ func queryChaincode(ctx *cli.Context) error {
 func downloadContract(ctx *cli.Context) error {
 	version := ctx.String("version")
 
-	repoPath, err := repo.PathRoot()
+	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("parse repo path error:%w", err)
+		return err
 	}
-	if !fileutil.Exist(repoPath) {
+	if !fileutil.Exist(filepath.Join(repoRoot, types.ReleaseJson)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	path := filepath.Join(repoPath, types.ChainTypeFabric, "contract", version, "contracts.zip")
+	path := filepath.Join(repoRoot, types.ChainTypeFabric, "contract", version, "contracts.zip")
 	if !fileutil.Exist(path) {
 		url := fmt.Sprintf(types.FabricContractUrl, version)
 		err := download.Download(path, url)

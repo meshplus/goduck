@@ -4,19 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/gosdk/hvm"
 	"github.com/meshplus/gosdk/rpc"
 	"github.com/meshplus/gosdk/utils/java"
 )
 
 func Update(configPath, codePath, typ string, local bool, conAddr string) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	hpc, err := New(configPath, repoRoot)
+	hpc, err := New(configPath)
 	if err != nil {
 		return err
 	}

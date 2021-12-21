@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
-	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/gosdk/common"
 	"github.com/meshplus/gosdk/hvm"
 	"github.com/meshplus/gosdk/rpc"
@@ -15,12 +14,7 @@ import (
 )
 
 func Deploy(configPath, codePath, typ string, local bool, args string) error {
-	repoRoot, err := repo.PathRoot()
-	if err != nil {
-		return err
-	}
-
-	hpc, err := New(configPath, repoRoot)
+	hpc, err := New(configPath)
 	if err != nil {
 		return err
 	}

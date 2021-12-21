@@ -2,6 +2,7 @@
 
 set -e
 
+CURRENT_PATH=$(pwd)
 WORKDIR=ethereum
 SYSTEM=$(uname -s)
 if [ $SYSTEM == "Linux" ]; then
@@ -39,7 +40,7 @@ function binaryUp() {
   tar xf datadir.tar.gz
 
   print_blue "start geth with datadir in ${WORKDIR}/datadir"
-  nohup $HOME/.goduck/bin/geth_${SYSTEM}_1.9.6/geth --datadir $HOME/.goduck/ethereum/datadir --dev --ws --rpc \
+  nohup $CURRENT_PATH/bin/geth_${SYSTEM}_1.9.6/geth --datadir $CURRENT_PATH/ethereum/datadir --dev --ws --rpc \
     --rpccorsdomain https://remix.ethereum.org \
     --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
     --rpcapi "eth,web3,personal,net,miner,admin,debug" >/dev/null 2>&1 &
@@ -96,8 +97,8 @@ function etherClean() {
   etherDown
 
   print_blue "===> clean ethereum in binary..."
-  if [[ ! -z $(ps | grep $HOME/.goduck/ethereum/datadir | grep -v "grep") ]]; then
-    ethPid=$(ps | grep $HOME/.goduck/ethereum/datadir | grep -v "grep")
+  if [[ ! -z $(ps | grep $CURRENT_PATH/ethereum/datadir | grep -v "grep") ]]; then
+    ethPid=$(ps | grep $CURRENT_PATH/ethereum/datadir | grep -v "grep")
     kill $ethPid
     if [ $? -eq 0 ]; then
       echo "ethereum pid:$ethPid exit"

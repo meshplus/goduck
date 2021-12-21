@@ -27,7 +27,7 @@ const (
 func GetInitCMD() *cli.Command {
 	return &cli.Command{
 		Name:   "init",
-		Usage:  "Init config home for GoDuck",
+		Usage:  "Init config home for GoDuck, default: $HOME/.goduck",
 		Action: Initialize,
 	}
 }

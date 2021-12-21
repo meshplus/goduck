@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/goduck/cmd/goduck/hpc"
+	"github.com/meshplus/goduck/internal/repo"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,7 +28,7 @@ var hpcDeployCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:     "code-path",
@@ -49,6 +51,18 @@ var hpcDeployCMD = cli.Command{
 		typ := ctx.String("type")
 		local := ctx.Bool("local")
 		args := ""
+
+		if configPath == "" {
+			repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+			if err != nil {
+				return err
+			}
+			configPath = filepath.Join(repoRoot, "hyperchain")
+			if !fileutil.Exist(configPath) {
+				return fmt.Errorf("please `goduck init` first")
+			}
+		}
+
 		if ctx.NArg() > 0 {
 			args = ctx.Args().Get(0)
 		}
@@ -62,7 +76,7 @@ var hpcUpdateCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:  "code-path",
@@ -91,6 +105,17 @@ var hpcUpdateCMD = cli.Command{
 		local := ctx.Bool("local")
 		conAddr := ctx.String("contract-addr")
 
+		if configPath == "" {
+			repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+			if err != nil {
+				return err
+			}
+			configPath = filepath.Join(repoRoot, "hyperchain")
+			if !fileutil.Exist(configPath) {
+				return fmt.Errorf("please `goduck init` first")
+			}
+		}
+
 		return hpc.Update(configPath, codePath, typ, local, conAddr)
 	},
 }
@@ -101,7 +126,7 @@ var hpcInvokeCMD = cli.Command{
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "config-path",
-			Usage: "specify hyperchain config path. It should be hpc.account, password, hpc.toml, certs in the catalog",
+			Usage: "specify hyperchain config path. It should be hpc.account, hpc.toml, certs in the catalog",
 		},
 		&cli.StringFlag{
 			Name:  "abi-path",
@@ -129,6 +154,17 @@ var hpcInvokeCMD = cli.Command{
 		}
 
 		args := ctx.Args()
+
+		if configPath == "" {
+			repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
+			if err != nil {
+				return err
+			}
+			configPath = filepath.Join(repoRoot, "hyperchain")
+			if !fileutil.Exist(configPath) {
+				return fmt.Errorf("please `goduck init` first")
+			}
+		}
 
 		return hpc.Invoke(configPath, abiPath, typ, args.Get(0), args.Get(1), args.Get(2))
 	},

@@ -42,6 +42,7 @@ const (
 	TmpPath                    = "tmp"
 	FabricConfig               = "config.yaml"
 	QuickStartBitxhubCofigPath = "docker/quick_start/bxhConfig/%s"
+	ReleaseJson                = "release.json"
 
 	Pier           = "pier"
 	BitXHub        = "bitxhub"

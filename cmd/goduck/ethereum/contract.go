@@ -135,7 +135,7 @@ var ContractCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:     "version",
 					Usage:    "specify bitxhub version",
-					Value:    "v1.6.2",
+					Value:    "v1.6.5",
 					Required: false,
 				},
 			},
@@ -179,8 +179,8 @@ func getTrustMeta(ctx *cli.Context) error {
 	}
 
 	etherSession := &EtherSession{
-		etherCli:   etherCli,
-		ctx:        context.Background(),
+		etherCli: etherCli,
+		ctx:      context.Background(),
 	}
 	trustMeta, err := etherSession.getTrustMeta(height)
 	if err != nil {

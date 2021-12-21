@@ -47,7 +47,7 @@ func Secp256k1() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:     "target",
-						Usage:    "Specific target directory (default: $HOEM/.goduck/key/$name)",
+						Usage:    "Specific target directory (default: $repo/key/$name)",
 						Required: false,
 					},
 				},
@@ -103,7 +103,7 @@ func ECDSA_P256() *cli.Command {
 					},
 					&cli.StringFlag{
 						Name:     "target",
-						Usage:    "Specific target directory (default: $HOEM/.goduck/key/$name)",
+						Usage:    "Specific target directory (default: $repo/key/$name)",
 						Required: false,
 					},
 				},

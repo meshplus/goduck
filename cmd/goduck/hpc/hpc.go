@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/meshplus/bitxhub-kit/fileutil"
 	"github.com/meshplus/gosdk/account"
 	"github.com/meshplus/gosdk/rpc"
 	"github.com/sirupsen/logrus"
@@ -24,15 +25,8 @@ type Hyperchain struct {
 	contractAddr string
 }
 
-func New(configPath, repoRoot string) (*Hyperchain, error) {
-	defaultConfigPath := filepath.Join(repoRoot, "hyperchain")
-
-	var hpcPath string
-	if len(configPath) == 0 {
-		hpcPath = defaultConfigPath
-	} else {
-		hpcPath = configPath
-	}
+func New(configPath string) (*Hyperchain, error) {
+	hpcPath := configPath
 
 	keyPath := filepath.Join(hpcPath, "hpc.account")
 	accountData, err := ioutil.ReadFile(keyPath)
@@ -40,12 +34,15 @@ func New(configPath, repoRoot string) (*Hyperchain, error) {
 		return nil, err
 	}
 
+	password := ""
 	psdPath := filepath.Join(hpcPath, "password")
-	psd, err := ioutil.ReadFile(psdPath)
-	if err != nil {
-		return nil, err
+	if fileutil.Exist(psdPath) {
+		psd, err := ioutil.ReadFile(psdPath)
+		if err != nil {
+			return nil, err
+		}
+		password = strings.TrimSpace(string(psd))
 	}
-	password := strings.TrimSpace(string(psd))
 
 	key, err := account.NewAccountFromAccountJSON(string(accountData), password)
 	if err != nil {
