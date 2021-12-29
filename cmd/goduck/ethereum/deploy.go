@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -56,12 +57,25 @@ func Deploy(config Config, codePath, argContract string) error {
 		// prepare for constructor parameters
 		var argx []interface{}
 		if len(argContract) != 0 {
-			argSplits := strings.Split(argContract, ",")
-			var argArr [][]byte
-			for _, arg := range argSplits {
-				argArr = append(argArr, []byte(arg))
+			rex := regexp.MustCompile(`(\[([^]]+)\])|([\w]+)`)
+			out := rex.FindAllStringSubmatch(argContract, -1)
+			params := make([]interface{}, len(out))
+			for k, v := range out {
+				var param []interface{}
+				v[0] = strings.TrimSpace(v[0])
+				v[0] = strings.ReplaceAll(v[0], "[", "")
+				v[0] = strings.ReplaceAll(v[0], "]", "")
+				str := strings.Split(v[0], ",")
+				if len(str) == 1 {
+					params[k] = v[0]
+				} else {
+					for _, v := range str {
+						param = append(param, v)
+					}
+					params[k] = param
+				}
 			}
-			argx, err = solidity.ABIUnmarshal(parsed, argArr, "")
+			argx, err = solidity.Encode(parsed, "", argx)
 			if err != nil {
 				return err
 			}
