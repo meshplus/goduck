@@ -59,23 +59,27 @@ func Deploy(config Config, codePath, argContract string) error {
 		if len(argContract) != 0 {
 			rex := regexp.MustCompile(`(\[([^]]+)\])|([\w]+)`)
 			out := rex.FindAllStringSubmatch(argContract, -1)
-			params := make([]interface{}, len(out))
-			for k, v := range out {
+			var params []interface{}
+			for _, v := range out {
 				var param []interface{}
+				isArray := false
+				if strings.Contains(v[0], "[") {
+					isArray = true
+				}
 				v[0] = strings.TrimSpace(v[0])
 				v[0] = strings.ReplaceAll(v[0], "[", "")
 				v[0] = strings.ReplaceAll(v[0], "]", "")
 				str := strings.Split(v[0], ",")
-				if len(str) == 1 {
-					params[k] = v[0]
+				if !isArray {
+					params = append(params, v[0])
 				} else {
 					for _, v := range str {
 						param = append(param, v)
 					}
-					params[k] = param
+					params = append(params, param)
 				}
 			}
-			argx, err = solidity.Encode(parsed, "", argx)
+			argx, err = solidity.Encode(parsed, "", params...)
 			if err != nil {
 				return err
 			}
