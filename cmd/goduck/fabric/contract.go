@@ -30,6 +30,12 @@ var ContractCMD = &cli.Command{
 					Usage:    "specify chain code path, default(our interchain chaincode)",
 					Required: false,
 				},
+				&cli.StringFlag{
+					Name:     "version",
+					Usage:    "specify pier version. If not set code-path, the code will be downloaded based on this version",
+					Value:    "v1.6.5",
+					Required: false,
+				},
 			},
 			Action: installChaincode,
 		},
@@ -136,13 +142,15 @@ func installChaincode(ctx *cli.Context) error {
 		absPath = absP
 	}
 
+	pierVersion := ctx.String("version")
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath)
+	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-p", pierVersion)
 
 	return utils.ExecuteShell(args, repoRoot)
 }
