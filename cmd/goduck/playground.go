@@ -155,6 +155,6 @@ func transfer(ctx *cli.Context) error {
 	}
 
 	ethVersion := EthConfigMap[version]
-	args := []string{types.QuickStartScript, "transfer", ethVersion}
+	args := []string{types.QuickStartScript, "transfer", ethVersion, version}
 	return utils.ExecuteShell(args, repoRoot)
 }

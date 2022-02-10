@@ -31,8 +31,8 @@ var ContractCMD = &cli.Command{
 					Required: false,
 				},
 				&cli.StringFlag{
-					Name:     "version",
-					Usage:    "specify pier version. If not set code-path, the code will be downloaded based on this version",
+					Name:     "bxh-version",
+					Usage:    "specify bitxhub version. If not set code-path, the code will be downloaded based on this version",
 					Value:    "v1.6.5",
 					Required: false,
 				},
@@ -142,7 +142,7 @@ func installChaincode(ctx *cli.Context) error {
 		absPath = absP
 	}
 
-	pierVersion := ctx.String("version")
+	bxhVersion := ctx.String("bxh-version")
 
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
@@ -150,7 +150,7 @@ func installChaincode(ctx *cli.Context) error {
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-p", pierVersion)
+	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion)
 
 	return utils.ExecuteShell(args, repoRoot)
 }

@@ -31,7 +31,7 @@ func logCMD() *cli.Command {
 								Usage: "configuration type, one of binary or docker",
 							},
 							&cli.StringFlag{
-								Name:     "repo",
+								Name:     "bxh-repo",
 								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
@@ -60,7 +60,7 @@ func logCMD() *cli.Command {
 								Usage: "configuration type, one of binary or docker",
 							},
 							&cli.StringFlag{
-								Name:     "repo",
+								Name:     "bxh-repo",
 								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
@@ -89,7 +89,7 @@ func logCMD() *cli.Command {
 								Usage: "configuration type, one of binary or docker",
 							},
 							&cli.StringFlag{
-								Name:     "repo",
+								Name:     "bxh-repo",
 								Usage:    "Specify BitXHub node repo, e.g. $repo/bitxhub/.bitxhub/node1, only for binary",
 								Required: false,
 							},
@@ -120,7 +120,7 @@ func logCMD() *cli.Command {
 						Usage: "configuration type, one of binary or docker",
 					},
 					&cli.StringFlag{
-						Name:     "repo",
+						Name:     "pier-repo",
 						Usage:    "Specify Pier repo, e.g. $repo/pier/.pier_ethereum, only for binary",
 						Required: false,
 					},
@@ -158,7 +158,7 @@ func bxhAll(ctx *cli.Context) error {
 	}
 
 	typ := ctx.String("type")
-	target := ctx.String("repo")
+	target := ctx.String("bxh-repo")
 	num := ctx.Int("num")
 	n := ctx.Int("n")
 
@@ -189,7 +189,7 @@ func bxhNet(ctx *cli.Context) error {
 	}
 
 	typ := ctx.String("type")
-	target := ctx.String("repo")
+	target := ctx.String("bxh-repo")
 	num := ctx.Int("num")
 	n := ctx.Int("n")
 
@@ -220,7 +220,7 @@ func bxhOrder(ctx *cli.Context) error {
 	}
 
 	typ := ctx.String("type")
-	target := ctx.String("repo")
+	target := ctx.String("bxh-repo")
 	num := ctx.Int("num")
 	n := ctx.Int("n")
 
@@ -251,7 +251,7 @@ func pierLog(ctx *cli.Context) error {
 	}
 
 	typ := ctx.String("type")
-	target := ctx.String("repo")
+	target := ctx.String("pier-repo")
 	num := ctx.Int("num")
 	appchain := ctx.String("appchain")
 	n := ctx.Int("n")

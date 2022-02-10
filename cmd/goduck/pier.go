@@ -25,6 +25,7 @@ var pierConfigMap = map[string]string{
 	"v1.9.0":  "v1.9.0", // v1.8.0
 	"v1.11.0": "v1.11.0",
 	"v1.11.1": "v1.11.0",
+	"v1.11.3": "v1.11.3",
 }
 
 var pierCMD = &cli.Command{

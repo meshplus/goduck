@@ -265,7 +265,7 @@ func getProcessParam(pidStr, pName string) ([]string, error) {
 
 		slice, _ := process.CmdlineSlice()
 		args = strings.Join(slice, " ")
-		if len(strings.Join(slice, " ")) > 70 {
+		if len(strings.Join(slice, " ")) > 500 {
 			args = args[:70] + "..."
 		}
 	} else {

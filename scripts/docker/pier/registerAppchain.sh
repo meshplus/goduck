@@ -17,7 +17,7 @@ if [ "${pierVersion}" = "v1.6.1" ] || [ "${pierVersion}" = "v1.6.2" ] || [ "${pi
     --version $appchainVersion \
     --validators $appchainValidators \
     --consensusType $appchainConsensus
-else
+elif [ "${pierVersion}" = "v1.8.0" ] || [ "${pierVersion}" = "v1.9.0" ] || [ "${pierVersion}" = "v1.11.0" ] || [ "${pierVersion}" = "v1.11.1" ]; then
   pier --repo /root/.pier appchain method register \
     --admin-key /root/.pier/key.json \
     --method $methodName \
@@ -29,4 +29,18 @@ else
     --version $appchainVersion \
     --validators $appchainValidators \
     --consensus $appchainConsensus
+else
+  pier --repo /root/.pier appchain method register \
+    --admin-key /root/.pier/key.json \
+    --method $methodName \
+    --doc-addr /ipfs/QmQVxzUqN2Yv2UHUQXYwH8dSNkM8ReJ9qPqwJsf8zzoNUi \
+    --doc-hash QmQVxzUqN2Yv2UHUQXYwH8dSNkM8ReJ9qPqwJsf8zzoNUi \
+    --name $appchainName \
+    --type $appchainType \
+    --desc $appchainDesc \
+    --version $appchainVersion \
+    --validators $appchainValidators \
+    --consensus $appchainConsensus \
+    --rule 0x00000000000000000000000000000000000000a2 \
+    --rule-url "url"
 fi
