@@ -149,8 +149,13 @@ function docker-compose-up() {
     command_retry "docker exec $bitxhubCID bitxhub client tx send --key /root/.bitxhub/key.json --to 0x4768E44fB5e85E1D86D403D767cC5898703B2e78 --amount 100000000000000000"
   fi
 
-  command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
-  command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+  if [ "${VERSION}" == "v1.11.3" ]; then
+    command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+    command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain0x4768E44fB5e85E1D86D403D767cC5898703B2e78 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+  elif [ "${VERSION}" == "v1.6.1" ] || [ "${VERSION}" == "v1.6.2" ] || [ "${VERSION}" == "v1.6.5" ] || [ "${VERSION}" == "v1.7.0" ] || [ "${VERSION}" == "v1.8.0" ] || [ "${VERSION}" == "v1.9.0" ] || [ "${VERSION}" == "v1.11.0" ] || [ "${VERSION}" == "v1.11.1" ] ; then
+    command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+    command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
+  fi
 
   pier1ID=$(echo $(command_retry "docker exec $pier1CID /root/.pier/scripts/getPierId.sh") | awk -F " " '{print $NF}')
   proposal11ID="${pier1ID}-0"
@@ -161,20 +166,22 @@ function docker-compose-up() {
   command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal21ID approve reason"
 
   # deploy rule
-  print_blue "======> Deploy rule...."
-  command_retry "docker exec $pier1CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain1 "${VERSION}""
-  command_retry "docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}""
+  if [ "${VERSION}" == "v1.6.1" ] || [ "${VERSION}" == "v1.6.2" ] || [ "${VERSION}" == "v1.6.5" ] || [ "${VERSION}" == "v1.7.0" ] || [ "${VERSION}" == "v1.8.0" ] || [ "${VERSION}" == "v1.9.0" ] || [ "${VERSION}" == "v1.11.0" ] || [ "${VERSION}" == "v1.11.1" ] ; then
+    print_blue "======> Deploy rule...."
+    command_retry "docker exec $pier1CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain1 "${VERSION}""
+    command_retry "docker exec $pier2CID /root/.pier/scripts/deployRule.sh /root/.pier/ethereum/validating.wasm appchain2 "${VERSION}""
 
-  version1=${VERSION}
-  version2="v1.7.0"
-  version_compare
-  if [[ $versionComPareRes -gt 0 ]]; then
+    version1=${VERSION}
+    version2="v1.7.0"
+    version_compare
+    if [[ $versionComPareRes -gt 0 ]]; then
     #  if [ "${VERSION}" \> "v1.7.0" ]; then
-    proposal12ID="${pier1ID}-1"
-    command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason"
+      proposal12ID="${pier1ID}-1"
+      command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal12ID approve reason"
 
-    proposal22ID="${pier2ID}-1"
-    command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal22ID approve reason"
+      proposal22ID="${pier2ID}-1"
+      command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal22ID approve reason"
+    fi
   fi
 
   if [ "${PROMETHEUS}" == "true" ]; then
@@ -263,17 +270,27 @@ function interchainTransfer() {
   print_blue "2. Send 1 coin from Alice in ethereum-1 to Alice in ethereum-2"
   version1=$1
   version2="1.3.0"
+  bxhVersion=$2
   version_compare
   if [[ $versionComPareRes -lt 0 ]]; then
+    # 1.1.0，1.2.0
     goduck ether contract invoke \
       --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
       --address http://localhost:8545 \
      0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0x4768E44fB5e85E1D86D403D767cC5898703B2e78,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
   else
-    goduck ether contract invoke \
-      --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
-      --address http://localhost:8545 \
-      0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain2:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    # 1.3.0
+    if [ $bxhVersion == "v1.11.3" ]; then
+      goduck ether contract invoke \
+            --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+            --address http://localhost:8545 \
+            0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain0x4768E44fB5e85E1D86D403D767cC5898703B2e78:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    else
+      goduck ether contract invoke \
+            --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+            --address http://localhost:8545 \
+            0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain2:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    fi
   fi
 
 
@@ -292,10 +309,17 @@ function interchainTransfer() {
     --address http://localhost:8547 \
     0x668a209Dc6562707469374B8235e37b8eC25db08 transfer 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4,0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
   else
-    goduck ether contract invoke \
-      --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
-      --address http://localhost:8547 \
-      0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain1:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    if [ $bxhVersion == "v1.11.3" ]; then
+      goduck ether contract invoke \
+            --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+            --address http://localhost:8547 \
+            0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    else
+      goduck ether contract invoke \
+            --key-path ./docker/quick_start/account.key --abi-path ./pier/ethereum/$1/transfer.abi \
+            --address http://localhost:8547 \
+            0x668a209Dc6562707469374B8235e37b8eC25db08 transfer did:bitxhub:appchain1:0x668a209Dc6562707469374B8235e37b8eC25db08,Alice,Alice,1
+    fi
   fi
 
   sleep 4
@@ -310,7 +334,7 @@ elif [ "$MODE" == "down" ]; then
 elif [ "$MODE" == "stop" ]; then
   docker-compose-stop
 elif [ "$MODE" == "transfer" ]; then
-  interchainTransfer $2
+  interchainTransfer $2 $3
 else
   printHelp
   exit 1

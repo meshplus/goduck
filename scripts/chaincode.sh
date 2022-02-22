@@ -49,7 +49,7 @@ function prepare() {
 
   if [ ! -f config-template.yaml ]; then
     print_blue "===> Download config-template.yaml"
-    wget https://raw.githubusercontent.com/meshplus/bitxhub/$PIER_VERSION/scripts/quick_start/config-template.yaml
+    wget https://raw.githubusercontent.com/meshplus/bitxhub/$BXH_VERSION/scripts/quick_start/config-template.yaml
   fi
 
   if [ ! -f config.yaml ]; then
@@ -66,7 +66,7 @@ function prepare() {
 function prepareContract() {
   if [ ! -d contracts ]; then
     print_blue "===> Download chaincode"
-    wget https://github.com/meshplus/pier-client-fabric/raw/$PIER_VERSION/example/contracts.zip
+    wget https://github.com/meshplus/pier-client-fabric/raw/$BXH_VERSION/example/contracts.zip
     unzip -q contracts.zip
     rm contracts.zip
   fi
@@ -204,12 +204,12 @@ function upgradeChaincode() {
 CONFIG_YAML=./config.yaml
 CHAINCODE_PATH=""
 CHAINCODE_VERSION=v1
-PIER_VERSION=v1.6.5
+BXH_VERSION=v1.6.5
 
 MODE=$1
 shift
 
-while getopts "h?c:g:v:p:" opt; do
+while getopts "h?c:g:v:b:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -224,7 +224,7 @@ while getopts "h?c:g:v:p:" opt; do
   v)
     CHAINCODE_VERSION=$OPTARG
     ;;
-  p)PIER_VERSION=$OPTARG
+  b)BXH_VERSION=$OPTARG
     ;;
   esac
 done

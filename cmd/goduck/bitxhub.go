@@ -30,6 +30,7 @@ var bxhConfigMap = map[string]string{
 	"v1.9.0":  "v1.9.0",
 	"v1.11.0": "v1.11.0",
 	"v1.11.1": "v1.11.0",
+	"v1.11.3": "v1.11.3",
 }
 
 func bitxhubCMD() *cli.Command {

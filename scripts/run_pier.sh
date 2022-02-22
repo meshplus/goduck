@@ -31,6 +31,7 @@ function appchain_register_binary() {
   version2="v1.8.0"
   version_compare
   if [[ $versionComPareRes -lt 0 ]]; then
+    # < v1.8.0
     "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain register \
       --name $1 \
       --type $2 \
@@ -39,17 +40,40 @@ function appchain_register_binary() {
       --validators "${PIERREPO}"/$5 \
       --consensusType ""
   else
-    "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain method register \
-      --name $1 \
-      --type $2 \
-      --desc $3 \
-      --version $4 \
-      --validators "${PIERREPO}"/$5 \
-      --admin-key "${PIERREPO}/key.json" \
-      --consensus "consensusType" \
-      --method "$6" \
-      --doc-addr "doc-addr" \
-      --doc-hash "doc-hash"
+    # >= v1.8.0
+    version1=${VERSION}
+    version2="v1.11.3"
+    version_compare
+    if [[ $versionComPareRes -lt 0 ]]; then
+      # v1.8.0 <= < v1.11.2
+      "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain method register \
+            --name $1 \
+            --type $2 \
+            --desc $3 \
+            --version $4 \
+            --validators "${PIERREPO}"/$5 \
+            --admin-key "${PIERREPO}/key.json" \
+            --consensus "consensusType" \
+            --method "$6" \
+            --doc-addr "doc-addr" \
+            --doc-hash "doc-hash"
+    else
+      # >= v1.11.2
+      "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain method register \
+                  --name $1 \
+                  --type $2 \
+                  --desc $3 \
+                  --version $4 \
+                  --validators "${PIERREPO}"/$5 \
+                  --admin-key "${PIERREPO}/key.json" \
+                  --consensus "consensusType" \
+                  --method "$6" \
+                  --doc-addr "doc-addr" \
+                  --doc-hash "doc-hash" \
+                  --rule "0x00000000000000000000000000000000000000a2" \
+                  --rule-url "url" \
+                  --reason "reason"
+    fi
   fi
 }
 
@@ -141,7 +165,7 @@ function pier_docker_register() {
     docker exec $PIERCID scripts/registerAppchain.sh "${METHOD}" chainB ether chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}"
   fi
 
-  print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier rule' command to deploy rule to bitxhub"
+  print_blue "Waiting for the administrators of BitXHub to vote for approval."
 }
 
 function pier_binary_register() {
@@ -163,7 +187,7 @@ function pier_binary_register() {
     appchain_register_binary chainB ether chainB-description 1.9.13 ethereum/ether.validators $METHOD
   fi
 
-  print_blue "Waiting for the administrators of BitXHub to vote for approval. If approved, use the 'goduck pier rule' command to deploy rule to bitxhub"
+  print_blue "Waiting for the administrators of BitXHub to vote for approval."
 }
 
 function pier_register() {
@@ -210,9 +234,9 @@ function pier_down() {
   set +e
 
   print_blue "======> Kill $APPCHAINTYPE pier in binary"
-  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
+  if [ -e "${PIER_CONFIG_PATH}"/pier-$APPCHAINTYPE.pid ]; then
     for ((i = 1; ; i++)); do
-      pid=$(cat "${PIER_CONFIG_PATH}"/pier-ethereum.pid | sed -n $i"p")
+      pid=$(cat "${PIER_CONFIG_PATH}"/pier-$APPCHAINTYPE.pid | sed -n $i"p")
       if [ -z $pid ]; then
         break
       fi
@@ -232,7 +256,11 @@ function pier_down() {
     echo "pier-$APPCHAINTYPE docker stop"
   fi
 
-  cleanPierInfoFile
+  if [ $APPCHAINTYPE == "fabric" ]; then
+    cleanPierFabricInfoFile
+  else
+    cleanPierEtherInfoFile
+  fi
 }
 
 function pier_clean() {
@@ -266,24 +294,31 @@ function pier_clean() {
   fi
 }
 
-function cleanPierInfoFile() {
+function cleanPierFabricInfoFile() {
   PIER_CONFIG_PATH="${CURRENT_PATH}"/pier
 
-  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-ethereum.pid
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.addr
-  fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.pid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric.pid
   fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
   fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.version ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.version
+  fi
+
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.cid ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric.cid
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
+  fi
+  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
+    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
+  fi
 }
 
-function cleanPierInfoFile() {
+function cleanPierEtherInfoFile() {
   PIER_CONFIG_PATH="${CURRENT_PATH}"/pier
 
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.pid ]; then
@@ -295,15 +330,6 @@ function cleanPierInfoFile() {
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-binary.version ]; then
       rm "${PIER_CONFIG_PATH}"/pier-ethereum-binary.version
     fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.pid ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric.pid
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.addr
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-binary.version ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric-binary.version
-  fi
 
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum.cid ]; then
     rm "${PIER_CONFIG_PATH}"/pier-ethereum.cid
@@ -313,15 +339,6 @@ function cleanPierInfoFile() {
   fi
   if [ -e "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr ]; then
     rm "${PIER_CONFIG_PATH}"/pier-ethereum-docker.addr
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric.cid ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric.cid
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
-  fi
-  if [ -e "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr ]; then
-    rm "${PIER_CONFIG_PATH}"/pier-fabric-docker.addr
   fi
 }
 
