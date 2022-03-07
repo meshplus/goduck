@@ -2,6 +2,7 @@ package hpc
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	eth_common "github.com/ethereum/go-ethereum/common"
@@ -104,24 +105,32 @@ func (h *Hyperchain) deployContractWithCode(code []byte, local bool, args string
 		return "", nil, errors.New("cannot found non-abstract contract")
 	}
 	var tranDeploy *rpc.Transaction
-	if "" == args {
+	if len(args) != 0 {
 		tranDeploy = rpc.NewTransaction(h.key.GetAddress().String()).Deploy(bin)
 	} else {
-		argSplits := strings.Split(args, "-")
-		var argArr []interface{}
-		for _, arg := range argSplits {
-			if arg == "" {
-				return "", nil, fmt.Errorf("contract parameter can't be empty")
+		rex := regexp.MustCompile(`(\[([^]]+)\])|([\w]+)`)
+		out := rex.FindAllStringSubmatch(args, -1)
+		var params []interface{}
+		for _, v := range out {
+			var param []interface{}
+			isArray := false
+			if strings.Contains(v[0], "[") {
+				isArray = true
 			}
-			if strings.Index(arg, "[") == 0 && strings.LastIndex(arg, "]") == len(arg)-1 {
-				// deal with slice
-				argSp := strings.Split(arg[1:len(arg)-1], ",")
-				argArr = append(argArr, argSp)
-				continue
+			v[0] = strings.TrimSpace(v[0])
+			v[0] = strings.ReplaceAll(v[0], "[", "")
+			v[0] = strings.ReplaceAll(v[0], "]", "")
+			str := strings.Split(v[0], ",")
+			if !isArray {
+				params = append(params, v[0])
+			} else {
+				for _, v := range str {
+					param = append(param, v)
+				}
+				params = append(params, param)
 			}
-			argArr = append(argArr, arg)
 		}
-		tranDeploy = rpc.NewTransaction(h.key.GetAddress().String()).Deploy(bin).DeployStringArgs(abi, argArr...)
+		tranDeploy = rpc.NewTransaction(h.key.GetAddress().String()).Deploy(bin).DeployStringArgs(abi, params...)
 	}
 	tranDeploy.Sign(h.key)
 	txDeploy, err := h.api.DeployContract(tranDeploy)
