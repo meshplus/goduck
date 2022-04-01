@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -57,29 +56,22 @@ func Deploy(config Config, codePath, argContract string) error {
 		// prepare for constructor parameters
 		var argx []interface{}
 		if len(argContract) != 0 {
-			rex := regexp.MustCompile(`(\[([^]]+)\])|([\w]+)`)
-			out := rex.FindAllStringSubmatch(argContract, -1)
-			var params []interface{}
-			for _, v := range out {
-				var param []interface{}
-				isArray := false
-				if strings.Contains(v[0], "[") {
-					isArray = true
-				}
-				v[0] = strings.TrimSpace(v[0])
-				v[0] = strings.ReplaceAll(v[0], "[", "")
-				v[0] = strings.ReplaceAll(v[0], "]", "")
-				str := strings.Split(v[0], ",")
-				if !isArray {
-					params = append(params, v[0])
-				} else {
-					for _, v := range str {
-						param = append(param, v)
+			argSplits := strings.Split(argContract, "^")
+			var argArr []interface{}
+			for _, arg := range argSplits {
+				if strings.Index(arg, "[") == 0 && strings.LastIndex(arg, "]") == len(arg)-1 {
+					if len(arg) == 2 {
+						argArr = append(argArr, make([]string, 0))
+						continue
 					}
-					params = append(params, param)
+					// deal with slice
+					argSp := strings.Split(arg[1:len(arg)-1], ",")
+					argArr = append(argArr, argSp)
+					continue
 				}
+				argArr = append(argArr, arg)
 			}
-			argx, err = solidity.Encode(parsed, "", params...)
+			argx, err = solidity.Encode(parsed, "", argArr...)
 			if err != nil {
 				return err
 			}
