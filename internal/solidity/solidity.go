@@ -47,7 +47,10 @@ func Encode(Abi abi.ABI, funcName string, args ...interface{}) ([]interface{}, e
 	typedArgs := make([]interface{}, len(method.Inputs))
 
 	for idx, input := range method.Inputs {
-		typedArgs[idx] = convert(input.Type, args[idx])
+		typedArgs[idx], err = convert(input.Type, args[idx])
+		if err != nil {
+			return nil, fmt.Errorf("convert %s to %s failed: %s", args[idx], input.Type.String(), err.Error())
+		}
 	}
 
 	return typedArgs, nil
@@ -177,7 +180,7 @@ func transform(input string, t string) (interface{}, error) {
 // convert val into target type through certain method
 // support: array / slice / bytesN / basic type
 // not support: nested array or slice
-func convert(t abi.Type, input interface{}) interface{} {
+func convert(t abi.Type, input interface{}) (interface{}, error) {
 	// array or slice
 	switch t.T {
 	case abi.ArrayTy:
@@ -213,10 +216,13 @@ func convert(t abi.Type, input interface{}) interface{} {
 		// build the array (not slice)
 		data := reflect.New(t.GetType()).Elem()
 		for idx, val := range fmtVal {
-			elem := convert(*t.Elem, val)
+			elem, err := convert(*t.Elem, val)
+			if err != nil {
+				return nil, err
+			}
 			data.Index(idx).Set(reflect.ValueOf(elem))
 		}
-		return data.Interface()
+		return data.Interface(), nil
 
 	case abi.SliceTy:
 		// todo: reflect
@@ -235,14 +241,17 @@ func convert(t abi.Type, input interface{}) interface{} {
 
 		data := reflect.MakeSlice(t.GetType(), len(fmtVal), len(fmtVal))
 		for idx, val := range fmtVal {
-			elem := convert(*t.Elem, val)
+			elem, err := convert(*t.Elem, val)
+			if err != nil {
+				return nil, err
+			}
 			data.Index(idx).Set(reflect.ValueOf(elem))
 		}
-		return data.Interface()
+		return data.Interface(), nil
 
 	case abi.FixedBytesTy:
 		if str, ok := input.(string); ok {
-			return newFixedBytes(t.Size, str)
+			return newFixedBytes(t.Size, str), nil
 		}
 	default:
 		if str, ok := input.(string); ok {
@@ -250,51 +259,82 @@ func convert(t abi.Type, input interface{}) interface{} {
 		}
 
 	}
-	return nil
+	return nil, fmt.Errorf("%s is not support", t.String())
 }
 
 // convert from string to basic type element
-func newElement(t abi.Type, val string) interface{} {
+func newElement(t abi.Type, val string) (interface{}, error) {
 	if t.T == abi.SliceTy || t.T == abi.ArrayTy {
-		return nil
+		return nil, nil
 	}
 	var UNIT = 64
 	var elem interface{}
 	switch t.String() {
 	case "uint8":
-		num, _ := strconv.ParseUint(val, 10, UNIT)
+		num, err := strconv.ParseUint(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = uint8(num)
 	case "uint16":
-		num, _ := strconv.ParseUint(val, 10, UNIT)
+		num, err := strconv.ParseUint(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = uint16(num)
 	case "uint32":
-		num, _ := strconv.ParseUint(val, 10, UNIT)
+		num, err := strconv.ParseUint(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = uint32(num)
 	case "uint64":
-		num, _ := strconv.ParseUint(val, 10, UNIT)
+		num, err := strconv.ParseUint(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = uint64(num)
 	case "uint128", "uint256", "int128", "int256":
 		var num *big.Int
+		var ok bool
 		if val == "" {
 			num = big.NewInt(0)
 		} else {
-			num, _ = big.NewInt(0).SetString(val, 10)
+			num, ok = big.NewInt(0).SetString(val, 10)
+			if !ok {
+				return nil, fmt.Errorf("set big int failed")
+			}
 		}
 		elem = num
 	case "int8":
-		num, _ := strconv.ParseInt(val, 10, UNIT)
+		num, err := strconv.ParseInt(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = int8(num)
 	case "int16":
-		num, _ := strconv.ParseInt(val, 10, UNIT)
+		num, err := strconv.ParseInt(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = int16(num)
 	case "int32":
-		num, _ := strconv.ParseInt(val, 10, UNIT)
+		num, err := strconv.ParseInt(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = int32(num)
 	case "int64":
-		num, _ := strconv.ParseInt(val, 10, UNIT)
+		num, err := strconv.ParseInt(val, 10, UNIT)
+		if err != nil {
+			return nil, err
+		}
 		elem = int64(num)
 	case "bool":
-		v, _ := strconv.ParseBool(val)
+		v, err := strconv.ParseBool(val)
+		if err != nil {
+			return nil, err
+		}
 		elem = v
 	case "address":
 		elem = common.HexToAddress(val)
@@ -308,7 +348,7 @@ func newElement(t abi.Type, val string) interface{} {
 		elem = reflect.New(t.GetType()).Elem().Interface()
 	}
 
-	return elem
+	return elem, nil
 }
 
 var byteTy = reflect.TypeOf(byte(0))
