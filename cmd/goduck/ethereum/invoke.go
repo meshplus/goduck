@@ -61,7 +61,6 @@ func (es *EtherSession) ethCall(invokerAddr, to *common.Address, function string
 	return result, nil
 }
 
-
 func (es *EtherSession) getTrustMeta(height int64) (string, error) {
 	header, err := es.etherCli.HeaderByNumber(context.Background(), big.NewInt(height))
 	if err != nil {
@@ -141,12 +140,22 @@ func Invoke(config Config, abiPath, dstAddr, function, argAbi string) error {
 	// prepare for invoke parameters
 	var argx []interface{}
 	if len(argAbi) != 0 {
-		argSplits := strings.Split(argAbi, ",")
-		var argArr [][]byte
+		argSplits := strings.Split(argAbi, "^")
+		var argArr []interface{}
 		for _, arg := range argSplits {
-			argArr = append(argArr, []byte(arg))
+			if strings.Index(arg, "[") == 0 && strings.LastIndex(arg, "]") == len(arg)-1 {
+				if len(arg) == 2 {
+					argArr = append(argArr, make([]string, 0))
+					continue
+				}
+				// deal with slice
+				argSp := strings.Split(arg[1:len(arg)-1], ",")
+				argArr = append(argArr, argSp)
+				continue
+			}
+			argArr = append(argArr, arg)
 		}
-		argx, err = solidity.ABIUnmarshal(ab, argArr, function)
+		argx, err = solidity.Encode(ab, function, argArr...)
 		if err != nil {
 			return err
 		}

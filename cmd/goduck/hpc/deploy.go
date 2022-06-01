@@ -107,14 +107,15 @@ func (h *Hyperchain) deployContractWithCode(code []byte, local bool, args string
 	if "" == args {
 		tranDeploy = rpc.NewTransaction(h.key.GetAddress().String()).Deploy(bin)
 	} else {
-		argSplits := strings.Split(args, "-")
+		argSplits := strings.Split(args, "^")
 		var argArr []interface{}
 		for _, arg := range argSplits {
-			if arg == "" {
-				return "", nil, fmt.Errorf("contract parameter can't be empty")
-			}
 			if strings.Index(arg, "[") == 0 && strings.LastIndex(arg, "]") == len(arg)-1 {
 				// deal with slice
+				if len(arg) == 2 {
+					argArr = append(argArr, make([]string, 0))
+					continue
+				}
 				argSp := strings.Split(arg[1:len(arg)-1], ",")
 				argArr = append(argArr, argSp)
 				continue
