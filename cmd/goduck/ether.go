@@ -40,6 +40,24 @@ func etherCMD() *cli.Command {
 						Value:    types.TypeDocker,
 					},
 					&cli.StringFlag{
+						Name:     "httpport",
+						Usage:    "specify http rpc port",
+						Required: false,
+						Value:    "8545",
+					},
+					&cli.StringFlag{
+						Name:     "wsport",
+						Usage:    "specify ws rpc port",
+						Required: false,
+						Value:    "8546",
+					},
+					&cli.StringFlag{
+						Name:     "port",
+						Usage:    "specify NIC listening port",
+						Required: false,
+						Value:    "30303",
+					},
+					&cli.StringFlag{
 						Name:     "bxh-version",
 						Usage:    "specify bitxhub version (Only for docker. The launched ethereum private chain in docker mod has already deployed the cross-chain contract required for the corresponding version of BitXHub)",
 						Required: false,
@@ -70,6 +88,9 @@ func startEther(ctx *cli.Context) error {
 	}
 
 	typ := ctx.String("type")
+	httpport := ctx.String("httpport")
+	wsport := ctx.String("wsport")
+	port := ctx.String("port")
 	version := EthConfigMap[ctx.String("bxh-version")]
 
 	if typ == types.TypeBinary {
@@ -79,7 +100,7 @@ func startEther(ctx *cli.Context) error {
 		}
 	}
 
-	if err := StartEthereum(repoRoot, typ, version); err != nil {
+	if err := StartEthereum(repoRoot, typ, httpport, wsport, port, version); err != nil {
 		return err
 	}
 
@@ -127,10 +148,10 @@ func CleanEthereum(repoPath string) error {
 	return utils.ExecuteShell([]string{types.EthereumScript, "clean"}, repoPath)
 }
 
-func StartEthereum(repoPath, mod, version string) error {
+func StartEthereum(repoPath, mod, httpport, wsport, port, version string) error {
 	if !fileutil.Exist(filepath.Join(repoPath, types.EthereumScript)) {
 		return fmt.Errorf("please `goduck init` first")
 	}
 
-	return utils.ExecuteShell([]string{types.EthereumScript, mod, version}, repoPath)
+	return utils.ExecuteShell([]string{types.EthereumScript, mod, httpport, wsport, port, version}, repoPath)
 }

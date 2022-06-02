@@ -42,21 +42,21 @@ function binaryUp() {
   print_blue "start geth with datadir in ${WORKDIR}/datadir"
   nohup $CURRENT_PATH/bin/geth_${SYSTEM}_1.9.6/geth --datadir $CURRENT_PATH/ethereum/datadir --dev --ws --rpc \
     --rpccorsdomain https://remix.ethereum.org \
-    --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport 8545 \
+    --wsaddr "0.0.0.0" --rpcaddr "0.0.0.0" --rpcport $HTTP_PORT --wsport $WS_PORT --port $PORT \
     --rpcapi "eth,web3,personal,net,miner,admin,debug" >/dev/null 2>&1 &
   echo $! >ethereum.pid
 }
 
 function dockerUp() {
-  if [ ! "$(docker ps -q -f name=ethereum-node)" ]; then
-    if [ "$(docker ps -aq -f status=exited -f name=ethereum-node)" ]; then
+  if [ ! "$(docker ps -q -f name=ethereum-node-$HTTP_PORT-$WS_PORT-$PORT)" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=ethereum-node-$HTTP_PORT-$WS_PORT-$PORT)" ]; then
       # restart your container
       print_blue "restart your ethereum-node container"
       docker restart ethereum-node
     else
       print_blue "start a new ethereum-node container"
-      docker run -d --name ethereum-node \
-        -p 8545:8545 -p 8546:8546 -p 30303:30303 \
+      docker run -d --name ethereum-node-$HTTP_PORT-$WS_PORT-$PORT \
+        -p $HTTP_PORT:8545 -p $WS_PORT:8546 -p $PORT:30303 \
         meshplus/ethereum:$VERSION \
         --datadir /root/datadir --dev --ws --rpc \
         --rpccorsdomain https://remix.ethereum.org \
@@ -87,7 +87,7 @@ function etherDown() {
 
   print_blue "===> stop ethereum in docker..."
   if [ "$(docker container ls | grep -c ethereum-node)" -ge 1 ]; then
-    docker kill ethereum-node
+    docker kill $(docker container ls | grep ethereum-node | awk '{print $1}')
     echo "ethereum docker container stopped"
   fi
 }
@@ -109,13 +109,16 @@ function etherClean() {
 
   print_blue "===> clean ethereum in docker..."
   if [ "$(docker container ls -a | grep -c ethereum-node)" -ge 1 ]; then
-    docker rm ethereum-node
+    docker rm $(docker container ls -a | grep ethereum-node | awk '{print $1}')
     echo "ethereum docker container cleaned"
   fi
 }
 
 MODE=$1
-VERSION=$2
+HTTP_PORT=$2
+WS_PORT=$3
+PORT=$4
+VERSION=$5
 
 if [ "$MODE" == "binary" ]; then
   binaryUp
