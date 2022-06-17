@@ -17,7 +17,7 @@ services:
   ethereum-1:
     image: meshplus/ethereum:1.2.0
     container_name: ethereum-1
-    command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
+    command: --datadir /root/datadir --dev --ws --rpc --rpccorsdomain https://remix.ethereum.org --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" --rpcapi "eth,web3,personal,net,miner,admin,debug"
     restart: always
     ports:
       - 8546:8546
@@ -26,7 +26,7 @@ services:
   ethereum-2:
     image: meshplus/ethereum:1.2.0
     container_name: ethereum-2
-    command: --datadir /root/datadir --nousb --dev --ws --http --http.addr "0.0.0.0" --http.port 8545 --ws.addr "0.0.0.0" --http.api "eth,web3,personal,net,miner,admin,debug"
+    command: --datadir /root/datadir --dev --ws --rpc --rpccorsdomain https://remix.ethereum.org --rpcaddr "0.0.0.0" --rpcport 8545 --wsaddr "0.0.0.0" --rpcapi "eth,web3,personal,net,miner,admin,debug"
     restart: always
     ports:
       - 8548:8546
@@ -47,11 +47,12 @@ services:
       - ../key1.json:/root/.pier/key.json
       - ../../pier:/root/.pier/scripts
     command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
-      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&
       sed -i 's/config = \".*\"/config = \"ethereum\"/g' /root/.pier/pier.toml &&
-      sed -i 's/did = \".*\"/did = \"did:bitxhub:appchain1:.\"/g' /root/.pier/pier.toml &&
       sed -i 's/localhost/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
       sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      sed -i 's/60012/60011/g' /root/.pier/pier.toml &&
+      sed -i 's/60013/60011/g' /root/.pier/pier.toml &&
+      sed -i 's/60014/60011/g' /root/.pier/pier.toml &&
       pier start"
   pier-ethereum-2:
     restart: always
@@ -68,11 +69,12 @@ services:
       - ../key2.json:/root/.pier/key.json
       - ../../pier:/root/.pier/scripts
     command: /bin/sh -c "sed -i 's/localhost/host.docker.internal/g' /root/.pier/pier.toml &&
-      sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/pier.toml &&
       sed -i 's/config = \".*\"/config = \"ethereum\"/g' /root/.pier/pier.toml &&
-      sed -i 's/did = \".*\"/did = \"did:bitxhub:appchain2:.\"/g' /root/.pier/pier.toml &&
       sed -i 's/localhost/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
       sed -i 's/127.0.0.1/host.docker.internal/g' /root/.pier/ethereum/ethereum.toml &&
+      sed -i 's/60012/60011/g' /root/.pier/pier.toml &&
+      sed -i 's/60013/60011/g' /root/.pier/pier.toml &&
+      sed -i 's/60014/60011/g' /root/.pier/pier.toml &&
       pier start"
   prom:
     restart: always
