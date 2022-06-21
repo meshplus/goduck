@@ -160,7 +160,7 @@ function rewritePierConfig() {
   # tls
   x_replace "s/enable_tls.*= .*/enable_tls = $TLS/" ${TARGET}/pier.toml
   # appchain
-  x_replace "s/config.*= \".*\"/config = \"$APPCHAINTYPE\"/" ${TARGET}/pier.toml
+  x_replace "s/config.*= \".*\"/config = \"ether\"/" ${TARGET}/pier.toml
 
   print_blue "【2】rewrite appchain config"
   if [ $APPCHAINTYPE == "ethereum" ]; then

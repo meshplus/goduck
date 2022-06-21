@@ -151,6 +151,7 @@ function generateNodeConfig() {
   pid_array+=(${PID})
   ADDR=`${BITXHUBBINPATH}/bitxhub key address --path ${TARGET}/$2/key.json --passwd bitxhub`
   addr_array+=(${ADDR})
+
 }
 
 function rewriteNodesConfig() {
@@ -175,7 +176,7 @@ function rewriteNodeConfig() {
   grpc=${GRPCPS[$1-1]}
   x_replace "s/grpc.*= .*/grpc = $grpc/" ${TARGET}/$2/bitxhub.toml
   gateway=${GATEWAYPS[$1-1]}
-  x_replace "s/gateway.*= .*/gateway = $gateway/" ${TARGET}/$2/bitxhub.toml
+  #x_replace "s/gateway.*= .*/gateway = $gateway/" ${TARGET}/$2/bitxhub.toml
   pprof=${PPROFPS[$1-1]}
   x_replace "s/pprof.*= .*/pprof = $pprof/" ${TARGET}/$2/bitxhub.toml
   monitor=${MONITORPS[$1-1]}
@@ -265,6 +266,8 @@ function rewriteNodeConfig() {
       x_replace "$pid_line s/pid = \".*\"/pid = \"$pid\"/" ${TARGET}/$2/network.toml
     done
   fi
+
+
 }
 
 # parses opts
