@@ -96,23 +96,6 @@ function appchain_register_binary() {
   fi
 }
 
-
-function service_register_binary() {
-     version1=${VERSION}
-     if [ $version1 == "v1.23.0" ]; then
-       "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain service register \
-               --appchain-id $1 \
-               --service-id $2 \
-               --name $3 \
-               -intro "" \
-               --type CallContract \
-               --permit "" \
-               --details "test" \
-               --reason "reason"
-
-     fi
-}
-
 function pier_docker_rule_deploy() {
   print_blue "======> Deploy rule in bitxhub"
 
@@ -236,19 +219,6 @@ function pier_register() {
     echo "Not supported up type "${UPTYPE}" for pier"
   fi
 }
-
-function pier_register_service() {
-    if [ "${UPTYPE}" == "binary" ]; then
-        service_register_binary ethappchain1 xxx ethereum1
-    else
-        echo "Not supported up type "${UPTYPE}" for pier"
-    fi
-}
-
-
-
-
-
 
 function pier_rule_deploy() {
   if [ "${UPTYPE}" == "docker" ]; then
@@ -436,8 +406,6 @@ if [ "$OPT" == "up" ]; then
   pier_up
 elif [ "$OPT" == "register" ]; then
   pier_register
-elif [ "$OPT" == "registerService" ]; then
-  pier_register_service
 elif [ "$OPT" == "rule" ]; then
   pier_rule_deploy
 elif [ "$OPT" == "down" ]; then
