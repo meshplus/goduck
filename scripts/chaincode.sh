@@ -118,6 +118,11 @@ function installInterchainChaincode() {
   fabric-cli chaincode instantiate --ccp transfer --ccid transfer --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
   fabric-cli chaincode install --gopath ./contracts --ccp data_swapper --ccid data_swapper --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
   fabric-cli chaincode instantiate --ccp data_swapper --ccid data_swapper --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
+  if [ "${TYPE}" == "direct" ]; then
+      print_blue "===> Deploying transaction"
+      fabric-cli chaincode install --gopath ./contracts --ccp transaction --ccid transaction --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
+      fabric-cli chaincode instantiate --ccp transaction --ccid transaction --config "${CONFIG_YAML}" --orgid org2 --user Admin --cid mychannel
+  fi
 
   print_blue "===> 2. Set Alice 10000 amout in transfer chaincode"
   fabric-cli chaincode invoke --cid mychannel --ccid=transfer \
@@ -205,11 +210,12 @@ CONFIG_YAML=./config.yaml
 CHAINCODE_PATH=""
 CHAINCODE_VERSION=v1
 BXH_VERSION=v1.6.5
+TYPE="relay"
 
 MODE=$1
 shift
 
-while getopts "h?c:g:v:b:" opt; do
+while getopts "h?c:g:v:b:t:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -225,6 +231,8 @@ while getopts "h?c:g:v:b:" opt; do
     CHAINCODE_VERSION=$OPTARG
     ;;
   b)BXH_VERSION=$OPTARG
+    ;;
+  t)TYPE=$OPTARG
     ;;
   esac
 done
