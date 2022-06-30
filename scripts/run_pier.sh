@@ -43,25 +43,6 @@ function appchain_register_binary() {
     # >= v1.8.0
     version1=${VERSION}
     version2="v1.11.3"
-
-    if [ $version1 == "v1.23.0" ]; then
-
-        cp "${PIER_BIN_PATH}"/pier "${PIERREPO}"
-        echo pwd
-        pier --repo "${PIERREPO}" appchain register \
-        --appchain-id $6 \
-        --name $1 \
-        --type $2 \
-        --trustroot "${PIERREPO}"/$5 \
-        --broker $7 \
-        --desc  $3 \
-        --master-rule "0x00000000000000000000000000000000000000a2" \
-        --rule-url "http://github.com" \
-        --admin $8 \
-        --reason "reason"
-        exit
-    fi
-
     version_compare
     if [[ $versionComPareRes -lt 0 ]]; then
       # v1.8.0 <= < v1.11.2
@@ -203,8 +184,7 @@ function pier_binary_register() {
 
   if [ "$APPCHAINTYPE" == "ethereum" ]; then
     print_blue "======> Register pier(ethereum) to bitxhub"
-    appchain_register_binary chainB ether chainB-description 1.9.13 ethereum/ether.validators $METHOD \
-     0x857133c5C69e6Ce66F7AD46F200B9B3573e77582 0xE65634A98C53eAaCFd05Ed66035E74B85eFe54D6
+    appchain_register_binary chainB ether chainB-description 1.9.13 ethereum/ether.validators $METHOD
   fi
 
   print_blue "Waiting for the administrators of BitXHub to vote for approval."
