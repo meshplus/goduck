@@ -1,0 +1,62 @@
+title = "Pier"
+
+[appchain]
+  config = "ethereum111"
+  id = "fabappchain"
+  plugin = "appchain_plugin"
+
+[ha]
+  mode = "single"
+
+[log]
+  dir = "logs"
+  filename = "pier.log"
+  level = "info"
+  report_caller = false
+
+  [log.module]
+    api_server = "info"
+    appchain_adapter = "info"
+    appchain_mgr = "info"
+    bxh_lite = "info"
+    direct_adapter = "info"
+    exchanger = "info"
+    executor = "info"
+    monitor = "info"
+    peer_mgr = "info"
+    router = "info"
+    rule_mgr = "info"
+    swarm = "info"
+    syncer = "info"
+    union_adapter = "info"
+
+[mode]
+  type = "relay"
+
+  [mode.direct]
+    gas_limit = 100000000
+
+  [mode.relay]
+    addrs = ["host.docker.internal:60011", "host.docker.internal:60012", "host.docker.internal:60013", "host.docker.internal:60014"]
+    bitxhub_id = "1356"
+    enable_offchain_transmission = false
+    quorum = 2
+    timeout_limit = "1s"
+
+  [mode.union]
+    addrs = ["host.docker.internal:60011", "host.docker.internal:60012", "host.docker.internal:60013", "host.docker.internal:60014"]
+    providers = 1
+
+[port]
+  http = 44544
+  pprof = 44555
+
+[security]
+  access_cert = ["node1.cert", "node2.cert", "node3.cert", "node4.cert"]
+  access_key = "node.priv"
+  common_name = "BitXHub"
+  enable_tls = false
+  tlsca = "certs/agency.cert"
+
+[tss]
+  enable_tss = false

@@ -1,0 +1,57 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "destFullServiceID",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "func",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes[]",
+				"name": "args",
+				"type": "bytes[]"
+			},
+			{
+				"internalType": "string",
+				"name": "funcCb",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes[]",
+				"name": "argsCb",
+				"type": "bytes[]"
+			},
+			{
+				"internalType": "string",
+				"name": "funcRb",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes[]",
+				"name": "argsRb",
+				"type": "bytes[]"
+			},
+			{
+				"internalType": "bool",
+				"name": "isEncrypt",
+				"type": "bool"
+			}
+		],
+		"name": "emitInterchainEvent",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "register",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]

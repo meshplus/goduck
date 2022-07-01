@@ -1,0 +1,53 @@
+[hosts]
+  [[hosts.host]]
+    host_lable = host1 # (自定义)主机标签
+    ip = 127.0.0.1
+    # 主机用户名
+    user = xxx
+    # 主机ssh密钥文件名(config/cert/host目录下)
+    key = host1
+[pier]
+  pier_host = host1
+  # whether to overwrite the configuration files if them already exist
+  rewrite = true
+  httpPort = 44554
+  pprofPort = 44550
+  apiPort = 8080
+  # whether to enable TLS
+  tls = false
+  # direct, relay or union
+  mode = relay
+  [pier.relay]
+    bitxhubAddr = localhost:60011
+    bitxhubValidators = ["0xc7F999b83Af6DF9e67d0a37Ee7e900bF38b3D013","0x79a1215469FaB6f9c63c1816b45183AD3624bE34","0x97c8B516D19edBf575D72a172Af7F418BE498C37","0xc0Ff2e0b3189132D815b8eb325bE17285AC898f8"]
+  [pier.direct]
+    directPort = 5001
+    peersAddr = ["/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL"]
+  [pier.union]
+    # address of peers which need to connect
+    connectors = ["/ip4/127.0.0.1/tcp/4001/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5ngmL","/ip4/127.0.0.1/tcp/4002/p2p/Qma1oh5JtrV24gfP9bFrVv4miGKz7AABpfJhZ4F2Z5abcD"]
+    providers = 1
+
+[appchain]
+  [appchain.ethereum]
+    # address of the contract on the appChain
+    contractAddr = 0xD3880ea40670eD51C3e3C0ea089fDbDc9e3FBBb4
+    ethAddr = ws://127.0.0.1:8546
+  [appchain.fabric]
+    # path of crypto-config
+    cryptoPath = REPO/fabric/crypto-config
+    # binary local: localhost
+    # docker local: host.docker.internal
+    fabricIP = localhost
+    ordererP = 7050
+    urlSubstitutionExpP1 = 7051
+    eventUrlSubstitutionExpP1 = 7053
+    urlSubstitutionExpP2 = 8051
+    eventUrlSubstitutionExpP2 = 8053
+    urlSubstitutionExpP3 = 9051
+    eventUrlSubstitutionExpP3 = 9053
+    urlSubstitutionExpP4 = 10051
+    eventUrlSubstitutionExpP4 = 10053
+
+
+

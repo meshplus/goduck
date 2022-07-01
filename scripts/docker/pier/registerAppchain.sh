@@ -8,6 +8,8 @@ appchainVersion=$5
 appchainValidators=$6
 appchainConsensus=$7
 pierVersion=$8
+broker=$9
+admin=${10}
 
 if [ "${pierVersion}" = "v1.6.1" ] || [ "${pierVersion}" = "v1.6.2" ] || [ "${pierVersion}" = "v1.7.0" ]; then
   pier --repo /root/.pier appchain register \
@@ -29,6 +31,18 @@ elif [ "${pierVersion}" = "v1.8.0" ] || [ "${pierVersion}" = "v1.9.0" ] || [ "${
     --version $appchainVersion \
     --validators $appchainValidators \
     --consensus $appchainConsensus
+elif [ "${pierVersion}" = "v1.23.0" ]; then
+  pier --repo /root/.pier  appchain register \
+  --appchain-id $methodName \
+  --name $appchainName \
+  --type $appchainType \
+  --trustroot $appchainValidators \
+  --broker $broker \
+  --desc "desc" \
+  --master-rule "0x00000000000000000000000000000000000000a2" \
+  --rule-url "http://github.com" \
+  --admin $admin \
+  --reason "reason"
 else
   pier --repo /root/.pier appchain method register \
     --admin-key /root/.pier/key.json \

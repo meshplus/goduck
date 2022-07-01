@@ -36,6 +36,12 @@ var ContractCMD = &cli.Command{
 					Value:    "v1.6.5",
 					Required: false,
 				},
+				&cli.StringFlag{
+					Name:     "pier-type",
+					Usage:    "relay or direct",
+					Value:    "relay",
+					Required: false,
+				},
 			},
 			Action: installChaincode,
 		},
@@ -144,13 +150,15 @@ func installChaincode(ctx *cli.Context) error {
 
 	bxhVersion := ctx.String("bxh-version")
 
+	pierType := ctx.String("pier-type")
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion)
+	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion, "-t", pierType)
 
 	return utils.ExecuteShell(args, repoRoot)
 }
