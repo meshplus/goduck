@@ -22,7 +22,7 @@ require (
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hyperledger/fabric v2.0.1+incompatible
-	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
+	github.com/hyperledger/fabric-sdk-go v1.0.0-beta2
 	github.com/libp2p/go-libp2p-core v0.5.7-0.20200520175250-264788628f5a
 	github.com/meshplus/bitxhub v1.1.0-rc1.0.20201020024116-dcdc23de5d04
 	github.com/meshplus/bitxhub-kit v1.1.2-0.20210112075018-319e668d6359
@@ -39,6 +39,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/urfave/cli/v2 v2.3.0
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
+	golang.org/x/tools v0.1.11 // indirect
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
 	gopkg.in/cheggaaa/pb.v2 v2.0.7 // indirect
 	gopkg.in/fatih/color.v1 v1.7.0 // indirect

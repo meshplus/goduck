@@ -29,6 +29,7 @@ const (
 	PlaygroundScript           = "playground.sh"
 	FabricScript               = "fabric.sh"
 	ChaincodeScript            = "chaincode.sh"
+	DeployChaincodeScript      = "deploy_chaincode.sh"
 	EthereumScript             = "ethereum.sh"
 	PierScript                 = "run_pier.sh"
 	QuickStartScript           = "quick_start.sh"

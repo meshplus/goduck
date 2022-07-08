@@ -42,6 +42,12 @@ var ContractCMD = &cli.Command{
 					Value:    "relay",
 					Required: false,
 				},
+				&cli.StringFlag{
+					Name:     "fabric-version",
+					Usage:    "1.14.3 or 2.0.0",
+					Value:    "2.0.0",
+					Required: false,
+				},
 			},
 			Action: installChaincode,
 		},
@@ -152,13 +158,19 @@ func installChaincode(ctx *cli.Context) error {
 
 	pierType := ctx.String("pier-type")
 
+	fabricVersion := ctx.String("fabric-version")
+
 	repoRoot, err := repo.PathRootWithDefault(ctx.String("repo"))
 	if err != nil {
 		return err
 	}
 
 	args := make([]string, 0)
-	args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion, "-t", pierType)
+	if fabricVersion == "2.0.0" {
+		args = append(args, filepath.Join(repoRoot, types.DeployChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion, "-t", pierType)
+	} else {
+		args = append(args, filepath.Join(repoRoot, types.ChaincodeScript), "install", "-c", configPath, "-g", absPath, "-b", bxhVersion, "-t", pierType)
+	}
 
 	return utils.ExecuteShell(args, repoRoot)
 }

@@ -25,7 +25,7 @@ client:
     # requiring a key store. PKCS#11 based implementations does not.
     cryptoStore:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
-      path: /tmp/msp
+      path: {FABRIC_PATH}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
 
     # BCCSP config for the client. Used by GO SDK.
   BCCSP:
@@ -44,9 +44,9 @@ client:
     #[Optional]. Client key and cert for TLS handshake with peers and orderers
     client:
       key:
-        path: {FABRIC_PATH}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/server.key
+        path: {FABRIC_PATH}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.key
       cert:
-        path: {FABRIC_PATH}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/server.crt
+        path: {FABRIC_PATH}/crypto-config/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.crt
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
