@@ -123,6 +123,8 @@ function docker-compose-up() {
     else
       if [ "${VERSION}" == "v1.23.0" ]; then
         docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml up -d bitxhub_solo ethereum-1 ethereum-2
+        echo "wait ethereum-1 ethereum-2 start"
+        sleep 5
         bash deploy_contracts.sh deploy http://localhost:8545 http://localhost:8547
         docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml up -d pier-ethereum-1 pier-ethereum-2
       else
