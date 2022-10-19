@@ -40,7 +40,7 @@ function printHelp() {
 function prepare() {
   if [ ! -d "${FABRIC_SAMPLE_PATH}"/bin ]; then
     print_blue "===> Download the necessary dependencies"
-    curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/bootstrap.sh | bash -s -- 1.4.3 1.4.3 0.4.18
+    curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/bootstrap.sh | bash -s -- 2.0.1 1.4.6 0.4.18
   fi
   docker volume prune -f
 }
@@ -72,7 +72,7 @@ function networkUp() {
   ./byfn.sh up -n
 
   rm -rf "${CURRENT_PATH}"/fabric/crypto-config
-  mv "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/fabric/crypto-config
+  cp -r "${FABRIC_SAMPLE_PATH}"/first-network/crypto-config "${CURRENT_PATH}"/fabric/
 }
 
 function networkDown() {
@@ -88,28 +88,36 @@ function networkClean() {
 
   print_blue "===> clean contract images ..."
   if [[ -n `docker ps -a |grep example.com-broker | awk '{print $1}'` ]]; then
-    docker rm  `docker ps -a |grep example.com-broker | awk '{print $1}'`
+    docker rm -f  `docker ps -a |grep example.com-broker | awk '{print $1}'`
   fi
 
   if [[ -n `docker ps -a |grep example.com-transfer | awk '{print $1}'` ]]; then
-    docker rm  `docker ps -a |grep example.com-transfer | awk '{print $1}'`
+    docker rm -f  `docker ps -a |grep example.com-transfer | awk '{print $1}'`
   fi
 
   if [[ `docker ps -a |grep example.com-data_swapper | awk '{print $1}'` ]]; then
-    docker rm  `docker ps -a |grep example.com-data_swapper | awk '{print $1}'`
+    docker rm -f  `docker ps -a |grep example.com-data_swapper | awk '{print $1}'`
   fi
 
+   if [[ `docker ps -a |grep example.com-transaction | awk '{print $1}'` ]]; then
+      docker rm -f  `docker ps -a |grep example.com-transaction | awk '{print $1}'`
+    fi
+
   if [[ `docker images |grep example.com-broker | awk '{print $1}'` ]]; then
-    docker rmi `docker images |grep example.com-broker | awk '{print $1}'`
+    docker rmi -f `docker images |grep example.com-broker | awk '{print $1}'`
   fi
 
   if [[ `docker images |grep example.com-transfer | awk '{print $1}'` ]]; then
-    docker rmi `docker images |grep example.com-transfer | awk '{print $1}'`
+    docker rmi -f `docker images |grep example.com-transfer | awk '{print $1}'`
   fi
 
   if [[ `docker images |grep example.com-data_swapper | awk '{print $1}'` ]]; then
-    docker rmi `docker images |grep example.com-data_swapper | awk '{print $1}'`
+    docker rmi -f `docker images |grep example.com-data_swapper | awk '{print $1}'`
   fi
+
+  if [[ `docker images |grep example.com-transaction | awk '{print $1}'` ]]; then
+      docker rmi -f `docker images |grep example.com-transaction | awk '{print $1}'`
+    fi
 }
 
 function networkRestart() {
