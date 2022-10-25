@@ -12,13 +12,15 @@ require (
 	github.com/cheynewallace/tabby v1.1.0
 	github.com/codeskyblue/go-sh v0.0.0-20200712050446-30169cf553fe
 	github.com/coreos/etcd v3.3.18+incompatible
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20180625184442-8e610b2b55bf
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.6
 	github.com/fatih/color v1.7.0
-	github.com/gobuffalo/packd v1.0.0
+	github.com/gobuffalo/envy v1.10.2 // indirect
+	github.com/gobuffalo/packd v1.0.2
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hyperledger/fabric v2.0.1+incompatible
@@ -31,14 +33,16 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
-	github.com/pelletier/go-toml v1.8.0
+	github.com/pelletier/go-toml v1.9.3
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
-	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/viper v1.6.1
-	github.com/stretchr/testify v1.7.0
+	github.com/sirupsen/logrus v1.9.0
+	github.com/spf13/viper v1.8.1
+	github.com/stretchr/testify v1.8.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/urfave/cli/v2 v2.3.0
+	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	gopkg.in/VividCortex/ewma.v1 v1.1.1 // indirect
 	gopkg.in/cheggaaa/pb.v2 v2.0.7 // indirect
 	gopkg.in/fatih/color.v1 v1.7.0 // indirect
