@@ -19,7 +19,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.6
 	github.com/fatih/color v1.7.0
 	github.com/gobuffalo/packd v1.0.0
-	github.com/gobuffalo/packr v1.30.1
+	github.com/gobuffalo/packr/v2 v2.5.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hyperledger/fabric v2.0.1+incompatible
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1

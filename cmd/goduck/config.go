@@ -24,7 +24,7 @@ import (
 	"github.com/codeskyblue/go-sh"
 	"github.com/fatih/color"
 	"github.com/gobuffalo/packd"
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/meshplus/bitxhub-kit/crypto"
 	"github.com/meshplus/bitxhub-kit/crypto/asym"
 	"github.com/meshplus/bitxhub-kit/fileutil"
@@ -1237,7 +1237,7 @@ func renderConfigFiles(dstDir, srcDir string, filesToRender []string, data inter
 		filesM[file] = struct{}{}
 	}
 
-	box := packr.NewBox(filepath.Join(PackPath, srcDir))
+	box := packr.New("box", filepath.Join(PackPath, srcDir))
 	if err := box.Walk(func(s string, file packd.File) error {
 		p := filepath.Join(dstDir, s)
 		dir := filepath.Dir(p)
@@ -1273,7 +1273,7 @@ func renderConfigFiles(dstDir, srcDir string, filesToRender []string, data inter
 }
 
 func renderConfigFile(dstDir string, srcFiles []string, data interface{}) error {
-	box := packr.NewBox(PackPath)
+	box := packr.New("box", PackPath)
 
 	for _, srcFile := range srcFiles {
 		fileStr, err := box.FindString(srcFile)
