@@ -13,7 +13,7 @@ import (
 	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/fatih/color"
 	"github.com/gobuffalo/packd"
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/meshplus/goduck/internal/repo"
 	"github.com/meshplus/goduck/internal/types"
 	"github.com/urfave/cli/v2"
@@ -50,8 +50,8 @@ func Initialize(ctx *cli.Context) error {
 			return nil
 		}
 	}
-	scriptBox := packr.NewBox(ScriptsPath)
-	configBox := packr.NewBox(ConfigPath)
+	scriptBox := packr.New("scriptBox", ScriptsPath)
+	configBox := packr.New("configBox", ConfigPath)
 
 	var walkFn = func(s string, file packd.File) error {
 		p := filepath.Join(repoRoot, s)
