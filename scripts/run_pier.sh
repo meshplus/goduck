@@ -57,6 +57,18 @@ function appchain_register_binary() {
             --method "$6" \
             --doc-addr "doc-addr" \
             --doc-hash "doc-hash"
+
+    elif [ "${version1}" = "v1.23.0" ] || [ "${version1}" = "v2.8.0" ]; then
+      "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain register \
+                --name $1 \
+                --type $2 \
+                --desc $3 \
+                --trustroot "${PIERREPO}"/$5 \
+                --appchain-id "$6" \
+                --admin "${PIERREPO}/key.json" \
+                --master-rule "0x00000000000000000000000000000000000000a2" \
+                --rule-url "http://github.com" \
+                --reason "reason"
     else
       # >= v1.11.2
       "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain method register \
@@ -115,24 +127,37 @@ function pier_docker_up() {
   if [ ! "$(docker ps -q -f name=pier-${APPCHAINTYPE})" ]; then
 
     print_blue "======> Start a new pier-${APPCHAINTYPE}"
+    if [ "${VERSION}" = "v2.8.0"  ]; then
+        if [ "${APPCHAINTYPE}" = "ethereum"  ]; then
+            startPierContainer=${PIERREPO}/scripts/docker-compose-pier-eth.yaml
+            x_replace "s/image: meshplus\/pier-ethereum:.*/image: meshplus\/pier-ethereum:${VERSION}/g" "${startPierContainer}"
+            cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier-eth.yaml
+            docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-eth.yaml up -d
+        else
+            startPierContainer=${PIERREPO}/scripts/docker-compose-pier-fabric.yaml
+            x_replace "s/image: meshplus\/pier-fabric:.*/image: meshplus\/pier-fabric:${VERSION}/g" "${startPierContainer}"
+            cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier-fabric.yaml
+            docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-fabric.yaml up -d
+        fi
+    else
+          startPierContainer=${PIERREPO}/scripts/docker-compose-pier.yaml
+          x_replace "s/container_name: .*/container_name: pier-$APPCHAINTYPE/g" "${startPierContainer}"
+          x_replace "s/image: meshplus\/pier:.*/image: meshplus\/pier:${VERSION}/g" "${startPierContainer}"
+          HTTPPORT=$(sed '/^.*httpPort/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH})
+          PPROFPORT=$(sed '/^.*pprofPort/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH})
+          x_replace "s/\".*:34544\"/\"${HTTPPORT}:34544\"/g" "${startPierContainer}"
+          x_replace "s/\".*:34555\"/\"${PPROFPORT}:34555\"/g" "${startPierContainer}"
+          pierRepoTmp=$(echo "${PIERREPO}" | sed 's/\//\\\//g')
+          x_replace "s/pier-fabric-repo/${pierRepoTmp}/g" "${startPierContainer}"
 
-    startPierContainer=${PIERREPO}/scripts/docker-compose-pier.yaml
-    x_replace "s/container_name: .*/container_name: pier-$APPCHAINTYPE/g" "${startPierContainer}"
-    x_replace "s/image: meshplus\/pier:.*/image: meshplus\/pier:${VERSION}/g" "${startPierContainer}"
-    HTTPPORT=$(sed '/^.*httpPort/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH})
-    PPROFPORT=$(sed '/^.*pprofPort/!d;s/.*=//;s/[[:space:]]//g' ${CONFIGPATH})
-    x_replace "s/\".*:34544\"/\"${HTTPPORT}:34544\"/g" "${startPierContainer}"
-    x_replace "s/\".*:34555\"/\"${PPROFPORT}:34555\"/g" "${startPierContainer}"
-    pierRepoTmp=$(echo "${PIERREPO}" | sed 's/\//\\\//g')
-    x_replace "s/pier-fabric-repo/${pierRepoTmp}/g" "${startPierContainer}"
-
-    cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier.yaml
-    docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml up -d
-    sleep 1
-    CID=`docker ps | grep pier-${APPCHAINTYPE} | awk '{print $1}'`
-    echo $CID >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}.cid
-    echo $(docker exec $CID pier id) >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.addr
-    docker exec $CID pier version >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.version
+          cp "${startPierContainer}" ${PIER_CONFIG_PATH}/docker-compose-pier.yaml
+          docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml up -d
+          sleep 1
+          CID=`docker ps | grep pier-${APPCHAINTYPE} | awk '{print $1}'`
+          echo $CID >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}.cid
+          echo $(docker exec $CID pier id) >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.addr
+          docker exec $CID pier version >"${PIER_CONFIG_PATH}"/pier-${APPCHAINTYPE}-docker.version
+    fi
   else
     print_red "pier-${APPCHAINTYPE} container already running, please stop them first"
     exit 1
@@ -253,6 +278,11 @@ function pier_down() {
   print_blue "======> Kill $APPCHAINTYPE pier in docker"
   if [ "$(docker ps | grep -c pier-$APPCHAINTYPE)" -ge 1 ]; then
     docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml stop
+    if [ $APPCHAINTYPE == "fabric" ]; then
+        docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-fabric.yaml stop
+    else
+        docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-eth.yaml stop
+    fi
     echo "pier-$APPCHAINTYPE docker stop"
   fi
 
@@ -270,6 +300,11 @@ function pier_clean() {
 
   print_blue "======> Clean $APPCHAINTYPE pier in docker"
   if [ "$(docker ps | grep -c pier-$APPCHAINTYPE)" -ge 1 ]; then
+    if [ $APPCHAINTYPE == "fabric" ]; then
+        docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-fabric.yaml rm -f
+    else
+        docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier-eth.yaml rm -f
+    fi
     docker-compose -f ${PIER_CONFIG_PATH}/docker-compose-pier.yaml rm -f
     echo "pier-$APPCHAINTYPE docker clean"
   fi

@@ -135,7 +135,7 @@ var ContractCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:     "version",
 					Usage:    "specify bitxhub version",
-					Value:    "v1.6.5",
+					Value:    "v2.8.0",
 					Required: false,
 				},
 			},
@@ -153,6 +153,9 @@ func downloadContract(ctx *cli.Context) error {
 	}
 	if !fileutil.Exist(repoPath) {
 		return fmt.Errorf("please `goduck init` first")
+	}
+	if version == "v2.8.0" {
+		ethContract = append(ethContract, "broker_data")
 	}
 
 	for _, contract := range ethContract {

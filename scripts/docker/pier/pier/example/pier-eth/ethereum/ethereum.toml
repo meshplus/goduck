@@ -1,0 +1,11 @@
+[ether]
+addr = "ws://host.docker.internal:8546"
+name = "ether"
+contract_address = "0x30c5D3aeb4681af4D13384DBc2a717C51cb1cc11"
+key_path = "account.key"
+password = "password"
+min_confirm = 0
+
+[contract_abi]
+0x6db07a8b0f23367dc65c7DAD91da4F6bfD97D674="data_swapper.abi"
+0x668a209Dc6562707469374B8235e37b8eC25db08="transfer.abi"

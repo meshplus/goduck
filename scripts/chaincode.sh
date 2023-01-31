@@ -136,9 +136,9 @@ function installInterchainChaincode() {
 
   print_blue "===> 4. Register transfer and data_swapper chaincode to broker chaincode"
   fabric-cli chaincode invoke --cid mychannel --ccid=transfer \
-    --args='{"Func":"register"}' --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
+    --args='{"Func":"register","Args":["1"]}' --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
   fabric-cli chaincode invoke --cid mychannel --ccid=data_swapper \
-    --args='{"Func":"register"}' --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
+    --args='{"Func":"register","Args":["1"]}' --user Admin --orgid org2 --payload --config "${CONFIG_YAML}"
 
   print_blue "===> 6. Audit transfer and data_swapper chaincode"
   fabric-cli chaincode invoke --cid mychannel --ccid=broker \

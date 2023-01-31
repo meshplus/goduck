@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  pier:
+    restart: always
+    image: meshplus/pier-ethereum:version
+    container_name: pier-ethereum
+    volumes:
+      - ./:/root/.pier/scripts
+      - ../docker/pier/pier/example/pier-eth/pier.toml:/root/.pier/pier.toml:ro
+      - ../docker/pier/pier/example/pier-eth/key.json:/root/.pier/key.json:ro
+      - ../docker/pier/pier/example/pier-eth/network.toml:/root/.pier/network.toml:ro
+      - ../docker/pier/pier/example/pier-eth/node.csr:/root/.pier/node.csr:ro
+      - ../docker/pier/pier/example/pier-eth/node.priv:/root/.pier/node.priv:ro
+      - ../docker/pier/pier/example/pier-eth/logs:/root/.pier/logs:rw
+      - ../docker/pier/pier/example/pier-eth/ethereum:/root/.pier/ethereum:ro
+      - ../docker/pier/pier/example/pier-eth/certs:/root/.pier/certs:ro
+    ports:
+      - "44554:44554"
+      - "44550:44550"

@@ -18,8 +18,8 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.6
 	github.com/fatih/color v1.7.0
-	github.com/gobuffalo/packd v1.0.0
-	github.com/gobuffalo/packr/v2 v2.5.1
+	github.com/gobuffalo/packd v1.0.1
+	github.com/gobuffalo/packr/v2 v2.8.3
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hyperledger/fabric v2.0.1+incompatible
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
@@ -31,11 +31,11 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
-	github.com/pelletier/go-toml v1.8.0
+	github.com/pelletier/go-toml v1.9.3
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
-	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/viper v1.6.1
+	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31
 	github.com/urfave/cli/v2 v2.3.0
