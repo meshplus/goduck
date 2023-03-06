@@ -40,7 +40,7 @@ function printHelp() {
 function prepare() {
   if [ ! -d "${FABRIC_SAMPLE_PATH}"/bin ]; then
     print_blue "===> Download the necessary dependencies"
-    curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/master/scripts/bootstrap.sh | bash -s -- 1.4.3 1.4.3 0.4.18
+    bash bootstrap.sh 1.4.3 1.4.3 
   fi
   docker volume prune -f
 }
