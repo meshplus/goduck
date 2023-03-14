@@ -1,0 +1,7 @@
+[[piers]]
+hosts = ["/ip4/127.0.0.1/tcp/4321/p2p/"]
+pid = "QmZBXPKmBSs45PuzbPpuZV6QzZpAQmqZa8AzJ6HNQX9wJh"
+
+[[piers]]
+hosts = ["/ip4/127.0.0.1/tcp/4322/p2p/"]
+pid = "QmbmD1kzdsxRiawxu7bRrteDgW1ituXupR8GH6E2EUAHY4"

@@ -31,7 +31,7 @@ elif [ "${pierVersion}" = "v1.8.0" ] || [ "${pierVersion}" = "v1.9.0" ] || [ "${
     --version $appchainVersion \
     --validators $appchainValidators \
     --consensus $appchainConsensus
-elif [ "${pierVersion}" = "v1.23.0" ]; then
+elif [ "${pierVersion}" = "v1.23.0" ] || [ "${pierVersion}" = "v2.8.0" ]; then
   pier --repo /root/.pier  appchain register \
   --appchain-id $methodName \
   --name $appchainName \

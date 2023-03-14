@@ -1,0 +1,20 @@
+version: '2'
+
+services:
+  pier:
+    restart: always
+    image: meshplus/pier-fabric:version
+    container_name: pier-fabric
+    volumes:
+      - ../docker/pier/pier/example/pier-fabric/pier.toml:/root/.pier/pier.toml:ro
+      - ../docker/pier/pier/example/pier-fabric/key.json:/root/.pier/key.json:ro
+      - ../docker/pier/pier/example/pier-fabric/network.toml:/root/.pier/network.toml:ro
+      - ../docker/pier/pier/example/pier-fabric/node.csr:/root/.pier/node.csr:ro
+      - ../docker/pier/pier/example/pier-fabric/node.priv:/root/.pier/node.priv:ro
+      - ../docker/pier/pier/example/pier-fabric/logs:/root/.pier/logs:rw
+      - ../docker/pier/pier/example/pier-fabric/fabric:/root/.pier/fabric:ro
+      - ../fabric/crypto-config:/root/.pier/fabric/crypto-config:ro
+      - ../docker/pier/pier/example/pier-fabric/certs:/root/.pier/certs:ro
+    ports:
+      - "44554:44554"
+      - "44550:44550"

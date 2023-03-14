@@ -1,0 +1,4 @@
+#pier --repo /root/.pier appchain register --appchain-id "ethappchain2" --name "ethereum2" --type "ETH" --trustroot "/root/.pier/ethereum/ether.validators" --broker 0x857133c5C69e6Ce66F7AD46F200B9B3573e77582 --desc "desc" --master-rule "0x00000000000000000000000000000000000000a2" --rule-url "http://github.com" --admin 0xf59D438B00B13F00A0F4EF3eAb23bCA5a1A8453D --reason "reason"
+#pier --repo /root/.pier appchain service register --appchain-id ethappchain2 --service-id "0x30c5D3aeb4681af4D13384DBc2a717C51cb1cc11" --name "eth2_transfer" --intro "" --ordered 1 --type CallContract --permit "" --details "test" --reason "reason"
+#pier --repo /root/.pier appchain service register --appchain-id ethappchain2 --service-id "0xe95C4c9D9DFeAdC8aD80F87de3F36476DcDdE9F4" --name "eth2_data_swapper" --intro "" --ordered 1 --type CallContract --permit "" --details "test" --reason "reason"
+pier --repo /root/.pier start

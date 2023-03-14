@@ -1,0 +1,10 @@
+[ether]
+addr = "ws://ethereum-1:8546"
+name = "ether"
+contract_address = "0x30c5D3aeb4681af4D13384DBc2a717C51cb1cc11"
+key_path = "account.key"
+password = "password"
+min_confirm = 1
+timeout_height = 10
+timeout_period = 60
+offchain_limit = 50

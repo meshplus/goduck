@@ -28,13 +28,13 @@ function a_b() {
 # -1: $1<$2
 function version_compare() {
   versionComPareRes=1
-  versionArr1_1=$(echo $version1 | awk -F ":" '{print $1}')
-  versionArr1_2=$(echo $version1 | awk -F ":" '{print $2}')
-  versionArr1_3=$(echo $version1 | awk -F ":" '{print $3}')
+  versionArr1_1=$(echo $version1 | awk -F "." '{print $1}')
+  versionArr1_2=$(echo $version1 | awk -F "." '{print $2}')
+  versionArr1_3=$(echo $version1 | awk -F "." '{print $3}')
 
-  versionArr2_1=$(echo $version2 | awk -F ":" '{print $1}')
-  versionArr2_2=$(echo $version2 | awk -F ":" '{print $2}')
-  versionArr2_3=$(echo $version2 | awk -F ":" '{print $3}')
+  versionArr2_1=$(echo $version2 | awk -F "." '{print $1}')
+  versionArr2_2=$(echo $version2 | awk -F "." '{print $2}')
+  versionArr2_3=$(echo $version2 | awk -F "." '{print $3}')
 
   a_b $versionArr1_1 $versionArr2_1
   if [ $abRes -gt 0 ]; then
