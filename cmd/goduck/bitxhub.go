@@ -33,6 +33,7 @@ var bxhConfigMap = map[string]string{
 	"v1.11.3": "v1.11.3",
 	"v1.23.0": "v1.23.0",
 	"v2.8.0":  "v2.8.0",
+	"v2.10.0": "v2.10.0",
 }
 
 func bitxhubCMD() *cli.Command {
@@ -59,7 +60,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v2.8.0",
+						Value:   "v2.10.0",
 						Usage:   "BitXHub version",
 					},
 				},
@@ -89,7 +90,7 @@ func bitxhubCMD() *cli.Command {
 					},
 					&cli.StringFlag{
 						Aliases: []string{"version", "v"},
-						Value:   "v2.8.0",
+						Value:   "v2.10.0",
 						Usage:   "BitXHub version",
 					},
 				},

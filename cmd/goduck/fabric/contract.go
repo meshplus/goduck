@@ -33,7 +33,7 @@ var ContractCMD = &cli.Command{
 				&cli.StringFlag{
 					Name:     "bxh-version",
 					Usage:    "specify bitxhub version. If not set code-path, the code will be downloaded based on this version",
-					Value:    "v2.8.0",
+					Value:    "v2.10.0",
 					Required: false,
 				},
 				&cli.StringFlag{

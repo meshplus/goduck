@@ -58,7 +58,7 @@ function appchain_register_binary() {
             --doc-addr "doc-addr" \
             --doc-hash "doc-hash"
 
-    elif [ "${version1}" = "v1.23.0" ] || [ "${version1}" = "v2.8.0" ]; then
+    elif [ "${version1}" = "v1.23.0" ] || [ "${version1}" = "v2.8.0" ] || [ "${version1}" = "v2.10.0" ]; then
       "${PIER_BIN_PATH}"/pier --repo "${PIERREPO}" appchain register \
                 --name $1 \
                 --type $2 \
@@ -127,7 +127,7 @@ function pier_docker_up() {
   if [ ! "$(docker ps -q -f name=pier-${APPCHAINTYPE})" ]; then
 
     print_blue "======> Start a new pier-${APPCHAINTYPE}"
-    if [ "${VERSION}" = "v2.8.0"  ]; then
+    if [ "${VERSION}" = "v2.8.0"  ] || [ "${VERSION}" = "v2.10.0"  ]; then
         if [ "${APPCHAINTYPE}" = "ethereum"  ]; then
             startPierContainer=${PIERREPO}/scripts/docker-compose-pier-eth.yaml
             x_replace "s/image: meshplus\/pier-ethereum:.*/image: meshplus\/pier-ethereum:${VERSION}/g" "${startPierContainer}"

@@ -124,7 +124,7 @@ function docker-compose-up() {
       curl -X POST http://127.0.0.1:3000/api/datasources -H "Content-Type:application/json" -d '{"name":"Prometheus","type":"prometheus","url":"http://prom:9090","access":"proxy","isDefault":true}' 2>$PROM_PATH/datasources2.log 1>$PROM_PATH/datasources1.log
       curl -X POST http://127.0.0.1:3000/api/dashboards/db -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d @$PROM_PATH/Go_Processes.json 2>$PROM_PATH/dashboards2.log 1>$PROM_PATH/dashboards1.log
     else
-      if [ "${VERSION}" == "v1.23.0" ] ||  [ "${VERSION}" == "v2.8.0" ]; then
+      if [ "${VERSION}" == "v1.23.0" ] ||  [ "${VERSION}" == "v2.8.0" ] ||  [ "${VERSION}" == "v2.10.0" ]; then
         docker-compose -f "${QUICK_PATH_TMP}"/quick_start.yml up -d bitxhub_solo ethereum-1 ethereum-2
         echo "wait ethereum-1 ethereum-2 start"
         sleep 5
@@ -174,7 +174,7 @@ function docker-compose-up() {
   if [ "${VERSION}" == "v1.11.0" ]; then
     command_retry "docker exec $bitxhubCID bitxhub client tx send --key /root/.bitxhub/key.json --to 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4 --amount 100000000000000000"
     command_retry "docker exec $bitxhubCID bitxhub client tx send --key /root/.bitxhub/key.json --to 0x4768E44fB5e85E1D86D403D767cC5898703B2e78 --amount 100000000000000000"
-  elif  [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ]; then
+  elif  [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ] || [ "${VERSION}" == "v2.10.0" ]; then
     command_retry "docker exec $bitxhubCID bitxhub client  transfer --key /root/.bitxhub/key.json --to 0xD389be2C1e6cCC9fB33aDc2235af8b449e3d14B4 --amount 100000000000000000"
     command_retry "docker exec $bitxhubCID bitxhub client  transfer --key /root/.bitxhub/key.json --to 0x4768E44fB5e85E1D86D403D767cC5898703B2e78 --amount 100000000000000000"
   fi
@@ -186,7 +186,7 @@ function docker-compose-up() {
   elif [ "${VERSION}" == "v1.6.1" ] || [ "${VERSION}" == "v1.6.2" ] || [ "${VERSION}" == "v1.6.5" ] || [ "${VERSION}" == "v1.7.0" ] || [ "${VERSION}" == "v1.8.0" ] || [ "${VERSION}" == "v1.9.0" ] || [ "${VERSION}" == "v1.11.0" ] || [ "${VERSION}" == "v1.11.1" ] ; then
     command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh appchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
     command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh appchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}""
-  elif [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ]; then
+  elif [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ] || [ "${VERSION}" == "v2.10.0" ]; then
     command_retry "docker exec $pier1CID /root/.pier/scripts/registerAppchain.sh ethappchain1 chainA ethereum chainA-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" "${BROKERADDR}" "${pier1CID}" "
     command_retry "docker exec $pier2CID /root/.pier/scripts/registerAppchain.sh ethappchain2 chainB ethereum chainB-description 1.9.13 /root/.pier/ethereum/ether.validators consensusType "${VERSION}" "${BROKERADDR}" "${pier2CID}" "
   fi
@@ -197,7 +197,7 @@ function docker-compose-up() {
   proposal21ID="${pier2ID}-0"
   command_retry "docker exec $bitxhubCID /root/.bitxhub/scripts/vote.sh $proposal21ID approve reason"
 
-  if [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ]; then
+  if [ "${VERSION}" == "v1.23.0" ] || [ "${VERSION}" == "v2.8.0" ] || [ "${VERSION}" == "v2.10.0" ]; then
       print_blue "======> register service"
       command_retry "docker exec $pier1CID /root/.pier/scripts/registerService.sh ethappchain1 "${TRANSFERADDR}" eth1 "${VERSION}""
       command_retry "docker exec $pier2CID /root/.pier/scripts/registerService.sh ethappchain2 "${TRANSFERADDR}" eth2 "${VERSION}""
@@ -324,7 +324,7 @@ function queryAccountNew() {
 
 function interchainTransfer() {
 
-  if [ "$2" == "v1.23.0"  ] || [ "$2" == "v2.8.0"  ]; then
+  if [ "$2" == "v1.23.0"  ] || [ "$2" == "v2.8.0"  ] || [ "$2" == "v2.10.0"  ]; then
       print_blue "1. Query original accounts in appchains"
       queryAccountNew
 

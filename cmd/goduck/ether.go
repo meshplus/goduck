@@ -24,6 +24,7 @@ var EthConfigMap = map[string]string{
 	"v1.11.3": "1.3.0",
 	"v1.23.0": "1.2.0",
 	"v2.8.0":  "1.2.0",
+	"v2.10.0": "1.2.0",
 }
 
 func etherCMD() *cli.Command {
@@ -63,7 +64,7 @@ func etherCMD() *cli.Command {
 						Name:     "bxh-version",
 						Usage:    "specify bitxhub version (Only for docker. The launched ethereum private chain in docker mod has already deployed the cross-chain contract required for the corresponding version of BitXHub)",
 						Required: false,
-						Value:    "v2.8.0",
+						Value:    "v2.10.0",
 					},
 				},
 				Action: startEther,

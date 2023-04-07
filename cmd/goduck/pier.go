@@ -28,6 +28,7 @@ var pierConfigMap = map[string]string{
 	"v1.11.3": "v1.11.3",
 	"v1.23.0": "v1.23.0",
 	"v2.8.0":  "v2.8.0",
+	"v2.10.0": "v2.10.0",
 }
 
 var pierCMD = &cli.Command{
@@ -58,7 +59,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v2.8.0",
+					Value:   "v2.10.0",
 					Usage:   "Pier version",
 				},
 			},
@@ -93,7 +94,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v2.8.0",
+					Value:   "v2.10.0",
 					Usage:   "Pier version",
 				},
 			},
@@ -132,7 +133,7 @@ var pierCMD = &cli.Command{
 				},
 				&cli.StringFlag{
 					Aliases: []string{"version", "v"},
-					Value:   "v2.8.0",
+					Value:   "v2.10.0",
 					Usage:   "Pier version",
 				},
 			},
