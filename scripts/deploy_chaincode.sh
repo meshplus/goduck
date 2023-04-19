@@ -72,6 +72,7 @@ function installInterchainChaincode() {
 
   cd "${CURRENT_PATH}"
   export CONFIG_PATH=${CURRENT_PATH}
+  docker exec cli go env -w GOFLAGS=-mod=vendor
 
   print_blue "===> 1. Deploying broker, transfer and data_swapper chaincode"
 
@@ -360,8 +361,8 @@ function installInterchainChaincode() {
   goduck fabric contract invoke transfer setBalance Alice,10000
 
   sleep 1
-  print_blue "===> 3. Set (key: path, value: ${CURRENT_PATH}) in data_swapper chaincode"
-  goduck fabric contract invoke data_swapper path,"'"${CURRENT_PATH}"'"
+  print_blue "===> 3. Set (key: keyTest, value: valueTest) in data_swapper chaincode"
+  goduck fabric contract invoke data_swapper set keyTest,valueTest
 
   print_blue "===> 4. Register transfer and data_swapper chaincode to broker chaincode"
   sleep 1
